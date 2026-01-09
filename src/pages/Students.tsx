@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Student, StudentStatus } from '@/types/student';
-import { Plus, Search, Filter, Download } from 'lucide-react';
+import { Plus, Search, Filter, Download, Users, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Sample data for demonstration
@@ -129,7 +129,6 @@ export default function Students() {
 
   const handleViewStudent = (student: Student) => {
     toast.info(`Viewing ${student.first_name} ${student.last_name}'s profile`);
-    // Could navigate to a detail page
   };
 
   const handleFormSubmit = (data: Partial<Student>) => {
@@ -171,78 +170,108 @@ export default function Students() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Students</h1>
-            <p className="mt-1 text-muted-foreground">
-              Manage student records and enrollment
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="animate-slide-up">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-orange-400 shadow-primary">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <h1 className="font-display text-3xl lg:text-4xl font-bold text-foreground">
+                Students
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg">
+              Manage student records and enrollment status
             </p>
           </div>
-          <Button onClick={handleAddStudent} size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            Add Student
-          </Button>
+          <div className="flex items-center gap-3 animate-slide-up stagger-1 opacity-0">
+            <Button variant="outline" size="lg" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button onClick={handleAddStudent} size="lg" className="gap-2 shadow-primary">
+              <Plus className="h-5 w-5" />
+              Add Student
+            </Button>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search students by name, email, or student number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+        {/* Filters Card */}
+        <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm animate-scale-in opacity-0 stagger-2">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search students by name, email, or student number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-12 text-base rounded-xl border-border/50 focus:border-primary bg-background"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StudentStatus | 'all')}>
+              <SelectTrigger className="w-full lg:w-[200px] h-12 rounded-xl border-border/50">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+                <SelectItem value="Graduated">Graduated</SelectItem>
+                <SelectItem value="Suspended">Suspended</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" className="h-12 gap-2 rounded-xl">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Results info */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{filteredStudents.length}</span> of{' '}
+            <span className="font-semibold text-foreground">{students.length}</span> students
+          </p>
+          {(searchQuery || statusFilter !== 'all') && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+              className="text-primary"
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+
+        {/* Student Table or Empty State */}
+        {filteredStudents.length > 0 ? (
+          <div className="animate-fade-in">
+            <StudentTable
+              students={filteredStudents}
+              onEdit={handleEditStudent}
+              onDelete={handleDeleteStudent}
+              onView={handleViewStudent}
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StudentStatus | 'all')}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-              <SelectItem value="Graduated">Graduated</SelectItem>
-              <SelectItem value="Suspended">Suspended</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-
-        {/* Results Count */}
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredStudents.length} of {students.length} students
-        </p>
-
-        {/* Student Table */}
-        {filteredStudents.length > 0 ? (
-          <StudentTable
-            students={filteredStudents}
-            onEdit={handleEditStudent}
-            onDelete={handleDeleteStudent}
-            onView={handleViewStudent}
-          />
         ) : (
-          <div className="rounded-xl border border-border bg-card p-12 text-center">
-            <div className="flex flex-col items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-                <Search className="h-8 w-8 text-muted-foreground" />
+          <div className="rounded-2xl border border-border/50 bg-card p-16 text-center animate-scale-in">
+            <div className="flex flex-col items-center max-w-sm mx-auto">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent to-muted mb-6">
+                <Search className="h-10 w-10 text-muted-foreground" />
               </div>
-              <h3 className="font-semibold text-foreground">No students found</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <h3 className="font-display text-xl font-bold text-foreground">No students found</h3>
+              <p className="mt-2 text-muted-foreground">
                 {searchQuery || statusFilter !== 'all'
                   ? 'Try adjusting your search or filter criteria'
-                  : 'Get started by adding your first student'}
+                  : 'Get started by adding your first student to the system'}
               </p>
               {!searchQuery && statusFilter === 'all' && (
-                <Button onClick={handleAddStudent} className="mt-4">
+                <Button onClick={handleAddStudent} className="mt-6 shadow-primary">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Student
                 </Button>
