@@ -1,18 +1,25 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { FileText, Search, Download, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { FileText, Search, Download, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/lib/supabase";
 
 export default function Transcripts() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('registrar_authenticated');
-    if (!isAuthenticated) {
-      navigate('/');
-    }
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
   return (
@@ -21,7 +28,9 @@ export default function Transcripts() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Transcripts</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">
+              Transcripts
+            </h1>
             <p className="mt-1 text-muted-foreground">
               Access and manage student academic transcripts
             </p>
@@ -57,16 +66,15 @@ export default function Transcripts() {
               Transcript Management
             </h3>
             <p className="mt-2 text-muted-foreground max-w-md">
-              Search for a student to view or generate their academic transcript. 
-              Transcripts include all courses, grades, and GPA calculations.
+              Search for a student to view or generate their academic
+              transcript. Transcripts include all courses, grades, and GPA
+              calculations.
             </p>
             <div className="mt-6 flex gap-3">
-              <Button variant="outline" onClick={() => navigate('/students')}>
+              <Button variant="outline" onClick={() => navigate("/students")}>
                 View Students
               </Button>
-              <Button>
-                Generate New Transcript
-              </Button>
+              <Button>Generate New Transcript</Button>
             </div>
           </div>
         </div>

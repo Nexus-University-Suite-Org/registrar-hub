@@ -1,7 +1,13 @@
-import { Student } from '@/types/student';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertTriangle } from 'lucide-react';
+import { Student } from "@/types/student";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { AlertTriangle } from "lucide-react";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -10,19 +16,26 @@ interface DeleteConfirmModalProps {
   student: Student | null;
 }
 
-export function DeleteConfirmModal({ isOpen, onClose, onConfirm, student }: DeleteConfirmModalProps) {
+export function DeleteConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  student,
+}: DeleteConfirmModalProps) {
   if (!student) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[90vw] p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
             <div>
-              <DialogTitle className="font-display text-xl">Delete Student</DialogTitle>
+              <DialogTitle className="font-display text-lg sm:text-xl">
+                Delete Student
+              </DialogTitle>
               <DialogDescription className="mt-1">
                 This action cannot be undone.
               </DialogDescription>
@@ -42,11 +55,19 @@ export function DeleteConfirmModal({ isOpen, onClose, onConfirm, student }: Dele
           </p>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="w-full sm:w-auto"
+          >
             Cancel
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+            className="w-full sm:w-auto"
+          >
             Delete Student
           </Button>
         </div>

@@ -1,113 +1,204 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { GraduationCap, Mail, Lock, ArrowRight, CheckCircle2, AlertCircle, ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  GraduationCap,
+  Mail,
+  Lock,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
-type AuthStep = 'email' | 'verification' | 'password' | 'login';
+type AuthStep = "email" | "verification" | "password" | "profile" | "login";
 
 const features = [
-  'Student Records Management',
-  'Enrollment & Status Tracking',
-  'Academic Oversight & Reports',
-  'Secure Role-Based Access',
+  "Student Records Management",
+  "Enrollment & Status Tracking",
+  "Academic Oversight & Reports",
+  "Secure Role-Based Access",
 ];
 
 export default function Auth() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<AuthStep>('email');
+  const [step, setStep] = useState<AuthStep>("email");
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Registrar profile fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [department, setDepartment] = useState("");
+
   const validateEmail = (email: string) => {
-    const registrarPattern = /^[a-zA-Z]+\.[a-zA-Z]+@registrar\.com$/;
-    return registrarPattern.test(email);
+    // For development/demo purposes, allow any valid email format
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
+    setError("");
+
     if (!validateEmail(email)) {
-      setError('Please use your institutional email (firstname.lastname@registrar.com)');
+      setError("Please enter a valid email address");
       return;
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsLoading(false);
 
     if (isLogin) {
-      setStep('login');
+      setStep("login");
     } else {
-      toast.success('Verification code sent to your email');
-      setStep('verification');
+      setStep("profile");
     }
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !employeeId.trim() ||
+      !department.trim()
+    ) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    setIsLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setIsLoading(false);
+
+    setStep("password");
   };
 
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (otp.length !== 6) {
-      setError('Please enter a valid 6-digit code');
+      setError("Please enter a valid 6-digit code");
       return;
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setIsLoading(false);
 
-    setStep('password');
+    setStep("password");
   };
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError("Password must be at least 8 characters");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    toast.success('Account created successfully!');
-    localStorage.setItem('registrar_authenticated', 'true');
-    navigate('/dashboard');
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+
+      if (authData.user) {
+        // Save registrar profile to database
+        const { error: profileError } = await supabase
+          .from("registrars")
+          .insert([
+            {
+              auth_id: authData.user.id,
+              first_name: firstName,
+              last_name: lastName,
+              email: email,
+              employee_id: employeeId,
+              department: department,
+              hire_date: new Date().toISOString().split("T")[0], // Today's date
+            },
+          ]);
+
+        if (profileError) {
+          console.error("Error saving registrar profile:", profileError);
+          setError(
+            "Account created but profile could not be saved. Please contact support."
+          );
+          return;
+        }
+      }
+
+      toast.success(
+        "Account created successfully! Please check your email for verification."
+      );
+      setStep("verification");
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!password) {
-      setError('Please enter your password');
+      setError("Please enter your password");
       return;
     }
 
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    toast.success('Welcome back!');
-    localStorage.setItem('registrar_authenticated', 'true');
-    navigate('/dashboard');
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -119,7 +210,7 @@ export default function Auth() {
         <div className="absolute inset-0 pattern-grid opacity-10" />
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-white/10 blur-3xl -translate-y-1/3 translate-x-1/3" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-white/5 blur-3xl translate-y-1/3 -translate-x-1/3" />
-        
+
         <div className="relative z-10 flex flex-col justify-between p-16 w-full">
           {/* Logo */}
           <div className="flex items-center gap-4">
@@ -138,15 +229,16 @@ export default function Auth() {
                 Manage your student records with confidence
               </h2>
               <p className="mt-6 text-xl text-white/80 leading-relaxed max-w-lg">
-                A powerful platform designed specifically for university registrars to streamline academic administration.
+                A powerful platform designed specifically for university
+                registrars to streamline academic administration.
               </p>
             </div>
 
             {/* Features list */}
             <div className="space-y-4">
               {features.map((feature, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className="flex items-center gap-4 text-white/90 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-4 transition-all duration-300 hover:bg-white/15"
                 >
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
@@ -169,7 +261,7 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background relative">
         {/* Subtle background pattern */}
         <div className="absolute inset-0 gradient-mesh opacity-30" />
-        
+
         <div className="w-full max-w-md relative z-10">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
@@ -182,9 +274,14 @@ export default function Auth() {
           </div>
 
           {/* Back button */}
-          {step !== 'email' && (
+          {step !== "email" && (
             <button
-              onClick={() => setStep('email')}
+              onClick={() => {
+                if (step === "profile") setStep("email");
+                else if (step === "password") setStep("profile");
+                else if (step === "verification") setStep("password");
+                else if (step === "login") setStep("email");
+              }}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -197,19 +294,26 @@ export default function Auth() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent text-primary text-xs font-semibold mb-4">
                 <Sparkles className="h-3 w-3" />
-                {isLogin ? 'Welcome back' : 'Get started'}
+                {isLogin ? "Welcome back" : "Get started"}
               </div>
               <h2 className="font-display text-3xl font-bold text-foreground">
-                {step === 'email' && (isLogin ? 'Sign in to your account' : 'Create your account')}
-                {step === 'verification' && 'Verify your email'}
-                {step === 'password' && 'Set your password'}
-                {step === 'login' && 'Enter your password'}
+                {step === "email" &&
+                  (isLogin ? "Sign in to your account" : "Create your account")}
+                {step === "profile" && "Complete your profile"}
+                {step === "verification" && "Verify your email"}
+                {step === "password" && "Set your password"}
+                {step === "login" && "Enter your password"}
               </h2>
               <p className="mt-3 text-muted-foreground">
-                {step === 'email' && (isLogin ? 'Enter your institutional email to continue' : 'Sign up using your institutional email')}
-                {step === 'verification' && `We sent a code to ${email}`}
-                {step === 'password' && 'Create a secure password for your account'}
-                {step === 'login' && 'Enter your password to access the portal'}
+                {step === "email" &&
+                  (isLogin
+                    ? "Enter your email to continue"
+                    : "Sign up using your email")}
+                {step === "profile" && "Tell us a bit about yourself"}
+                {step === "verification" && `We sent a code to ${email}`}
+                {step === "password" &&
+                  "Create a secure password for your account"}
+                {step === "login" && "Enter your password to access the portal"}
               </p>
             </div>
 
@@ -222,10 +326,12 @@ export default function Auth() {
             )}
 
             {/* Email Step */}
-            {step === 'email' && (
+            {step === "email" && (
               <form onSubmit={handleEmailSubmit} className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="email" className="text-sm font-medium">Institutional Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email Address
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -233,13 +339,105 @@ export default function Auth() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="firstname.lastname@registrar.com"
+                      placeholder="your.email@example.com"
                       className="pl-12 h-14 text-base rounded-xl border-border/50 focus:border-primary bg-card"
                       required
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-base rounded-xl shadow-primary" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-base rounded-xl shadow-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Please wait...
+                    </div>
+                  ) : (
+                    <>
+                      Continue
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
+
+            {/* Profile Step */}
+            {step === "profile" && (
+              <form onSubmit={handleProfileSubmit} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="firstName" className="text-sm font-medium">
+                      First Name
+                    </Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="John"
+                      className="h-12 rounded-xl border-border/50 focus:border-primary bg-card"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="lastName" className="text-sm font-medium">
+                      Last Name
+                    </Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Doe"
+                      className="h-12 rounded-xl border-border/50 focus:border-primary bg-card"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="employeeId" className="text-sm font-medium">
+                    Employee ID
+                  </Label>
+                  <Input
+                    id="employeeId"
+                    type="text"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    placeholder="REG-001"
+                    className="h-12 rounded-xl border-border/50 focus:border-primary bg-card"
+                    required
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label htmlFor="department" className="text-sm font-medium">
+                    Department
+                  </Label>
+                  <select
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full h-12 px-4 rounded-xl border border-border/50 focus:border-primary bg-card text-base"
+                    required
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Academic Affairs">Academic Affairs</option>
+                    <option value="Student Services">Student Services</option>
+                    <option value="Records Management">
+                      Records Management
+                    </option>
+                    <option value="Administration">Administration</option>
+                    <option value="IT Services">IT Services</option>
+                  </select>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-base rounded-xl shadow-primary"
+                  disabled={isLoading}
+                >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -256,40 +454,56 @@ export default function Auth() {
             )}
 
             {/* Verification Step */}
-            {step === 'verification' && (
+            {step === "verification" && (
               <form onSubmit={handleVerification} className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="otp" className="text-sm font-medium">Verification Code</Label>
+                  <Label htmlFor="otp" className="text-sm font-medium">
+                    Verification Code
+                  </Label>
                   <Input
                     id="otp"
                     type="text"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
                     placeholder="000000"
                     className="h-14 text-center text-2xl tracking-[0.5em] font-mono rounded-xl border-border/50 focus:border-primary bg-card"
                     maxLength={6}
                     required
                   />
                   <p className="text-sm text-muted-foreground">
-                    Didn't receive the code? <button type="button" className="text-primary hover:underline font-medium">Resend</button>
+                    Didn't receive the code?{" "}
+                    <button
+                      type="button"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Resend
+                    </button>
                   </p>
                 </div>
-                <Button type="submit" className="w-full h-14 text-base rounded-xl shadow-primary" disabled={isLoading}>
-                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-base rounded-xl shadow-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Verifying..." : "Verify Code"}
                 </Button>
               </form>
             )}
 
             {/* Password Setup Step */}
-            {step === 'password' && (
+            {step === "password" && (
               <form onSubmit={handlePasswordSetup} className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="password" className="text-sm font-medium">Create Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Create Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="password"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
@@ -301,17 +515,26 @@ export default function Auth() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</Label>
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-medium"
+                  >
+                    Confirm Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Confirm password"
@@ -320,19 +543,31 @@ export default function Auth() {
                     />
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-base rounded-xl shadow-primary" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create Account'}
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-base rounded-xl shadow-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
             )}
 
             {/* Login Step */}
-            {step === 'login' && (
+            {step === "login" && (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="loginPassword" className="text-sm font-medium">Password</Label>
-                    <button type="button" className="text-sm text-primary hover:underline font-medium">
+                    <Label
+                      htmlFor="loginPassword"
+                      className="text-sm font-medium"
+                    >
+                      Password
+                    </Label>
+                    <button
+                      type="button"
+                      className="text-sm text-primary hover:underline font-medium"
+                    >
                       Forgot password?
                     </button>
                   </div>
@@ -340,7 +575,7 @@ export default function Auth() {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="loginPassword"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter your password"
@@ -352,26 +587,36 @@ export default function Auth() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-base rounded-xl shadow-primary" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-base rounded-xl shadow-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
             )}
 
             {/* Toggle Login/Signup */}
-            {step === 'email' && (
+            {step === "email" && (
               <p className="text-center text-muted-foreground">
-                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                {isLogin
+                  ? "Don't have an account? "
+                  : "Already have an account? "}
                 <button
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
                   className="font-semibold text-primary hover:underline"
                 >
-                  {isLogin ? 'Sign up' : 'Sign in'}
+                  {isLogin ? "Sign up" : "Sign in"}
                 </button>
               </p>
             )}

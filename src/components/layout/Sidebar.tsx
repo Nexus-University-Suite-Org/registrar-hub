@@ -1,128 +1,230 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Settings, 
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Settings,
   LogOut,
   GraduationCap,
   ChevronLeft,
   ChevronRight,
   BarChart3,
-  HelpCircle
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+  HelpCircle,
+  UserCheck,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Students', href: '/students', icon: Users },
-  { name: 'Transcripts', href: '/transcripts', icon: FileText },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Students", href: "/students", icon: Users },
+  { name: "Lecturers", href: "/lecturers", icon: UserCheck },
+  { name: "Results", href: "/results", icon: GraduationCap },
+  { name: "Transcripts", href: "/transcripts", icon: FileText },
+  { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 interface SidebarProps {
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ onLogout }: SidebarProps) {
+export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-card border-r border-border/50 transition-all duration-300 flex flex-col",
-        collapsed ? "w-20" : "w-64"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-20 items-center justify-between px-4 border-b border-border/50">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-30" />
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
-              <GraduationCap className="h-6 w-6 text-primary-foreground" />
+    <>
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "hidden lg:flex fixed left-0 top-0 z-40 h-screen bg-card border-r border-border/50 transition-all duration-300 flex-col",
+          collapsed ? "w-20" : "w-64"
+        )}
+      >
+        {/* Logo */}
+        <div className="flex h-20 items-center justify-between px-4 border-b border-border/50">
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-30" />
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
+                <GraduationCap className="h-6 w-6 text-primary-foreground" />
+              </div>
             </div>
+            {!collapsed && (
+              <span className="font-display font-bold text-xl text-foreground">
+                Registrar
+              </span>
+            )}
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-8 w-8 rounded-lg hover:bg-accent"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Menu
+              </p>
+            )}
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
+                    isActive
+                      ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 flex-shrink-0 transition-transform duration-200",
+                      !isActive && "group-hover:scale-110"
+                    )}
+                  />
+                  {!collapsed && <span>{item.name}</span>}
+                </Link>
+              );
+            })}
           </div>
-          {!collapsed && (
+        </nav>
+
+        {/* Bottom section */}
+        <div className="p-3 border-t border-border/50 space-y-1">
+          <Link
+            to="#"
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
+              collapsed && "justify-center"
+            )}
+          >
+            <HelpCircle className="h-5 w-5 flex-shrink-0" />
+            {!collapsed && <span>Help & Support</span>}
+          </Link>
+          <Button
+            variant="ghost"
+            onClick={onLogout}
+            className={cn(
+              "w-full justify-start gap-3 rounded-xl px-3 py-3 h-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+              collapsed && "justify-center"
+            )}
+          >
+            <LogOut className="h-5 w-5" />
+            {!collapsed && <span>Logout</span>}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <aside
+        className={cn(
+          "lg:hidden fixed left-0 top-0 z-40 h-screen bg-card border-r border-border/50 transition-transform duration-300 flex flex-col w-64",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Mobile Header */}
+        <div className="flex h-20 items-center justify-between px-4 border-b border-border/50">
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-3"
+            onClick={onClose}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-30" />
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
+                <GraduationCap className="h-6 w-6 text-primary-foreground" />
+              </div>
+            </div>
             <span className="font-display font-bold text-xl text-foreground">
               Registrar
             </span>
-          )}
-        </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8 rounded-lg hover:bg-accent"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 rounded-lg hover:bg-accent"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
-        <div className="space-y-1">
-          {!collapsed && (
+        {/* Navigation */}
+        <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+          <div className="space-y-1">
             <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Menu
             </p>
-          )}
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
-              >
-                <item.icon className={cn(
-                  "h-5 w-5 flex-shrink-0 transition-transform duration-200",
-                  !isActive && "group-hover:scale-110"
-                )} />
-                {!collapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
+                    isActive
+                      ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 flex-shrink-0 transition-transform duration-200",
+                      !isActive && "group-hover:scale-110"
+                    )}
+                  />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
 
-      {/* Bottom section */}
-      <div className="p-3 border-t border-border/50 space-y-1">
-        <Link
-          to="#"
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
-            collapsed && "justify-center"
-          )}
-        >
-          <HelpCircle className="h-5 w-5 flex-shrink-0" />
-          {!collapsed && <span>Help & Support</span>}
-        </Link>
-        <Button
-          variant="ghost"
-          onClick={onLogout}
-          className={cn(
-            "w-full justify-start gap-3 rounded-xl px-3 py-3 h-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-            collapsed && "justify-center"
-          )}
-        >
-          <LogOut className="h-5 w-5" />
-          {!collapsed && <span>Logout</span>}
-        </Button>
-      </div>
-    </aside>
+        {/* Bottom section */}
+        <div className="p-3 border-t border-border/50 space-y-1">
+          <Link
+            to="#"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
+          >
+            <HelpCircle className="h-5 w-5 flex-shrink-0" />
+            <span>Help & Support</span>
+          </Link>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onLogout();
+              onClose?.();
+            }}
+            className="w-full justify-start gap-3 rounded-xl px-3 py-3 h-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Logout</span>
+          </Button>
+        </div>
+      </aside>
+    </>
   );
 }

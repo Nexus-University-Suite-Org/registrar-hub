@@ -1,28 +1,36 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { BarChart3, Download, Calendar, Users, TrendingUp, FileSpreadsheet } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  BarChart3,
+  Download,
+  Calendar,
+  Users,
+  TrendingUp,
+  FileSpreadsheet,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 const reportTypes = [
   {
-    name: 'Enrollment Report',
-    description: 'Overview of student enrollment by department and program',
+    name: "Enrollment Report",
+    description: "Overview of student enrollment by department and program",
     icon: Users,
   },
   {
-    name: 'Academic Performance',
-    description: 'Student performance metrics and GPA distributions',
+    name: "Academic Performance",
+    description: "Student performance metrics and GPA distributions",
     icon: TrendingUp,
   },
   {
-    name: 'Graduation Statistics',
-    description: 'Graduation rates and completion timelines',
+    name: "Graduation Statistics",
+    description: "Graduation rates and completion timelines",
     icon: Calendar,
   },
   {
-    name: 'Department Summary',
-    description: 'Detailed breakdown by academic department',
+    name: "Department Summary",
+    description: "Detailed breakdown by academic department",
     icon: FileSpreadsheet,
   },
 ];
@@ -31,10 +39,16 @@ export default function Reports() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('registrar_authenticated');
-    if (!isAuthenticated) {
-      navigate('/');
-    }
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
   return (
@@ -43,7 +57,9 @@ export default function Reports() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Reports</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">
+              Reports
+            </h1>
             <p className="mt-1 text-muted-foreground">
               Generate and view analytical reports
             </p>
@@ -66,8 +82,12 @@ export default function Reports() {
                   <report.icon className="h-6 w-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">{report.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{report.description}</p>
+                  <h3 className="font-semibold text-foreground">
+                    {report.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {report.description}
+                  </p>
                   <div className="mt-4 flex gap-2">
                     <Button size="sm" variant="outline">
                       View

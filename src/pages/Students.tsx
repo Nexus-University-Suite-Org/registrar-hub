@@ -1,91 +1,112 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { StudentTable } from '@/components/students/StudentTable';
-import { StudentFormModal } from '@/components/students/StudentFormModal';
-import { DeleteConfirmModal } from '@/components/students/DeleteConfirmModal';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Student, StudentStatus } from '@/types/student';
-import { Plus, Search, Filter, Download, Users, RefreshCw } from 'lucide-react';
-import { toast } from 'sonner';
-
-// Sample data for demonstration
-const sampleStudents: Student[] = [
-  {
-    id: '1',
-    student_number: 'STU-2024-001',
-    registration_number: 'REG-2024-001',
-    first_name: 'John',
-    last_name: 'Doe',
-    email: 'john.doe@university.edu',
-    department: 'Computer Science',
-    program: 'Bachelor of Science',
-    year_of_study: 3,
-    status: 'Active',
-    admission_date: '2022-09-01',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    student_number: 'STU-2024-002',
-    registration_number: 'REG-2024-002',
-    first_name: 'Jane',
-    last_name: 'Smith',
-    email: 'jane.smith@university.edu',
-    department: 'Business Administration',
-    program: 'Master of Arts',
-    year_of_study: 2,
-    status: 'Active',
-    admission_date: '2023-09-01',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    student_number: 'STU-2023-045',
-    registration_number: 'REG-2023-045',
-    first_name: 'Michael',
-    last_name: 'Johnson',
-    email: 'michael.j@university.edu',
-    department: 'Engineering',
-    program: 'Bachelor of Science',
-    year_of_study: 4,
-    status: 'Graduated',
-    admission_date: '2020-09-01',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { StudentTable } from "@/components/students/StudentTable";
+import { StudentFormModal } from "@/components/students/StudentFormModal";
+import { DeleteConfirmModal } from "@/components/students/DeleteConfirmModal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Student, StudentStatus } from "@/types/student";
+import { Plus, Search, Filter, Download, Users, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 export default function Students() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StudentStatus | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StudentStatus | "all">(
+    "all"
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [loading, setLoading] = useState(true);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      console.log("Fetching students from Supabase...");
+
+      // For testing with service key to bypass RLS
+      const testSupabase = createClient(
+        "https://oszbmaqieyemkgcqbeap.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zemJtYXFpZXllbWtnY3FiZWFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzUxMDk1NSwiZXhwIjoyMDgzMDg2OTU1fQ.2IwBsS3EQBdCZC44r5dg1xjREWIxlrj_FT8Qn57oEY4"
+      );
+
+      const { data, error } = await testSupabase
+        .from("profiles")
+        .select("*")
+        .not("student_number", "is", null)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching students:", error);
+        toast.error(`Failed to load students: ${error.message}`);
+        setStudents([]);
+        return;
+      }
+
+      console.log("Students fetched:", data?.length || 0, data);
+
+      // Map profiles data to Student format
+      const mappedStudents: Student[] = (data || []).map((profile: any) => ({
+        id: profile.id,
+        student_number: profile.student_number,
+        registration_number:
+          profile.registration_number || profile.student_number,
+        first_name: profile.full_name?.split(" ")[0] || "",
+        last_name: profile.full_name?.split(" ").slice(1).join(" ") || "",
+        email: profile.email,
+        department: profile.department || "",
+        program: "", // Not stored in profiles table
+        year_of_study: 1, // Not stored in profiles table
+        status: "Active", // Not stored in profiles table
+        admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles table
+        avatar_url: profile.avatar_url,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
+      }));
+
+      setStudents(mappedStudents);
+      toast.success(`Loaded ${mappedStudents.length} students from database`);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      toast.error("Failed to load students");
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('registrar_authenticated');
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
+    const checkAuth = async () => {
+      console.log("Checking authentication...");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    // Load students from localStorage or use sample data
-    const savedStudents = localStorage.getItem('registrar_students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
-    } else {
-      setStudents(sampleStudents);
-      localStorage.setItem('registrar_students', JSON.stringify(sampleStudents));
-    }
+      if (!session) {
+        console.log("No session found, redirecting to login");
+        navigate("/");
+        return;
+      }
+
+      console.log("Session found, user:", session.user.email);
+      await fetchStudents();
+    };
+
+    checkAuth();
   }, [navigate]);
 
   useEffect(() => {
@@ -103,7 +124,7 @@ export default function Students() {
       );
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter !== "all") {
       filtered = filtered.filter((s) => s.status === statusFilter);
     }
 
@@ -112,13 +133,13 @@ export default function Students() {
 
   const handleAddStudent = () => {
     setSelectedStudent(null);
-    setFormMode('add');
+    setFormMode("add");
     setIsFormOpen(true);
   };
 
   const handleEditStudent = (student: Student) => {
     setSelectedStudent(student);
-    setFormMode('edit');
+    setFormMode("edit");
     setIsFormOpen(true);
   };
 
@@ -128,44 +149,141 @@ export default function Students() {
   };
 
   const handleViewStudent = (student: Student) => {
-    toast.info(`Viewing ${student.first_name} ${student.last_name}'s profile`);
+    console.log("Viewing student details:", student);
+    toast.info(
+      `Viewing ${student.first_name} ${student.last_name}'s profile - Student #: ${student.student_number}`
+    );
   };
 
-  const handleFormSubmit = (data: Partial<Student>) => {
-    if (formMode === 'add') {
-      const newStudent: Student = {
-        ...data,
-        id: Date.now().toString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as Student;
+  const handleFormSubmit = async (data: Partial<Student>) => {
+    try {
+      if (formMode === "add") {
+        // For add, create a new profile entry with only fields that exist in profiles table
+        const newProfileData = {
+          id: crypto.randomUUID(), // Generate a new UUID for the profile
+          email: data.email,
+          full_name: `${data.first_name} ${data.last_name}`,
+          student_number: data.student_number,
+          registration_number: data.registration_number,
+          department: data.department,
+          avatar_url: data.avatar_url,
+          role: "student",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-      const updatedStudents = [...students, newStudent];
-      setStudents(updatedStudents);
-      localStorage.setItem('registrar_students', JSON.stringify(updatedStudents));
-      toast.success('Student added successfully');
-    } else {
-      const updatedStudents = students.map((s) =>
-        s.id === selectedStudent?.id
-          ? { ...s, ...data, updated_at: new Date().toISOString() }
-          : s
-      );
-      setStudents(updatedStudents);
-      localStorage.setItem('registrar_students', JSON.stringify(updatedStudents));
-      toast.success('Student updated successfully');
+        const { data: insertedData, error } = await supabase
+          .from("profiles")
+          .insert([newProfileData])
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error adding student:", error);
+          toast.error(`Failed to add student: ${error.message}`);
+          return;
+        }
+
+        // Map back to Student format for local state
+        const newStudent: Student = {
+          id: insertedData.id,
+          student_number: insertedData.student_number,
+          registration_number: insertedData.registration_number,
+          first_name: insertedData.full_name?.split(" ")[0] || "",
+          last_name:
+            insertedData.full_name?.split(" ").slice(1).join(" ") || "",
+          email: insertedData.email,
+          department: insertedData.department,
+          program: "", // Not stored in profiles
+          year_of_study: 1, // Not stored in profiles
+          status: "Active", // Not stored in profiles
+          admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles
+          avatar_url: insertedData.avatar_url,
+          created_at: insertedData.created_at,
+          updated_at: insertedData.updated_at,
+        };
+
+        setStudents((prev) => [newStudent, ...prev]);
+        toast.success("Student added successfully");
+      } else {
+        // Edit existing profile - only update fields that exist in profiles table
+        const updateData = {
+          full_name: `${data.first_name} ${data.last_name}`,
+          email: data.email,
+          student_number: data.student_number,
+          registration_number: data.registration_number,
+          department: data.department,
+          avatar_url: data.avatar_url,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: updatedData, error } = await supabase
+          .from("profiles")
+          .update(updateData)
+          .eq("id", selectedStudent?.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error updating student:", error);
+          toast.error(`Failed to update student: ${error.message}`);
+          return;
+        }
+
+        // Map back to Student format for local state
+        const updatedStudent: Student = {
+          id: updatedData.id,
+          student_number: updatedData.student_number,
+          registration_number: updatedData.registration_number,
+          first_name: updatedData.full_name?.split(" ")[0] || "",
+          last_name: updatedData.full_name?.split(" ").slice(1).join(" ") || "",
+          email: updatedData.email,
+          department: updatedData.department,
+          program: "", // Not stored in profiles
+          year_of_study: 1, // Not stored in profiles
+          status: "Active", // Not stored in profiles
+          admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles
+          avatar_url: updatedData.avatar_url,
+          created_at: updatedData.created_at,
+          updated_at: updatedData.updated_at,
+        };
+
+        setStudents((prev) =>
+          prev.map((s) => (s.id === selectedStudent?.id ? updatedStudent : s))
+        );
+        toast.success("Student updated successfully");
+      }
+
+      setIsFormOpen(false);
+      fetchStudents(); // Refresh the list
+    } catch (error) {
+      console.error("Error saving student:", error);
+      toast.error("Failed to save student");
     }
-
-    setIsFormOpen(false);
   };
 
-  const handleConfirmDelete = () => {
-    if (selectedStudent) {
-      const updatedStudents = students.filter((s) => s.id !== selectedStudent.id);
-      setStudents(updatedStudents);
-      localStorage.setItem('registrar_students', JSON.stringify(updatedStudents));
-      toast.success('Student deleted successfully');
+  const handleConfirmDelete = async () => {
+    if (!selectedStudent) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", selectedStudent.id);
+
+      if (error) {
+        console.error("Error deleting student:", error);
+        toast.error("Failed to delete student");
+        return;
+      }
+
+      setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
+      toast.success("Student deleted successfully");
+      setIsDeleteOpen(false);
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      toast.error("Failed to delete student");
     }
-    setIsDeleteOpen(false);
   };
 
   return (
@@ -186,14 +304,22 @@ export default function Students() {
               Manage student records and enrollment status
             </p>
           </div>
-          <div className="flex items-center gap-3 animate-slide-up stagger-1 opacity-0">
-            <Button variant="outline" size="lg" className="gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-3 animate-slide-up stagger-1 opacity-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 w-full sm:w-auto"
+            >
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button onClick={handleAddStudent} size="lg" className="gap-2 shadow-primary">
+            <Button
+              onClick={handleAddStudent}
+              size="sm"
+              className="gap-2 w-full sm:w-auto shadow-primary"
+            >
               <Plus className="h-5 w-5" />
-              Add Student
+              <span className="hidden sm:inline">Add Student</span>
             </Button>
           </div>
         </div>
@@ -210,7 +336,10 @@ export default function Students() {
                 className="pl-12 h-12 text-base rounded-xl border-border/50 focus:border-primary bg-background"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StudentStatus | 'all')}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StudentStatus | "all")}
+            >
               <SelectTrigger className="w-full lg:w-[200px] h-12 rounded-xl border-border/50">
                 <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Filter by status" />
@@ -223,9 +352,12 @@ export default function Students() {
                 <SelectItem value="Suspended">Suspended</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" className="h-12 gap-2 rounded-xl">
+            <Button
+              variant="outline"
+              className="h-12 gap-2 rounded-xl w-full sm:w-auto"
+            >
               <Download className="h-4 w-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
           </div>
         </div>
@@ -233,14 +365,24 @@ export default function Students() {
         {/* Results info */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{filteredStudents.length}</span> of{' '}
-            <span className="font-semibold text-foreground">{students.length}</span> students
+            Showing{" "}
+            <span className="font-semibold text-foreground">
+              {filteredStudents.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-semibold text-foreground">
+              {students.length}
+            </span>{" "}
+            students
           </p>
-          {(searchQuery || statusFilter !== 'all') && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+          {(searchQuery || statusFilter !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+              }}
               className="text-primary"
             >
               Clear filters
@@ -264,14 +406,19 @@ export default function Students() {
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent to-muted mb-6">
                 <Search className="h-10 w-10 text-muted-foreground" />
               </div>
-              <h3 className="font-display text-xl font-bold text-foreground">No students found</h3>
+              <h3 className="font-display text-xl font-bold text-foreground">
+                No students found
+              </h3>
               <p className="mt-2 text-muted-foreground">
-                {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'Get started by adding your first student to the system'}
+                {searchQuery || statusFilter !== "all"
+                  ? "Try adjusting your search or filter criteria"
+                  : "Get started by adding your first student to the system"}
               </p>
-              {!searchQuery && statusFilter === 'all' && (
-                <Button onClick={handleAddStudent} className="mt-6 shadow-primary">
+              {!searchQuery && statusFilter === "all" && (
+                <Button
+                  onClick={handleAddStudent}
+                  className="mt-6 shadow-primary"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Student
                 </Button>

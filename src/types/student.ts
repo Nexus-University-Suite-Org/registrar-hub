@@ -1,4 +1,4 @@
-export type StudentStatus = 'Active' | 'Inactive' | 'Graduated' | 'Suspended';
+export type StudentStatus = "Active" | "Inactive" | "Graduated" | "Suspended";
 
 export interface Student {
   id: string;
@@ -12,6 +12,7 @@ export interface Student {
   year_of_study: number;
   status: StudentStatus;
   admission_date: string;
+  avatar_url?: string;
   created_at: string;
   updated_at: string;
 }

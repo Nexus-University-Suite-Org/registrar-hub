@@ -1,29 +1,28 @@
-import { Student } from "@/types/student";
+import { Lecturer } from "@/types/lecturer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface StudentTableProps {
-  students: Student[];
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
-  onView: (student: Student) => void;
+interface LecturerTableProps {
+  lecturers: Lecturer[];
+  onEdit: (lecturer: Lecturer) => void;
+  onDelete: (lecturer: Lecturer) => void;
+  onView: (lecturer: Lecturer) => void;
 }
 
 const statusStyles = {
   Active: "bg-success/10 text-success border-success/20",
   Inactive: "bg-muted text-muted-foreground border-muted",
-  Graduated: "bg-primary/10 text-primary border-primary/20",
-  Suspended: "bg-destructive/10 text-destructive border-destructive/20",
+  Retired: "bg-primary/10 text-primary border-primary/20",
 };
 
-export function StudentTable({
-  students,
+export function LecturerTable({
+  lecturers,
   onEdit,
   onDelete,
   onView,
-}: StudentTableProps) {
+}: LecturerTableProps) {
   return (
     <>
       {/* Desktop Table */}
@@ -32,19 +31,19 @@ export function StudentTable({
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Student
+                Lecturer
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Student No.
+                Lecturer No.
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Department
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Program
+                Specialization
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Year
+                Employment Date
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Status
@@ -55,55 +54,55 @@ export function StudentTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {students.map((student) => (
+            {lecturers.map((lecturer) => (
               <tr
-                key={student.id}
+                key={lecturer.id}
                 className="transition-colors hover:bg-muted/30"
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    {student.avatar_url ? (
+                    {lecturer.avatar_url ? (
                       <img
-                        src={student.avatar_url}
-                        alt={`${student.first_name} ${student.last_name}`}
+                        src={lecturer.avatar_url}
+                        alt={`${lecturer.first_name} ${lecturer.last_name}`}
                         className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
                         <span className="text-sm font-medium text-muted-foreground">
-                          {student.first_name?.[0]}
-                          {student.last_name?.[0]}
+                          {lecturer.first_name?.[0]}
+                          {lecturer.last_name?.[0]}
                         </span>
                       </div>
                     )}
                     <div>
                       <p className="font-medium text-foreground">
-                        {student.first_name} {student.last_name}
+                        {lecturer.first_name} {lecturer.last_name}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {student.email}
+                        {lecturer.email}
                       </p>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-foreground font-mono">
-                  {student.student_number}
+                  {lecturer.lecturer_number}
                 </td>
                 <td className="px-6 py-4 text-sm text-foreground">
-                  {student.department}
+                  {lecturer.department}
                 </td>
                 <td className="px-6 py-4 text-sm text-foreground">
-                  {student.program}
+                  {lecturer.specialization || "N/A"}
                 </td>
                 <td className="px-6 py-4 text-sm text-foreground">
-                  Year {student.year_of_study}
+                  {new Date(lecturer.employment_date).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4">
                   <Badge
                     variant="outline"
-                    className={cn("font-medium", statusStyles[student.status])}
+                    className={cn("font-medium", statusStyles[lecturer.status])}
                   >
-                    {student.status}
+                    {lecturer.status}
                   </Badge>
                 </td>
                 <td className="px-6 py-4">
@@ -111,7 +110,7 @@ export function StudentTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onView(student)}
+                      onClick={() => onView(lecturer)}
                       className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     >
                       <Eye className="h-4 w-4" />
@@ -119,7 +118,7 @@ export function StudentTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit(student)}
+                      onClick={() => onEdit(lecturer)}
                       className="h-8 w-8 text-muted-foreground hover:text-primary"
                     >
                       <Edit className="h-4 w-4" />
@@ -127,7 +126,7 @@ export function StudentTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onDelete(student)}
+                      onClick={() => onDelete(lecturer)}
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -142,23 +141,23 @@ export function StudentTable({
 
       {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
-        {students.map((student) => (
+        {lecturers.map((lecturer) => (
           <div
-            key={student.id}
+            key={lecturer.id}
             className="rounded-xl border border-border bg-card p-4 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              {student.avatar_url ? (
+              {lecturer.avatar_url ? (
                 <img
-                  src={student.avatar_url}
-                  alt={`${student.first_name} ${student.last_name}`}
+                  src={lecturer.avatar_url}
+                  alt={`${lecturer.first_name} ${lecturer.last_name}`}
                   className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                   <span className="text-sm font-medium text-muted-foreground">
-                    {student.first_name?.[0]}
-                    {student.last_name?.[0]}
+                    {lecturer.first_name?.[0]}
+                    {lecturer.last_name?.[0]}
                   </span>
                 </div>
               )}
@@ -166,45 +165,45 @@ export function StudentTable({
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <h3 className="font-medium text-foreground truncate">
-                      {student.first_name} {student.last_name}
+                      {lecturer.first_name} {lecturer.last_name}
                     </h3>
                     <p className="text-sm text-muted-foreground truncate">
-                      {student.email}
+                      {lecturer.email}
                     </p>
                   </div>
                   <Badge
                     variant="outline"
                     className={cn(
                       "font-medium text-xs",
-                      statusStyles[student.status]
+                      statusStyles[lecturer.status]
                     )}
                   >
-                    {student.status}
+                    {lecturer.status}
                   </Badge>
                 </div>
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>
-                    <span className="font-medium">Student No:</span>{" "}
-                    {student.student_number}
+                    <span className="font-medium">Lecturer No:</span>{" "}
+                    {lecturer.lecturer_number}
                   </p>
                   <p>
                     <span className="font-medium">Department:</span>{" "}
-                    {student.department}
+                    {lecturer.department}
                   </p>
                   <p>
-                    <span className="font-medium">Program:</span>{" "}
-                    {student.program}
+                    <span className="font-medium">Specialization:</span>{" "}
+                    {lecturer.specialization || "N/A"}
                   </p>
                   <p>
-                    <span className="font-medium">Year:</span>{" "}
-                    {student.year_of_study}
+                    <span className="font-medium">Employment Date:</span>{" "}
+                    {new Date(lecturer.employment_date).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-3">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onView(student)}
+                    onClick={() => onView(lecturer)}
                     className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-foreground flex-1 sm:flex-none"
                   >
                     <Eye className="h-4 w-4" />
@@ -213,7 +212,7 @@ export function StudentTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(student)}
+                    onClick={() => onEdit(lecturer)}
                     className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-primary flex-1 sm:flex-none"
                   >
                     <Edit className="h-4 w-4" />
@@ -222,7 +221,7 @@ export function StudentTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(student)}
+                    onClick={() => onDelete(lecturer)}
                     className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-destructive flex-1 sm:flex-none"
                   >
                     <Trash2 className="h-4 w-4" />
