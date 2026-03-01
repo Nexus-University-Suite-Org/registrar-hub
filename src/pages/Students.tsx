@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StudentTable } from "@/components/students/StudentTable";
 import { StudentFormModal } from "@/components/students/StudentFormModal";
+import { StudentViewModal } from "@/components/students/StudentViewModal";
 import { DeleteConfirmModal } from "@/components/students/DeleteConfirmModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ export default function Students() {
   const [statusFilter, setStatusFilter] = useState<StudentStatus | "all">(
     "all",
   );
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -53,7 +55,6 @@ export default function Students() {
       const studentsQuery = query(
         collection(db, "profiles"),
         where("role", "==", "student"),
-        orderBy("created_at", "desc"),
       );
 
       const querySnapshot = await getDocs(studentsQuery);
@@ -151,10 +152,8 @@ export default function Students() {
   };
 
   const handleViewStudent = (student: Student) => {
-    console.log("Viewing student details:", student);
-    toast.info(
-      `Viewing ${student.first_name} ${student.last_name}'s profile - Student #: ${student.student_number}`,
-    );
+    setSelectedStudent(student);
+    setIsViewOpen(true);
   };
 
   const handleFormSubmit = async (data: Partial<Student>) => {
@@ -401,6 +400,12 @@ export default function Students() {
         onSubmit={handleFormSubmit}
         student={selectedStudent}
         mode={formMode}
+      />
+
+      <StudentViewModal
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        student={selectedStudent}
       />
 
       <DeleteConfirmModal

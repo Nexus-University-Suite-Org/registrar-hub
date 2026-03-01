@@ -12,10 +12,11 @@ interface StudentTableProps {
 }
 
 const statusStyles = {
-  Active: "bg-success/10 text-success border-success/20",
-  Inactive: "bg-muted text-muted-foreground border-muted",
-  Graduated: "bg-primary/10 text-primary border-primary/20",
-  Suspended: "bg-destructive/10 text-destructive border-destructive/20",
+  Active: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+  Inactive: "bg-slate-100 text-slate-600 border-slate-200",
+  Suspended: "bg-amber-500/10 text-amber-600 border-amber-200",
+  Graduated: "bg-blue-500/10 text-blue-600 border-blue-200",
+  Withdrawn: "bg-rose-500/10 text-rose-600 border-rose-200",
 };
 
 export function StudentTable({
@@ -176,7 +177,7 @@ export function StudentTable({
                     variant="outline"
                     className={cn(
                       "font-medium text-xs",
-                      statusStyles[student.status]
+                      statusStyles[student.status],
                     )}
                   >
                     {student.status}

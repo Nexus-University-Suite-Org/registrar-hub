@@ -53,7 +53,6 @@ export default function Lecturers() {
       const q = query(
         collection(db, "profiles"),
         where("role", "==", "lecturer"),
-        orderBy("created_at", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
@@ -401,7 +400,9 @@ export default function Lecturers() {
         <DeleteConfirmModal
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleDeleteConfirm} student={undefined}        />
+          onConfirm={handleDeleteConfirm}
+          student={undefined}
+        />
       </div>
     </DashboardLayout>
   );
