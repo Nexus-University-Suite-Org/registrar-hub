@@ -48,53 +48,41 @@ export default function Students() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      console.log("Fetching students from Supabase...");
+      console.log("Fetching students from Firestore...");
 
-      // For testing with service key to bypass RLS
-      const testSupabase = createClient(
-        "https://oszbmaqieyemkgcqbeap.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zemJtYXFpZXllbWtnY3FiZWFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzUxMDk1NSwiZXhwIjoyMDgzMDg2OTU1fQ.2IwBsS3EQBdCZC44r5dg1xjREWIxlrj_FT8Qn57oEY4"
+      const studentsQuery = query(
+        collection(db, "profiles"),
+        where("role", "==", "student"),
+        orderBy("created_at", "desc")
       );
 
-      const { data, error } = await testSupabase
-        .from("profiles")
-        .select("*")
-        .not("student_number", "is", null)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching students:", error);
-        toast.error(`Failed to load students: ${error.message}`);
-        setStudents([]);
-        return;
-      }
-
-      console.log("Students fetched:", data?.length || 0, data);
-
-      // Map profiles data to Student format
-      const mappedStudents: Student[] = (data || []).map((profile: any) => ({
-        id: profile.id,
-        student_number: profile.student_number,
-        registration_number:
-          profile.registration_number || profile.student_number,
-        first_name: profile.full_name?.split(" ")[0] || "",
-        last_name: profile.full_name?.split(" ").slice(1).join(" ") || "",
-        email: profile.email,
-        department: profile.department || "",
-        program: "", // Not stored in profiles table
-        year_of_study: 1, // Not stored in profiles table
-        status: "Active", // Not stored in profiles table
-        admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles table
-        avatar_url: profile.avatar_url,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
-      }));
+      const querySnapshot = await getDocs(studentsQuery);
+      
+      const mappedStudents: Student[] = querySnapshot.docs.map(doc => {
+        const profile = doc.data();
+        return {
+          id: doc.id,
+          student_number: profile.student_number || "",
+          registration_number: profile.registration_number || profile.student_number || "",
+          first_name: profile.full_name?.split(" ")[0] || "",
+          last_name: profile.full_name?.split(" ").slice(1).join(" ") || "",
+          email: profile.email || "",
+          department: profile.department || "",
+          program: profile.program || "",
+          year_of_study: profile.year_of_study || 1,
+          status: profile.status || "Active",
+          admission_date: profile.admission_date || new Date().toISOString().split("T")[0],
+          avatar_url: profile.avatar_url,
+          created_at: profile.created_at?.toDate?.()?.toISOString() || profile.created_at,
+          updated_at: profile.updated_at?.toDate?.()?.toISOString() || profile.updated_at,
+        };
+      });
 
       setStudents(mappedStudents);
       toast.success(`Loaded ${mappedStudents.length} students from database`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching students:", error);
-      toast.error("Failed to load students");
+      toast.error(`Failed to load students: ${error.message}`);
       setStudents([]);
     } finally {
       setLoading(false);
@@ -104,17 +92,15 @@ export default function Students() {
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Checking authentication...");
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const user = auth.currentUser;
 
-      if (!session) {
-        console.log("No session found, redirecting to login");
+      if (!user) {
+        console.log("No user found, redirecting to login");
         navigate("/");
         return;
       }
 
-      console.log("Session found, user:", session.user.email);
+      console.log("User found:", user.email);
       await fetchStudents();
     };
 
