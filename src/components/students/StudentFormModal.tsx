@@ -17,8 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X, Upload } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { auth, db } from "@/lib/firebase";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { toast } from "sonner";
 
 interface StudentFormModalProps {
@@ -273,12 +273,6 @@ export function StudentFormModal({
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-
-  // For testing with service key to bypass RLS
-  const testSupabase = createClient(
-    "https://oszbmaqieyemkgcqbeap.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zemJtYXFpZXllbWtnY3FiZWFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzUxMDk1NSwiZXhwIjoyMDgzMDg2OTU1fQ.2IwBsS3EQBdCZC44r5dg1xjREWIxlrj_FT8Qn57oEY4"
-  );
 
   useEffect(() => {
     if (student && mode === "edit") {

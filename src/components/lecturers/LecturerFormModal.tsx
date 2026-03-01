@@ -461,7 +461,7 @@ export function LecturerFormModal({
     ];
     if (!allowedTypes.includes(selectedFile.type)) {
       toast.error(
-        "Invalid file type. Please select a valid image file (JPG, PNG, GIF, WebP)."
+        "Invalid file type. Please select a valid image file (JPG, PNG, GIF, WebP).",
       );
       return null;
     }
@@ -484,7 +484,9 @@ export function LecturerFormModal({
       return publicUrl;
     } catch (error: any) {
       console.error("Error uploading image:", error);
-      toast.error(`Failed to upload image: ${error.message || "Please try again."}`);
+      toast.error(
+        `Failed to upload image: ${error.message || "Please try again."}`,
+      );
       return null;
     } finally {
       setUploading(false);
@@ -717,8 +719,8 @@ export function LecturerFormModal({
                   {imagePreview
                     ? "Preview"
                     : formData.avatar_url
-                    ? "Current photo"
-                    : "No photo uploaded"}
+                      ? "Current photo"
+                      : "No photo uploaded"}
                 </p>
               </div>
 
