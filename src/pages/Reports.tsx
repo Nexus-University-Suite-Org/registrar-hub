@@ -10,7 +10,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
 
 const reportTypes = [
   {
