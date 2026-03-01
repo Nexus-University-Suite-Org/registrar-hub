@@ -99,6 +99,9 @@ export default function Courses() {
     credits: 3,
   });
 
+  const [selectedCourseForUnits, setSelectedCourseForUnits] =
+    useState<Course | null>(null);
+
   const [activeTab, setActiveTab] = useState<"courses" | "units">("courses");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -131,9 +134,9 @@ export default function Courses() {
         where("college", "==", college),
       );
       const coursesSnap = await getDocs(coursesQuery);
-      const coursesData = coursesSnap.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() }) as Course,
-      );
+      const coursesData = coursesSnap.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }) as Course)
+        .sort((a, b) => a.name.localeCompare(b.name));
       setCourses(coursesData);
 
       // Fetch Course Units for these courses
@@ -148,7 +151,16 @@ export default function Courses() {
             course_name: course?.name || "Unknown Course",
           } as CourseUnit;
         })
-        .filter((unit) => coursesData.some((c) => c.id === unit.course_id)); // Only show units belonging to college's courses
+        .filter((unit) => coursesData.some((c) => c.id === unit.course_id)) // Only show units belonging to college's courses
+        .sort((a, b) => {
+          // Sort by Course Name, then Year, then Semester, then Unit Name
+          if (a.course_name !== b.course_name) {
+            return a.course_name!.localeCompare(b.course_name!);
+          }
+          if (a.year !== b.year) return a.year - b.year;
+          if (a.semester !== b.semester) return a.semester - b.semester;
+          return a.name.localeCompare(b.name);
+        });
 
       setCourseUnits(unitsData);
     } catch (error) {
@@ -291,6 +303,7 @@ export default function Courses() {
                 });
                 setIsCourseModalOpen(true);
               } else {
+                setSelectedCourseForUnits(null);
                 setCuForm({
                   code: "",
                   name: "",
@@ -412,6 +425,10 @@ export default function Courses() {
                             size="icon"
                             onClick={() => {
                               setSelectedCU(u);
+                              const course = courses.find(
+                                (c) => c.id === u.course_id,
+                              );
+                              setSelectedCourseForUnits(course || null);
                               setCuForm({
                                 code: u.code,
                                 name: u.name,
@@ -574,9 +591,11 @@ export default function Courses() {
                 <Label>Belongs to Course</Label>
                 <Select
                   value={cuForm.course_id}
-                  onValueChange={(val) =>
-                    setCuForm({ ...cuForm, course_id: val })
-                  }
+                  onValueChange={(val) => {
+                    const course = courses.find((c) => c.id === val);
+                    setSelectedCourseForUnits(course || null);
+                    setCuForm({ ...cuForm, course_id: val });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Course" />
@@ -598,16 +617,24 @@ export default function Courses() {
                     onValueChange={(val) =>
                       setCuForm({ ...cuForm, year: parseInt(val) })
                     }
+                    disabled={!selectedCourseForUnits}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Year 1</SelectItem>
-                      <SelectItem value="2">Year 2</SelectItem>
-                      <SelectItem value="3">Year 3</SelectItem>
-                      <SelectItem value="4">Year 4</SelectItem>
-                      <SelectItem value="5">Year 5</SelectItem>
+                      {selectedCourseForUnits ? (
+                        Array.from(
+                          { length: selectedCourseForUnits.duration_years },
+                          (_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              Year {i + 1}
+                            </SelectItem>
+                          ),
+                        )
+                      ) : (
+                        <SelectItem value="1">Year 1</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
