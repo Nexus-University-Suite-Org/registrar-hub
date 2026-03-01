@@ -103,29 +103,14 @@ export default function Results() {
   const fetchResults = async () => {
     try {
       setLoading(true);
-      console.log("🔍 FETCHING RESULTS - Starting fetchResults function...");
+      console.log("🔍 FETCHING RESULTS - Starting fetchResults function via Firestore...");
 
-      // Test the service key client first
-      // console.log("🧪 Testing service key client...");
-      // const { data: testData, error: testError } = await testSupabase
-      //   .from("students")
-      //   .select("count")
-      //   .limit(1);
-      // console.log("Service key test result:", testData, "Error:", testError);
-
-      // Get all students
-      const { data: students, error: studentsError } = await testSupabase
-        .from("students")
-        .select(
-          "id, student_number, registration_number, first_name, last_name, email, department, program, year_of_study, status"
-        )
-        .order("last_name", { ascending: true });
-
-      if (studentsError) {
-        console.error("Error fetching students:", studentsError);
-        toast.error("Failed to load students");
-        return;
-      }
+      // Get all students from Firestore
+      const studentsSnapshot = await getDocs(query(collection(db, "students"), orderBy("last_name", "asc")));
+      const students = studentsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
 
       if (!students || students.length === 0) {
         setResults([]);
@@ -136,139 +121,36 @@ export default function Results() {
 
       console.log(`Found ${students.length} students`);
 
-      // Debug student IDs
-      // const studentIds = students.map((s) => s.id);
-      // console.log("Student IDs for query:", studentIds);
+      // Get all student grades
+      const gradesSnapshot = await getDocs(collection(db, "student_grades"));
+      const studentGrades = gradesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
 
-      // Get student grades for all students
-      console.log("📊 Testing grades query with regular client...");
-      const testGradesQuery = await supabase
-        .from("student_grades")
-        .select("*")
-        .limit(1);
-      console.log(
-        "Grades test (regular client):",
-        testGradesQuery.data,
-        "Error:",
-        testGradesQuery.error
-      );
-
-      // Test with specific student ID
-      // if (studentIds.length > 0) {
-      //   console.log("Testing query for first student ID:", studentIds[0]);
-      //   const specificQuery = await testSupabase
-      //     .from("student_grades")
-      //     .select("*")
-      //     .eq("student_id", studentIds[0]);
-      //   console.log(
-      //     "Specific student query:",
-      //     specificQuery.data?.length || 0,
-      //     "records, Error:",
-      //     specificQuery.error
-      //   );
-      // }
-
-      // Test getting all grades without filter
-      // console.log("Testing query for ALL grades (no filter)...");
-      // const allGradesQuery = await testSupabase
-      //   .from("student_grades")
-      //   .select("*")
-      //   .limit(5);
-      // console.log(
-      //   "All grades query:",
-      //   allGradesQuery.data?.length || 0,
-      //   "records, Error:",
-      //   allGradesQuery.error
-      // );
-
-      // Try different table names
-      // console.log("Testing different table names...");
-      // const tablesToTest = [
-      //   "student_grades",
-      //   "grades", 
-      //   "studentgrades",
-      //   "public.student_grades",
-      // ];
-      // for (const tableName of tablesToTest) {
-      //   try {
-      //     const tableTest = await testSupabase
-      //       .from(tableName)
-      //       .select("*")
-      //       .limit(1);
-      //     console.log(
-      //       `Table '${tableName}':`,
-      //       tableTest.data?.length || 0,
-      //       "records, Error:",
-      //       tableTest.error?.message
-      //     );
-      //   } catch (e) {
-      //     console.log(`Table '${tableName}' exception:`, e.message);
-      //   }
-      // }
-
-      const { data: studentGrades, error: gradesError } = await testSupabase
-        .from("student_grades")
-        .select("*")
-        .in(
-          "student_id",
-          students.map((s) => s.id)
-        );
-
-      // console.log("Raw student grades data:", studentGrades);
-      // console.log("Grades error:", gradesError);
-
-      // If that works, try with join
-      let gradesWithCourses = studentGrades;
-      if (studentGrades && studentGrades.length > 0) {
-        console.log("Grades found, now trying join query...");
-        const { data: joinedData, error: joinError } = await testSupabase
-          .from("student_grades")
-          .select(
-            `
-            *,
-            courses(code, title, credits)
-          `
-          )
-          .in(
-            "student_id",
-            students.map((s) => s.id)
-          );
-        console.log("Joined data:", joinedData);
-        console.log("Join error:", joinError);
-        gradesWithCourses = joinedData || studentGrades;
-      }
-
-      if (gradesError) {
-        console.error("Error fetching student grades:", gradesError);
-        toast.error("Failed to load student grades");
-        return;
-      }
+      // Get all courses to map them to grades
+      const coursesSnapshot = await getDocs(collection(db, "courses"));
+      const coursesMap = new Map();
+      coursesSnapshot.docs.forEach(doc => {
+        coursesMap.set(doc.id, { id: doc.id, ...doc.data() });
+      });
 
       // Group transcripts by student and organize by academic year/semester
       const studentResultsMap = new Map<string, StudentResults>();
 
       students.forEach((student) => {
-        const studentGradesData =
-          studentGrades?.filter((g) => g.student_id === student.id) || [];
+        const studentGradesData = studentGrades.filter((g) => g.student_id === student.id);
 
         console.log(
           `Student ${student.first_name} ${student.last_name} (${student.student_number}): ${studentGradesData.length} grades`
         );
-        studentGradesData.forEach((g) => {
-          console.log(
-            `  - Course: ${g.courses?.code || g.course_id || "NO COURSE"} (${
-              g.courses?.title || "NO TITLE"
-            }), Grade: ${g.grade}, GP: ${g.gp}, Credits: ${
-              g.courses?.credits || "NO CREDITS"
-            }`
-          );
-        });
 
         // Group grades by academic year and semester
         const termsMap = new Map<string, TermResult>();
 
         studentGradesData.forEach((grade) => {
           const termKey = `${grade.academic_year} · ${grade.semester}`;
+          const courseData = coursesMap.get(grade.course_id);
 
           if (!termsMap.has(termKey)) {
             termsMap.set(termKey, {
@@ -281,6 +163,8 @@ export default function Results() {
           }
 
           const term = termsMap.get(termKey)!;
+          const credits = courseData?.credits || 3;
+          
           term.entries.push({
             id: grade.id,
             course_id: grade.course_id,
@@ -289,9 +173,9 @@ export default function Results() {
             marks: grade.total || 0,
             grade: grade.grade,
             grade_point: grade.gp || 0,
-            courseTitle: grade.courses?.title || "Unknown Course",
-            courseCode: grade.courses?.code || "N/A",
-            credits: grade.courses?.credits || 3,
+            courseTitle: courseData?.title || "Unknown Course",
+            courseCode: courseData?.code || "N/A",
+            credits: credits,
             student_id: grade.student_id,
             semester_remark: calculateSemesterRemark(
               grade.gp || 0,
@@ -299,7 +183,7 @@ export default function Results() {
             ),
           });
 
-          term.totalCredits += grade.courses?.credits || 3;
+          term.totalCredits += credits;
         });
 
         // Calculate GPA for each term
@@ -329,13 +213,6 @@ export default function Results() {
         );
         const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
 
-        console.log(
-          `Final calculation for ${student.first_name} ${student.last_name}:`
-        );
-        console.log(`  Total grade points: ${totalGradePoints}`);
-        console.log(`  Total credits: ${totalCredits}`);
-        console.log(`  CGPA: ${cgpa}`);
-
         studentResultsMap.set(student.id, {
           studentId: student.id,
           studentName: `${student.first_name} ${student.last_name}`,
@@ -351,10 +228,6 @@ export default function Results() {
       const resultsArray = Array.from(studentResultsMap.values());
       setResults(resultsArray);
       setFilteredResults(resultsArray);
-      console.log(
-        "✅ FETCH COMPLETE - Setting results:",
-        resultsArray.map((r) => ({ name: r.studentName, cgpa: r.cgpa }))
-      );
       toast.success(`Loaded results for ${resultsArray.length} students`);
     } catch (error) {
       console.error("❌ FETCH ERROR:", error);
@@ -368,22 +241,15 @@ export default function Results() {
     const checkAuth = async () => {
       console.log("🔐 CHECKING AUTH - Starting authentication check...");
       
-      const { data: { session }, error } = await supabase.auth.getSession();
-      console.log("Session exists:", !!session);
-      console.log("Session error:", error);
+      const user = auth.currentUser;
       
-      if (session) {
-        console.log("User ID:", session.user.id);
-        console.log("User email:", session.user.email);
-      }
-      
-      if (!session) {
-        console.log("❌ NO SESSION - Redirecting to login");
+      if (!user) {
+        console.log("❌ NO USER - Redirecting to login");
         navigate("/");
         return;
       }
 
-      console.log("✅ SESSION FOUND - Calling fetchResults");
+      console.log("✅ USER FOUND - Calling fetchResults");
       fetchResults();
     };
 
