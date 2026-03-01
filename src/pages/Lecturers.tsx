@@ -100,42 +100,30 @@ export default function Lecturers() {
   const handleFormSubmit = async (lecturerData: Partial<Lecturer>) => {
     try {
       if (modalMode === "add") {
-        const { data, error } = await supabase
-          .from("profiles")
-          .insert([
-            {
-              ...lecturerData,
-              role: "lecturer",
-            },
-          ])
-          .select()
-          .single();
+        const docRef = await addDoc(collection(db, "profiles"), {
+          ...lecturerData,
+          role: "lecturer",
+          created_at: serverTimestamp(),
+        });
 
-        if (error) {
-          console.error("Error adding lecturer:", error);
-          toast.error("Failed to add lecturer");
-          return;
-        }
+        const newLecturer = {
+          id: docRef.id,
+          ...lecturerData,
+          role: "lecturer",
+        } as Lecturer;
 
-        setLecturers([data, ...lecturers]);
+        setLecturers([newLecturer, ...lecturers]);
         toast.success("Lecturer added successfully");
       } else if (selectedLecturer) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .update(lecturerData)
-          .eq("id", selectedLecturer.id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error("Error updating lecturer:", error);
-          toast.error("Failed to update lecturer");
-          return;
-        }
+        const docRef = doc(db, "profiles", selectedLecturer.id);
+        await updateDoc(docRef, {
+          ...lecturerData,
+          updated_at: serverTimestamp()
+        });
 
         setLecturers(
           lecturers.map((lecturer) =>
-            lecturer.id === selectedLecturer.id ? data : lecturer
+            lecturer.id === selectedLecturer.id ? { ...lecturer, ...lecturerData } : lecturer
           )
         );
         toast.success("Lecturer updated successfully");
@@ -143,7 +131,7 @@ export default function Lecturers() {
 
       setIsFormModalOpen(false);
     } catch (error) {
-      console.error("Error saving lecturer:", error);
+      console.error("Error saving lecturer to Firestore:", error);
       toast.error("Failed to save lecturer");
     }
   };
@@ -152,16 +140,7 @@ export default function Lecturers() {
     if (!selectedLecturer) return;
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", selectedLecturer.id);
-
-      if (error) {
-        console.error("Error deleting lecturer:", error);
-        toast.error("Failed to delete lecturer");
-        return;
-      }
+      await deleteDoc(doc(db, "profiles", selectedLecturer.id));
 
       setLecturers(
         lecturers.filter((lecturer) => lecturer.id !== selectedLecturer.id)
@@ -170,7 +149,7 @@ export default function Lecturers() {
       setIsDeleteModalOpen(false);
       setSelectedLecturer(null);
     } catch (error) {
-      console.error("Error deleting lecturer:", error);
+      console.error("Error deleting lecturer from Firestore:", error);
       toast.error("Failed to delete lecturer");
     }
   };
