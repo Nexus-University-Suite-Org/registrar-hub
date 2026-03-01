@@ -1,7 +1,7 @@
 import { Lecturer } from "@/types/lecturer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LecturerTableProps {
@@ -9,6 +9,7 @@ interface LecturerTableProps {
   onEdit: (lecturer: Lecturer) => void;
   onDelete: (lecturer: Lecturer) => void;
   onView: (lecturer: Lecturer) => void;
+  onAssignUnits: (lecturer: Lecturer) => void;
 }
 
 const statusStyles = {
@@ -22,6 +23,7 @@ export function LecturerTable({
   onEdit,
   onDelete,
   onView,
+  onAssignUnits,
 }: LecturerTableProps) {
   return (
     <>
@@ -110,6 +112,15 @@ export function LecturerTable({
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => onAssignUnits(lecturer)}
+                      className="h-8 w-8 text-muted-foreground hover:text-green-500"
+                      title="Assign Course Units"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onView(lecturer)}
                       className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     >
@@ -175,7 +186,7 @@ export function LecturerTable({
                     variant="outline"
                     className={cn(
                       "font-medium text-xs",
-                      statusStyles[lecturer.status]
+                      statusStyles[lecturer.status],
                     )}
                   >
                     {lecturer.status}
@@ -199,7 +210,16 @@ export function LecturerTable({
                     {new Date(lecturer.employment_date).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-3">
+                <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-3 text-xs">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAssignUnits(lecturer)}
+                    className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-green-500 flex-1 sm:flex-none"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Units</span>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

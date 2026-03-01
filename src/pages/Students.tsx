@@ -52,9 +52,13 @@ export default function Students() {
       setLoading(true);
       console.log("Fetching students from Firestore...");
 
-      const studentsQuery = query(collection(db, "student_records"));
+      const studentsQuery = query(
+        collection(db, "profiles"),
+        where("role", "==", "student"),
+      );
 
       const querySnapshot = await getDocs(studentsQuery);
+      console.log(`Query returned ${querySnapshot.docs.length} documents`);
 
       const mappedStudents: Student[] = querySnapshot.docs.map((doc) => {
         const profile = doc.data();
@@ -255,10 +259,7 @@ export default function Students() {
           updated_at: serverTimestamp(),
         };
 
-        const docRef = await addDoc(
-          collection(db, "student_records"),
-          newProfileData,
-        );
+        const docRef = await addDoc(collection(db, "profiles"), newProfileData);
 
         const newStudent: Student = {
           id: docRef.id,
@@ -299,7 +300,7 @@ export default function Students() {
           updated_at: serverTimestamp(),
         };
 
-        const docRef = doc(db, "student_records", selectedStudent?.id!);
+        const docRef = doc(db, "profiles", selectedStudent?.id!);
         await updateDoc(docRef, updateData);
 
         const updatedStudent: Student = {
@@ -325,7 +326,7 @@ export default function Students() {
     if (!selectedStudent) return;
 
     try {
-      await deleteDoc(doc(db, "student_records", selectedStudent.id));
+      await deleteDoc(doc(db, "profiles", selectedStudent.id));
 
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");
@@ -359,6 +360,7 @@ export default function Students() {
               variant="outline"
               size="sm"
               className="gap-2 w-full sm:w-auto"
+              onClick={fetchStudents}
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh</span>

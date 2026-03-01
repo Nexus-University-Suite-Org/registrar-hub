@@ -48,26 +48,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { toast } from "sonner";
-
-interface Course {
-  id: string;
-  code: string;
-  name: string;
-  college: string;
-  department: string;
-  duration_years: number;
-}
-
-interface CourseUnit {
-  id: string;
-  code: string;
-  name: string;
-  course_id: string;
-  course_name?: string;
-  semester: number;
-  year: number;
-  credits: number;
-}
+import { Course, CourseUnit } from "@/types/course";
 
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);

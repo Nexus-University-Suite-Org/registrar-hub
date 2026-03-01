@@ -5,6 +5,7 @@ import { Lecturer } from "@/types/lecturer";
 import { LecturerTable } from "@/components/lecturers/LecturerTable";
 import { LecturerFormModal } from "@/components/lecturers/LecturerFormModal";
 import { LecturerViewModal } from "@/components/lecturers/LecturerViewModal";
+import { AssignCourseUnitsModal } from "@/components/lecturers/AssignCourseUnitsModal";
 import { DeleteConfirmModal } from "@/components/students/DeleteConfirmModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ export default function Lecturers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<Lecturer | null>(
     null,
   );
@@ -94,6 +96,17 @@ export default function Lecturers() {
   const handleDeleteLecturer = (lecturer: Lecturer) => {
     setSelectedLecturer(lecturer);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleAssignUnits = (lecturer: Lecturer) => {
+    setSelectedLecturer(lecturer);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleAssignSuccess = (updatedLecturer: Lecturer) => {
+    setLecturers(
+      lecturers.map((l) => (l.id === updatedLecturer.id ? updatedLecturer : l)),
+    );
   };
 
   const handleFormSubmit = async (lecturerData: Partial<Lecturer>) => {
@@ -356,6 +369,7 @@ export default function Lecturers() {
                 onEdit={handleEditLecturer}
                 onDelete={handleDeleteLecturer}
                 onView={handleViewLecturer}
+                onAssignUnits={handleAssignUnits}
               />
             </div>
 
@@ -403,6 +417,15 @@ export default function Lecturers() {
           onConfirm={handleDeleteConfirm}
           student={undefined}
         />
+
+        {selectedLecturer && (
+          <AssignCourseUnitsModal
+            isOpen={isAssignModalOpen}
+            onClose={() => setIsAssignModalOpen(false)}
+            lecturer={selectedLecturer}
+            onSuccess={handleAssignSuccess}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
