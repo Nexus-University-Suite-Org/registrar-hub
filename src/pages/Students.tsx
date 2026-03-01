@@ -52,34 +52,48 @@ export default function Students() {
       setLoading(true);
       console.log("Fetching students from Firestore...");
 
-      const studentsQuery = query(
-        collection(db, "profiles"),
-        where("role", "==", "student"),
-      );
+      const studentsQuery = query(collection(db, "student_records"));
 
       const querySnapshot = await getDocs(studentsQuery);
 
       const mappedStudents: Student[] = querySnapshot.docs.map((doc) => {
         const profile = doc.data();
+        console.log("Firestore Profile Data:", profile); // Debugging
         return {
           id: doc.id,
-          student_number: profile.student_number || "",
+          student_number: profile.student_number || profile.studentNumber || "",
           registration_number:
-            profile.registration_number || profile.student_number || "",
-          first_name: profile.full_name?.split(" ")[0] || "",
-          last_name: profile.full_name?.split(" ").slice(1).join(" ") || "",
+            profile.registration_number ||
+            profile.registrationNumber ||
+            profile.student_number ||
+            profile.studentNumber ||
+            "",
+          first_name:
+            profile.full_name?.split(" ")[0] || profile.firstName || "",
+          last_name:
+            profile.full_name?.split(" ").slice(1).join(" ") ||
+            profile.lastName ||
+            "",
           email: profile.email || "",
           department: profile.department || "",
           program: profile.program || "",
-          year_of_study: profile.year_of_study || 1,
+          year_of_study: profile.year_of_study || profile.yearOfStudy || 1,
           status: profile.status || "Active",
           admission_date:
-            profile.admission_date || new Date().toISOString().split("T")[0],
-          avatar_url: profile.avatar_url,
+            profile.admission_date ||
+            profile.admissionDate ||
+            new Date().toISOString().split("T")[0],
+          avatar_url: profile.avatar_url || profile.avatarUrl,
           created_at:
-            profile.created_at?.toDate?.()?.toISOString() || profile.created_at,
+            profile.created_at?.toDate?.()?.toISOString() ||
+            profile.createdAt?.toDate?.()?.toISOString() ||
+            profile.created_at ||
+            profile.createdAt,
           updated_at:
-            profile.updated_at?.toDate?.()?.toISOString() || profile.updated_at,
+            profile.updated_at?.toDate?.()?.toISOString() ||
+            profile.updatedAt?.toDate?.()?.toISOString() ||
+            profile.updated_at ||
+            profile.updatedAt,
         };
       });
 
@@ -160,23 +174,28 @@ export default function Students() {
     try {
       if (formMode === "add") {
         const newProfileData = {
-          email: data.email,
-          full_name: `${data.first_name} ${data.last_name}`,
-          student_number: data.student_number,
-          registration_number: data.registration_number,
-          department: data.department,
-          avatar_url: data.avatar_url,
+          email: data.email || "",
+          full_name: `${data.first_name || ""} ${data.last_name || ""}`,
+          student_number: data.student_number || "",
+          registration_number:
+            data.registration_number || data.student_number || "",
+          department: data.department || "",
+          avatar_url: data.avatar_url || "",
           role: "student",
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
           status: data.status || "Active",
+          is_registered: true, // Added for student_records consistency
           admission_date:
             data.admission_date || new Date().toISOString().split("T")[0],
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
         };
 
-        const docRef = await addDoc(collection(db, "profiles"), newProfileData);
+        const docRef = await addDoc(
+          collection(db, "student_records"),
+          newProfileData,
+        );
 
         const newStudent: Student = {
           id: docRef.id,
@@ -201,20 +220,23 @@ export default function Students() {
         toast.success("Student added successfully");
       } else {
         const updateData = {
-          full_name: `${data.first_name} ${data.last_name}`,
-          email: data.email,
-          student_number: data.student_number,
-          registration_number: data.registration_number,
-          department: data.department,
-          avatar_url: data.avatar_url,
-          program: data.program,
-          year_of_study: data.year_of_study,
-          status: data.status,
-          admission_date: data.admission_date,
+          full_name: `${data.first_name || ""} ${data.last_name || ""}`,
+          email: data.email || "",
+          student_number: data.student_number || "",
+          registration_number:
+            data.registration_number || data.student_number || "",
+          department: data.department || "",
+          avatar_url: data.avatar_url || "",
+          program: data.program || "",
+          year_of_study: data.year_of_study || 1,
+          status: data.status || "Active",
+          is_registered: true, // Added for student_records consistency
+          admission_date:
+            data.admission_date || new Date().toISOString().split("T")[0],
           updated_at: serverTimestamp(),
         };
 
-        const docRef = doc(db, "profiles", selectedStudent?.id!);
+        const docRef = doc(db, "student_records", selectedStudent?.id!);
         await updateDoc(docRef, updateData);
 
         const updatedStudent: Student = {
@@ -240,7 +262,7 @@ export default function Students() {
     if (!selectedStudent) return;
 
     try {
-      await deleteDoc(doc(db, "profiles", selectedStudent.id));
+      await deleteDoc(doc(db, "student_records", selectedStudent.id));
 
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");
