@@ -201,7 +201,9 @@ export default function Students() {
       ]);
 
       // Combine headers and rows
-      const csvContent = [headers, ...csvData].map((e) => e.join(",")).join("\n");
+      const csvContent = [headers, ...csvData]
+        .map((e) => e.join(","))
+        .join("\n");
 
       // Create a Blob and download link
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -217,7 +219,9 @@ export default function Students() {
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Successfully exported ${filteredStudents.length} students`);
+      toast.success(
+        `Successfully exported ${filteredStudents.length} students`,
+      );
     } catch (error) {
       console.error("Export error:", error);
       toast.error("Failed to export student data");
