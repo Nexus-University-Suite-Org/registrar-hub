@@ -20,17 +20,17 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   orderBy,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 import { toast } from "sonner";
 
@@ -42,7 +42,7 @@ export default function Lecturers() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<Lecturer | null>(
-    null
+    null,
   );
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingLecturer, setViewingLecturer] = useState<Lecturer | null>(null);
@@ -53,13 +53,13 @@ export default function Lecturers() {
       const q = query(
         collection(db, "profiles"),
         where("role", "==", "lecturer"),
-        orderBy("created_at", "desc")
+        orderBy("created_at", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
-      const lecturersData = querySnapshot.docs.map(doc => ({
+      const lecturersData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as Lecturer[];
 
       setLecturers(lecturersData);
@@ -118,13 +118,15 @@ export default function Lecturers() {
         const docRef = doc(db, "profiles", selectedLecturer.id);
         await updateDoc(docRef, {
           ...lecturerData,
-          updated_at: serverTimestamp()
+          updated_at: serverTimestamp(),
         });
 
         setLecturers(
           lecturers.map((lecturer) =>
-            lecturer.id === selectedLecturer.id ? { ...lecturer, ...lecturerData } : lecturer
-          )
+            lecturer.id === selectedLecturer.id
+              ? { ...lecturer, ...lecturerData }
+              : lecturer,
+          ),
         );
         toast.success("Lecturer updated successfully");
       }
@@ -143,7 +145,7 @@ export default function Lecturers() {
       await deleteDoc(doc(db, "profiles", selectedLecturer.id));
 
       setLecturers(
-        lecturers.filter((lecturer) => lecturer.id !== selectedLecturer.id)
+        lecturers.filter((lecturer) => lecturer.id !== selectedLecturer.id),
       );
       toast.success("Lecturer deleted successfully");
       setIsDeleteModalOpen(false);
@@ -163,11 +165,11 @@ export default function Lecturers() {
       lecturer.lecturer_number
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
-      lecturer.department?.toLowerCase().includes(searchTerm.toLowerCase())
+      lecturer.department?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const activeLecturers = lecturers.filter(
-    (lecturer) => lecturer.status === "Active"
+    (lecturer) => lecturer.status === "Active",
   ).length;
   const totalLecturers = lecturers.length;
 
@@ -307,7 +309,7 @@ export default function Lecturers() {
               <div className="text-3xl font-bold text-orange-900 dark:text-orange-100">
                 {
                   new Set(
-                    lecturers.map((l) => l.specialization).filter(Boolean)
+                    lecturers.map((l) => l.specialization).filter(Boolean),
                   ).size
                 }
               </div>
@@ -399,10 +401,7 @@ export default function Lecturers() {
         <DeleteConfirmModal
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleDeleteConfirm}
-          title="Remove Lecturer"
-          description={`Are you sure you want to remove ${selectedLecturer?.first_name} ${selectedLecturer?.last_name} from the faculty? This action cannot be undone.`}
-        />
+          onConfirm={handleDeleteConfirm} student={undefined}        />
       </div>
     </DashboardLayout>
   );
