@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
 
 const settingsSections = [
   { id: "profile", name: "Profile", icon: User },
@@ -27,11 +27,9 @@ export default function Settings() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+    const checkAuth = () => {
+      const user = auth.currentUser;
+      if (!user) {
         navigate("/");
       }
     };
