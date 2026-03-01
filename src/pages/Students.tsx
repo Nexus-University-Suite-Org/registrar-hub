@@ -17,18 +17,18 @@ import { Student, StudentStatus } from "@/types/student";
 import { Plus, Search, Filter, Download, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
   orderBy,
   serverTimestamp,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
 
 export default function Students() {
@@ -37,7 +37,7 @@ export default function Students() {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus | "all">(
-    "all"
+    "all",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -53,17 +53,18 @@ export default function Students() {
       const studentsQuery = query(
         collection(db, "profiles"),
         where("role", "==", "student"),
-        orderBy("created_at", "desc")
+        orderBy("created_at", "desc"),
       );
 
       const querySnapshot = await getDocs(studentsQuery);
-      
-      const mappedStudents: Student[] = querySnapshot.docs.map(doc => {
+
+      const mappedStudents: Student[] = querySnapshot.docs.map((doc) => {
         const profile = doc.data();
         return {
           id: doc.id,
           student_number: profile.student_number || "",
-          registration_number: profile.registration_number || profile.student_number || "",
+          registration_number:
+            profile.registration_number || profile.student_number || "",
           first_name: profile.full_name?.split(" ")[0] || "",
           last_name: profile.full_name?.split(" ").slice(1).join(" ") || "",
           email: profile.email || "",
@@ -71,10 +72,13 @@ export default function Students() {
           program: profile.program || "",
           year_of_study: profile.year_of_study || 1,
           status: profile.status || "Active",
-          admission_date: profile.admission_date || new Date().toISOString().split("T")[0],
+          admission_date:
+            profile.admission_date || new Date().toISOString().split("T")[0],
           avatar_url: profile.avatar_url,
-          created_at: profile.created_at?.toDate?.()?.toISOString() || profile.created_at,
-          updated_at: profile.updated_at?.toDate?.()?.toISOString() || profile.updated_at,
+          created_at:
+            profile.created_at?.toDate?.()?.toISOString() || profile.created_at,
+          updated_at:
+            profile.updated_at?.toDate?.()?.toISOString() || profile.updated_at,
         };
       });
 
@@ -118,7 +122,7 @@ export default function Students() {
           s.last_name.toLowerCase().includes(query) ||
           s.email.toLowerCase().includes(query) ||
           s.student_number.toLowerCase().includes(query) ||
-          s.department.toLowerCase().includes(query)
+          s.department.toLowerCase().includes(query),
       );
     }
 
@@ -149,7 +153,7 @@ export default function Students() {
   const handleViewStudent = (student: Student) => {
     console.log("Viewing student details:", student);
     toast.info(
-      `Viewing ${student.first_name} ${student.last_name}'s profile - Student #: ${student.student_number}`
+      `Viewing ${student.first_name} ${student.last_name}'s profile - Student #: ${student.student_number}`,
     );
   };
 
@@ -167,25 +171,28 @@ export default function Students() {
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
           status: data.status || "Active",
-          admission_date: data.admission_date || new Date().toISOString().split("T")[0],
+          admission_date:
+            data.admission_date || new Date().toISOString().split("T")[0],
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
         };
 
         const docRef = await addDoc(collection(db, "profiles"), newProfileData);
-        
+
         const newStudent: Student = {
           id: docRef.id,
           first_name: data.first_name || "",
           last_name: data.last_name || "",
           email: data.email || "",
           student_number: data.student_number || "",
-          registration_number: data.registration_number || data.student_number || "",
+          registration_number:
+            data.registration_number || data.student_number || "",
           department: data.department || "",
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
           status: (data.status as StudentStatus) || "Active",
-          admission_date: data.admission_date || new Date().toISOString().split("T")[0],
+          admission_date:
+            data.admission_date || new Date().toISOString().split("T")[0],
           avatar_url: data.avatar_url || "",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -218,7 +225,7 @@ export default function Students() {
         } as Student;
 
         setStudents((prev) =>
-          prev.map((s) => (s.id === selectedStudent?.id ? updatedStudent : s))
+          prev.map((s) => (s.id === selectedStudent?.id ? updatedStudent : s)),
         );
         toast.success("Student updated successfully");
       }
@@ -235,7 +242,7 @@ export default function Students() {
 
     try {
       await deleteDoc(doc(db, "profiles", selectedStudent.id));
-      
+
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");
       setIsDeleteOpen(false);

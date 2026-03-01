@@ -4,18 +4,17 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FileText, Search, Download, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
 
 export default function Transcripts() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+    const checkAuth = () => {
+      const user = auth.currentUser;
+      if (!user) {
         navigate("/");
+        return;
       }
     };
 
