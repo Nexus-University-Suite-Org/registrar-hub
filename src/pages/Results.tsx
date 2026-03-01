@@ -12,8 +12,16 @@ import {
 } from "@/components/ui/select";
 import { Search, Filter, Download, FileText, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { auth, db } from "@/lib/firebase";
+import { 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  orderBy,
+  doc,
+  getDoc
+} from "firebase/firestore";
 
 interface ResultCourse {
   title: string;
