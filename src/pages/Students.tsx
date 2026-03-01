@@ -165,6 +165,65 @@ export default function Students() {
     setIsDeleteOpen(true);
   };
 
+  const handleExportStudents = () => {
+    if (filteredStudents.length === 0) {
+      toast.error("No student data available to export");
+      return;
+    }
+
+    try {
+      // Create CSV headers
+      const headers = [
+        "Student Number",
+        "Registration Number",
+        "First Name",
+        "Last Name",
+        "Email",
+        "Department",
+        "Program",
+        "Year of Study",
+        "Status",
+        "Admission Date",
+      ];
+
+      // Convert students data to CSV rows
+      const csvData = filteredStudents.map((s) => [
+        `"${s.student_number}"`,
+        `"${s.registration_number}"`,
+        `"${s.first_name}"`,
+        `"${s.last_name}"`,
+        `"${s.email}"`,
+        `"${s.department}"`,
+        `"${s.program}"`,
+        s.year_of_study,
+        `"${s.status}"`,
+        `"${s.admission_date}"`,
+      ]);
+
+      // Combine headers and rows
+      const csvContent = [headers, ...csvData].map((e) => e.join(",")).join("\n");
+
+      // Create a Blob and download link
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `students_export_${new Date().toISOString().split("T")[0]}.csv`,
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Successfully exported ${filteredStudents.length} students`);
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export student data");
+    }
+  };
+
   const handleViewStudent = (student: Student) => {
     setSelectedStudent(student);
     setIsViewOpen(true);
@@ -341,6 +400,7 @@ export default function Students() {
             </Select>
             <Button
               variant="outline"
+              onClick={handleExportStudents}
               className="h-12 gap-2 rounded-xl w-full sm:w-auto"
             >
               <Download className="h-4 w-4" />
