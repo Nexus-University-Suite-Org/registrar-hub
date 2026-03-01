@@ -3,7 +3,8 @@ import { Sidebar } from "./Sidebar";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
 import { toast } from "sonner";
 
 interface DashboardLayoutProps {
@@ -16,16 +17,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Error signing out:", error);
-        toast.error("Failed to sign out");
-        return;
-      }
+      await signOut(auth);
       toast.success("Signed out successfully");
       navigate("/");
-    } catch (error) {
-      console.error("Error signing out:", error);
+    } catch (err: any) {
+      console.error("Error signing out from Firebase:", err);
       toast.error("Failed to sign out");
     }
   };
