@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { StudentStats } from "@/types/student";
 import { LecturerStats } from "@/types/lecturer";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { db } from "@/lib/firebase";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
 
 const quickActions = [
   {

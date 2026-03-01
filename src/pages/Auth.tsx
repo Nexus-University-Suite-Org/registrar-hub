@@ -16,7 +16,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { auth, db } from "@/lib/firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 type AuthStep = "email" | "verification" | "password" | "profile" | "login";
 
@@ -125,47 +131,36 @@ export default function Auth() {
     setIsLoading(true);
     try {
       // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
         email,
         password,
-      });
+      );
+      const user = userCredential.user;
 
-      if (authError) {
-        setError(authError.message);
-        return;
-      }
+      if (user) {
+        // Send verification email
+        await sendEmailVerification(user);
 
-      if (authData.user) {
-        // Save registrar profile to database
-        const { error: profileError } = await supabase
-          .from("registrars")
-          .insert([
-            {
-              auth_id: authData.user.id,
-              first_name: firstName,
-              last_name: lastName,
-              email: email,
-              employee_id: employeeId,
-              department: department,
-              hire_date: new Date().toISOString().split("T")[0], // Today's date
-            },
-          ]);
-
-        if (profileError) {
-          console.error("Error saving registrar profile:", profileError);
-          setError(
-            "Account created but profile could not be saved. Please contact support."
-          );
-          return;
-        }
+        // Save registrar profile to database (Firestore)
+        await setDoc(doc(db, "registrars", user.uid), {
+          auth_id: user.uid,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          employee_id: employeeId,
+          department: department,
+          hire_date: new Date().toISOString().split("T")[0], // Today's date
+        });
       }
 
       toast.success(
-        "Account created successfully! Please check your email for verification."
+        "Account created successfully! Please check your email for verification.",
       );
       setStep("verification");
-    } catch (error) {
-      setError("An unexpected error occurred");
+    } catch (err: any) {
+      console.error("Error creating account:", err);
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -182,20 +177,22 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
         email,
         password,
-      });
+      );
 
-      if (error) {
-        setError(error.message);
-        return;
+      if (!userCredential.user.emailVerified) {
+        toast.info("Please verify your email address.");
+        // Optional: you could resend verification if needed
       }
 
       toast.success("Welcome back!");
       navigate("/dashboard");
-    } catch (error) {
-      setError("An unexpected error occurred");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
