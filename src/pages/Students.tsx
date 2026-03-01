@@ -16,8 +16,20 @@ import {
 import { Student, StudentStatus } from "@/types/student";
 import { Plus, Search, Filter, Download, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { auth, db } from "@/lib/firebase";
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy,
+  serverTimestamp,
+  getDoc
+} from "firebase/firestore";
 
 export default function Students() {
   const navigate = useNavigate();
