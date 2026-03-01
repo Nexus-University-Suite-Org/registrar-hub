@@ -156,9 +156,7 @@ export default function Students() {
   const handleFormSubmit = async (data: Partial<Student>) => {
     try {
       if (formMode === "add") {
-        // For add, create a new profile entry with only fields that exist in profiles table
         const newProfileData = {
-          id: crypto.randomUUID(), // Generate a new UUID for the profile
           email: data.email,
           full_name: `${data.first_name} ${data.last_name}`,
           student_number: data.student_number,
@@ -166,45 +164,36 @@ export default function Students() {
           department: data.department,
           avatar_url: data.avatar_url,
           role: "student",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          program: data.program || "",
+          year_of_study: data.year_of_study || 1,
+          status: data.status || "Active",
+          admission_date: data.admission_date || new Date().toISOString().split("T")[0],
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
         };
 
-        const { data: insertedData, error } = await supabase
-          .from("profiles")
-          .insert([newProfileData])
-          .select()
-          .single();
-
-        if (error) {
-          console.error("Error adding student:", error);
-          toast.error(`Failed to add student: ${error.message}`);
-          return;
-        }
-
-        // Map back to Student format for local state
+        const docRef = await addDoc(collection(db, "profiles"), newProfileData);
+        
         const newStudent: Student = {
-          id: insertedData.id,
-          student_number: insertedData.student_number,
-          registration_number: insertedData.registration_number,
-          first_name: insertedData.full_name?.split(" ")[0] || "",
-          last_name:
-            insertedData.full_name?.split(" ").slice(1).join(" ") || "",
-          email: insertedData.email,
-          department: insertedData.department,
-          program: "", // Not stored in profiles
-          year_of_study: 1, // Not stored in profiles
-          status: "Active", // Not stored in profiles
-          admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles
-          avatar_url: insertedData.avatar_url,
-          created_at: insertedData.created_at,
-          updated_at: insertedData.updated_at,
+          id: docRef.id,
+          first_name: data.first_name || "",
+          last_name: data.last_name || "",
+          email: data.email || "",
+          student_number: data.student_number || "",
+          registration_number: data.registration_number || data.student_number || "",
+          department: data.department || "",
+          program: data.program || "",
+          year_of_study: data.year_of_study || 1,
+          status: (data.status as StudentStatus) || "Active",
+          admission_date: data.admission_date || new Date().toISOString().split("T")[0],
+          avatar_url: data.avatar_url || "",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         };
 
         setStudents((prev) => [newStudent, ...prev]);
         toast.success("Student added successfully");
       } else {
-        // Edit existing profile - only update fields that exist in profiles table
         const updateData = {
           full_name: `${data.first_name} ${data.last_name}`,
           email: data.email,
@@ -212,39 +201,21 @@ export default function Students() {
           registration_number: data.registration_number,
           department: data.department,
           avatar_url: data.avatar_url,
-          updated_at: new Date().toISOString(),
+          program: data.program,
+          year_of_study: data.year_of_study,
+          status: data.status,
+          admission_date: data.admission_date,
+          updated_at: serverTimestamp(),
         };
 
-        const { data: updatedData, error } = await supabase
-          .from("profiles")
-          .update(updateData)
-          .eq("id", selectedStudent?.id)
-          .select()
-          .single();
+        const docRef = doc(db, "profiles", selectedStudent?.id!);
+        await updateDoc(docRef, updateData);
 
-        if (error) {
-          console.error("Error updating student:", error);
-          toast.error(`Failed to update student: ${error.message}`);
-          return;
-        }
-
-        // Map back to Student format for local state
         const updatedStudent: Student = {
-          id: updatedData.id,
-          student_number: updatedData.student_number,
-          registration_number: updatedData.registration_number,
-          first_name: updatedData.full_name?.split(" ")[0] || "",
-          last_name: updatedData.full_name?.split(" ").slice(1).join(" ") || "",
-          email: updatedData.email,
-          department: updatedData.department,
-          program: "", // Not stored in profiles
-          year_of_study: 1, // Not stored in profiles
-          status: "Active", // Not stored in profiles
-          admission_date: new Date().toISOString().split("T")[0], // Not stored in profiles
-          avatar_url: updatedData.avatar_url,
-          created_at: updatedData.created_at,
-          updated_at: updatedData.updated_at,
-        };
+          ...selectedStudent!,
+          ...data,
+          updated_at: new Date().toISOString(),
+        } as Student;
 
         setStudents((prev) =>
           prev.map((s) => (s.id === selectedStudent?.id ? updatedStudent : s))
@@ -253,10 +224,9 @@ export default function Students() {
       }
 
       setIsFormOpen(false);
-      fetchStudents(); // Refresh the list
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving student:", error);
-      toast.error("Failed to save student");
+      toast.error(`Failed to save student: ${error.message}`);
     }
   };
 
@@ -264,23 +234,14 @@ export default function Students() {
     if (!selectedStudent) return;
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", selectedStudent.id);
-
-      if (error) {
-        console.error("Error deleting student:", error);
-        toast.error("Failed to delete student");
-        return;
-      }
-
+      await deleteDoc(doc(db, "profiles", selectedStudent.id));
+      
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");
       setIsDeleteOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting student:", error);
-      toast.error("Failed to delete student");
+      toast.error(`Failed to delete student: ${error.message}`);
     }
   };
 
