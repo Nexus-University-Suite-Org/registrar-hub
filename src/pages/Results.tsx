@@ -13,14 +13,14 @@ import {
 import { Search, Filter, Download, FileText, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
+import {
+  collection,
+  getDocs,
+  query,
+  where,
   orderBy,
   doc,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
 
 interface ResultCourse {
@@ -94,22 +94,22 @@ export default function Results() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
 
-  // For testing with service key to bypass RLS
-  const testSupabase = createClient(
-    "https://oszbmaqieyemkgcqbeap.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zemJtYXFpZXllbWtnY3FiZWFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzUxMDk1NSwiZXhwIjoyMDgzMDg2OTU1fQ.2IwBsS3EQBdCZC44r5dg1xjREWIxlrj_FT8Qn57oEY4"
-  );
+  
 
   const fetchResults = async () => {
     try {
       setLoading(true);
-      console.log("🔍 FETCHING RESULTS - Starting fetchResults function via Firestore...");
+      console.log(
+        "🔍 FETCHING RESULTS - Starting fetchResults function via Firestore...",
+      );
 
       // Get all students from Firestore
-      const studentsSnapshot = await getDocs(query(collection(db, "students"), orderBy("last_name", "asc")));
-      const students = studentsSnapshot.docs.map(doc => ({
+      const studentsSnapshot = await getDocs(
+        query(collection(db, "students"), orderBy("last_name", "asc")),
+      );
+      const students = studentsSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as any[];
 
       if (!students || students.length === 0) {
@@ -123,15 +123,15 @@ export default function Results() {
 
       // Get all student grades
       const gradesSnapshot = await getDocs(collection(db, "student_grades"));
-      const studentGrades = gradesSnapshot.docs.map(doc => ({
+      const studentGrades = gradesSnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       })) as any[];
 
       // Get all courses to map them to grades
       const coursesSnapshot = await getDocs(collection(db, "courses"));
       const coursesMap = new Map();
-      coursesSnapshot.docs.forEach(doc => {
+      coursesSnapshot.docs.forEach((doc) => {
         coursesMap.set(doc.id, { id: doc.id, ...doc.data() });
       });
 
@@ -139,10 +139,12 @@ export default function Results() {
       const studentResultsMap = new Map<string, StudentResults>();
 
       students.forEach((student) => {
-        const studentGradesData = studentGrades.filter((g) => g.student_id === student.id);
+        const studentGradesData = studentGrades.filter(
+          (g) => g.student_id === student.id,
+        );
 
         console.log(
-          `Student ${student.first_name} ${student.last_name} (${student.student_number}): ${studentGradesData.length} grades`
+          `Student ${student.first_name} ${student.last_name} (${student.student_number}): ${studentGradesData.length} grades`,
         );
 
         // Group grades by academic year and semester
@@ -164,7 +166,7 @@ export default function Results() {
 
           const term = termsMap.get(termKey)!;
           const credits = courseData?.credits || 3;
-          
+
           term.entries.push({
             id: grade.id,
             course_id: grade.course_id,
@@ -179,7 +181,7 @@ export default function Results() {
             student_id: grade.student_id,
             semester_remark: calculateSemesterRemark(
               grade.gp || 0,
-              grade.grade
+              grade.grade,
             ),
           });
 
@@ -191,7 +193,7 @@ export default function Results() {
           if (term.entries.length > 0) {
             const totalGradePoints = term.entries.reduce(
               (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
-              0
+              0,
             );
             term.gpa =
               term.totalCredits > 0 ? totalGradePoints / term.totalCredits : 0;
@@ -201,15 +203,15 @@ export default function Results() {
 
         // Calculate overall CGPA
         const allEntries = Array.from(termsMap.values()).flatMap(
-          (term) => term.entries
+          (term) => term.entries,
         );
         const totalGradePoints = allEntries.reduce(
           (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
-          0
+          0,
         );
         const totalCredits = allEntries.reduce(
           (sum, entry) => sum + entry.credits,
-          0
+          0,
         );
         const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
 
@@ -220,7 +222,7 @@ export default function Results() {
           cgpa: Math.round(cgpa * 100) / 100,
           totalCredits,
           terms: Array.from(termsMap.values()).sort((a, b) =>
-            b.term.localeCompare(a.term)
+            b.term.localeCompare(a.term),
           ),
         });
       });
@@ -240,9 +242,9 @@ export default function Results() {
   useEffect(() => {
     const checkAuth = async () => {
       console.log("🔐 CHECKING AUTH - Starting authentication check...");
-      
+
       const user = auth.currentUser;
-      
+
       if (!user) {
         console.log("❌ NO USER - Redirecting to login");
         navigate("/");
@@ -265,7 +267,9 @@ export default function Results() {
           result.studentName
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          result.studentNumber.toLowerCase().includes(searchQuery.toLowerCase())
+          result.studentNumber
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -401,23 +405,23 @@ export default function Results() {
                               result.cgpa >= 4.5
                                 ? "bg-green-100 text-green-800"
                                 : result.cgpa >= 4.0
-                                ? "bg-blue-100 text-blue-800"
-                                : result.cgpa >= 3.5
-                                ? "bg-cyan-100 text-cyan-800"
-                                : result.cgpa >= 3.0
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : result.cgpa >= 3.5
+                                    ? "bg-cyan-100 text-cyan-800"
+                                    : result.cgpa >= 3.0
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-red-100 text-red-800"
                             }`}
                           >
                             {result.cgpa >= 4.5
                               ? "Excellent"
                               : result.cgpa >= 4.0
-                              ? "Very Good"
-                              : result.cgpa >= 3.5
-                              ? "Good"
-                              : result.cgpa >= 3.0
-                              ? "Satisfactory"
-                              : "Needs Improvement"}
+                                ? "Very Good"
+                                : result.cgpa >= 3.5
+                                  ? "Good"
+                                  : result.cgpa >= 3.0
+                                    ? "Satisfactory"
+                                    : "Needs Improvement"}
                           </span>
                         </td>
                         <td className="p-3">{result.terms.length}</td>
