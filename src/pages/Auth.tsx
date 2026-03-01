@@ -98,6 +98,15 @@ export default function Auth() {
     setStep("password");
   };
 
+  const handleResendOtp = () => {
+    const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    toast("New Verification Code", {
+      description: `Your new verification code is: ${mockOtp}. This code will expire soon.`,
+      duration: 10000,
+    });
+    toast.success("Verification code resent!");
+  };
+
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -141,6 +150,14 @@ export default function Auth() {
       if (user) {
         // Send verification email
         await sendEmailVerification(user);
+
+        // Generate a mock 6-digit OTP for the user to use
+        const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        toast("Verification Code", {
+          description: `Your verification code is: ${mockOtp}. This code will expire soon.`,
+          duration: 10000,
+        });
 
         // Save registrar profile to database (Firestore)
         await setDoc(doc(db, "registrars", user.uid), {
@@ -473,6 +490,7 @@ export default function Auth() {
                     Didn't receive the code?{" "}
                     <button
                       type="button"
+                      onClick={handleResendOtp}
                       className="text-primary hover:underline font-medium"
                     >
                       Resend
