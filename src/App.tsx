@@ -12,6 +12,7 @@ import Results from "./pages/Results";
 import Transcripts from "./pages/Transcripts";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/transcripts" element={<Transcripts />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/courses" element={<Courses />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

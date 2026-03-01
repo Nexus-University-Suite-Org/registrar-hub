@@ -13,6 +13,7 @@ import {
   HelpCircle,
   UserCheck,
   X,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Students", href: "/students", icon: Users },
   { name: "Lecturers", href: "/lecturers", icon: UserCheck },
+  { name: "Courses", href: "/courses", icon: BookOpen },
   { name: "Results", href: "/results", icon: GraduationCap },
   { name: "Transcripts", href: "/transcripts", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
@@ -43,7 +45,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
       <aside
         className={cn(
           "hidden lg:flex fixed left-0 top-0 z-40 h-screen bg-card border-r border-border/50 transition-all duration-300 flex-col",
-          collapsed ? "w-20" : "w-64"
+          collapsed ? "w-20" : "w-64",
         )}
       >
         {/* Logo */}
@@ -93,13 +95,13 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
                     "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
                   <item.icon
                     className={cn(
                       "h-5 w-5 flex-shrink-0 transition-transform duration-200",
-                      !isActive && "group-hover:scale-110"
+                      !isActive && "group-hover:scale-110",
                     )}
                   />
                   {!collapsed && <span>{item.name}</span>}
@@ -115,7 +117,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
             to="#"
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
-              collapsed && "justify-center"
+              collapsed && "justify-center",
             )}
           >
             <HelpCircle className="h-5 w-5 flex-shrink-0" />
@@ -126,7 +128,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
             onClick={onLogout}
             className={cn(
               "w-full justify-start gap-3 rounded-xl px-3 py-3 h-auto text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-              collapsed && "justify-center"
+              collapsed && "justify-center",
             )}
           >
             <LogOut className="h-5 w-5" />
@@ -139,7 +141,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
       <aside
         className={cn(
           "lg:hidden fixed left-0 top-0 z-40 h-screen bg-card border-r border-border/50 transition-transform duration-300 flex flex-col w-64",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         {/* Mobile Header */}
@@ -186,13 +188,13 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
                     "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
                   <item.icon
                     className={cn(
                       "h-5 w-5 flex-shrink-0 transition-transform duration-200",
-                      !isActive && "group-hover:scale-110"
+                      !isActive && "group-hover:scale-110",
                     )}
                   />
                   <span>{item.name}</span>

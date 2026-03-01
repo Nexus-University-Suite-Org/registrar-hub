@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   GraduationCap,
   Mail,
   Lock,
@@ -14,6 +21,9 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Building,
+  User,
+  CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
@@ -50,6 +60,20 @@ export default function Auth() {
   const [lastName, setLastName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
+  const [college, setCollege] = useState("");
+
+  const colleges = [
+    "College of Computing and Information Sciences (COCIS)",
+    "College of Business and Management Sciences (COBAMS)",
+    "College of Humanities and Social Sciences (CHUSS)",
+    "College of Natural Sciences (CONAS)",
+    "College of Engineering, Design, Art and Technology (CEDAT)",
+    "College of Health Sciences (CHS)",
+    "College of Agricultural and Environmental Sciences (CAES)",
+    "College of Veterinary Medicine, Animal Resources and Bio-security (COVAB)",
+    "College of Education and External Studies (CEES)",
+    "School of Law (SOL)",
+  ];
 
   const validateEmail = (email: string) => {
     // For development/demo purposes, allow any valid email format
@@ -85,6 +109,7 @@ export default function Auth() {
       !firstName.trim() ||
       !lastName.trim() ||
       !employeeId.trim() ||
+      !college.trim() ||
       !department.trim()
     ) {
       setError("Please fill in all required fields");
@@ -166,7 +191,9 @@ export default function Auth() {
           last_name: lastName,
           email: email,
           employee_id: employeeId,
+          college: college,
           department: department,
+          role: "registrar",
           hire_date: new Date().toISOString().split("T")[0], // Today's date
         });
       }
@@ -387,15 +414,18 @@ export default function Auth() {
                     <Label htmlFor="firstName" className="text-sm font-medium">
                       First Name
                     </Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="John"
-                      className="h-12 rounded-xl border-border/50 focus:border-primary bg-card"
-                      required
-                    />
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="John"
+                        className="pl-12 h-12 rounded-xl border-border/50 focus:border-primary bg-card"
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="lastName" className="text-sm font-medium">
@@ -413,18 +443,41 @@ export default function Auth() {
                   </div>
                 </div>
                 <div className="space-y-3">
+                  <Label htmlFor="college" className="text-sm font-medium">
+                    College / Faculty
+                  </Label>
+                  <Select value={college} onValueChange={setCollege} required>
+                    <SelectTrigger className="h-12 rounded-xl border-border/50 focus:ring-primary bg-card text-left">
+                      <div className="flex items-center gap-3">
+                        <Building className="h-5 w-5 text-muted-foreground" />
+                        <SelectValue placeholder="Select your college" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colleges.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-3">
                   <Label htmlFor="employeeId" className="text-sm font-medium">
                     Employee ID
                   </Label>
-                  <Input
-                    id="employeeId"
-                    type="text"
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="REG-001"
-                    className="h-12 rounded-xl border-border/50 focus:border-primary bg-card"
-                    required
-                  />
+                  <div className="relative">
+                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="employeeId"
+                      type="text"
+                      value={employeeId}
+                      onChange={(e) => setEmployeeId(e.target.value)}
+                      placeholder="REG-001"
+                      className="pl-12 h-12 rounded-xl border-border/50 focus:border-primary bg-card"
+                      required
+                    />
+                  </div>
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="department" className="text-sm font-medium">
