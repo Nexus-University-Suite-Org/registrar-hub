@@ -307,24 +307,19 @@ export function StudentFormModal({
 
     setUploading(true);
     try {
+      const storage = getStorage();
       const fileExt = selectedFile.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `student-avatars/${fileName}`;
+      const storageRef = ref(storage, filePath);
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, selectedFile);
+      await uploadBytes(storageRef, selectedFile);
+      const publicUrl = await getDownloadURL(storageRef);
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
+      return publicUrl;
+    } catch (error: any) {
       console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      toast.error(`Failed to upload image: ${error.message || ""}`);
       return null;
     } finally {
       setUploading(false);
