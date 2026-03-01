@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { StudentStats } from "@/types/student";
 import { LecturerStats } from "@/types/lecturer";
-import { db } from "@/lib/firebase";
-import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { collection, getCountFromServer } from "firebase/firestore";
 
 const quickActions = [
   {
@@ -159,55 +159,22 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      // For testing with service key to bypass RLS
-      const testSupabase = createClient(
-        "https://oszbmaqieyemkgcqbeap.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zemJtYXFpZXllbWtnY3FiZWFwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzUxMDk1NSwiZXhwIjoyMDgzMDg2OTU1fQ.2IwBsS3EQBdCZC44r5dg1xjREWIxlrj_FT8Qn57oEY4"
-      );
+      const studentCollection = collection(db, "profiles");
+      
+      // Get all students count
+      const snapshot = await getCountFromServer(studentCollection);
+      const total = snapshot.data().count;
 
-      const { count, error } = await testSupabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .not("student_number", "is", null);
-
-      if (error) {
-        console.error("Error fetching student stats:", error);
-        // Fallback to regular client
-        const { count: fallbackCount, error: fallbackError } = await supabase
-          .from("profiles")
-          .select("*", { count: "exact", head: true })
-          .not("student_number", "is", null);
-        if (fallbackError) {
-          console.error("Fallback also failed:", fallbackError);
-          // Use sample stats
-          setStats({
-            total: 0,
-            active: 0,
-            inactive: 0,
-            graduated: 0,
-            suspended: 0,
-          });
-        } else {
-          setStats({
-            total: fallbackCount || 0,
-            active: fallbackCount || 0, // All students from profiles are considered active
-            inactive: 0,
-            graduated: 0,
-            suspended: 0,
-          });
-        }
-        return;
-      }
-
+      // In the original Supabase code, all students from profiles were considered active
       setStats({
-        total: count || 0,
-        active: count || 0, // All students from profiles are considered active
-        inactive: 0, // No inactive status in profiles logic
+        total: total || 0,
+        active: total || 0,
+        inactive: 0,
         graduated: 0,
         suspended: 0,
       });
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching stats from Firestore:", error);
     } finally {
       setLoading(false);
     }
@@ -215,10 +182,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+      const user = auth.currentUser;
+      if (!user) {
         navigate("/");
         return;
       }
