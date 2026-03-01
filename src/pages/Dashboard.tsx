@@ -160,7 +160,7 @@ export default function Dashboard() {
   const fetchStats = async () => {
     try {
       const studentCollection = collection(db, "profiles");
-      
+
       // Get all students count
       const snapshot = await getCountFromServer(studentCollection);
       const total = snapshot.data().count;

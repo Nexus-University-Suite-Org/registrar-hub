@@ -19,7 +19,19 @@ import {
   Award,
   RefreshCw,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { db } from "@/lib/firebase";
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  orderBy,
+  serverTimestamp
+} from "firebase/firestore";
 import { toast } from "sonner";
 
 export default function Lecturers() {
@@ -38,21 +50,21 @@ export default function Lecturers() {
 
   const fetchLecturers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "lecturer")
-        .order("created_at", { ascending: false });
+      const q = query(
+        collection(db, "profiles"),
+        where("role", "==", "lecturer"),
+        orderBy("created_at", "desc")
+      );
 
-      if (error) {
-        console.error("Error fetching lecturers:", error);
-        toast.error("Failed to fetch lecturers");
-        return;
-      }
+      const querySnapshot = await getDocs(q);
+      const lecturersData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Lecturer[];
 
-      setLecturers(data || []);
+      setLecturers(lecturersData);
     } catch (error) {
-      console.error("Error fetching lecturers:", error);
+      console.error("Error fetching lecturers from Firestore:", error);
       toast.error("Failed to fetch lecturers");
     } finally {
       setLoading(false);
