@@ -18,7 +18,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X, Upload, UserCheck } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { auth, db } from "@/lib/firebase";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { toast } from "sonner";
 
 interface LecturerFormModalProps {
@@ -473,31 +474,17 @@ export function LecturerFormModal({
         .substring(2)}.${fileExt}`;
       const filePath = `lecturer-avatars/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, selectedFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      const storage = getStorage();
+      const storageRef = ref(storage, filePath);
 
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError);
-        toast.error(`Failed to upload image: ${uploadError.message}`);
-        return null;
-      }
-
-      const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      if (!data.publicUrl) {
-        toast.error("Failed to get image URL after upload");
-        return null;
-      }
+      await uploadBytes(storageRef, selectedFile);
+      const publicUrl = await getDownloadURL(storageRef);
 
       toast.success("Profile photo uploaded successfully!");
-      return data.publicUrl;
-    } catch (error) {
+      return publicUrl;
+    } catch (error: any) {
       console.error("Error uploading image:", error);
-      toast.error("Failed to upload image. Please try again.");
+      toast.error(`Failed to upload image: ${error.message || "Please try again."}`);
       return null;
     } finally {
       setUploading(false);
