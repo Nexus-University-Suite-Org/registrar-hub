@@ -347,7 +347,7 @@ export default function Calendar() {
                 <CardTitle>Upcoming Events</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {sampleEvents
+                {events
                   .filter((event) => event.date >= new Date())
                   .sort((a, b) => a.date.getTime() - b.date.getTime())
                   .slice(0, 5)
