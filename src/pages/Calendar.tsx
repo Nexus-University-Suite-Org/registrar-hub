@@ -200,6 +200,25 @@ export default function Calendar() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="dueDate" className="text-right">
+                    Due Date
+                  </Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={
+                      newEvent.dueDate ? format(newEvent.dueDate, "yyyy-MM-dd") : ""
+                    }
+                    onChange={(e) =>
+                      setNewEvent({
+                        ...newEvent,
+                        dueDate: new Date(e.target.value),
+                      })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="type" className="text-right">
                     Type
                   </Label>
