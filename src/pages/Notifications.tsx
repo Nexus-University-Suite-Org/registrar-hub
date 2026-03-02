@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Bell, Check, Trash2, Clock, User, FileText, GraduationCap } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Trash2,
+  Clock,
+  User,
+  FileText,
+  GraduationCap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Notification {
@@ -29,7 +41,8 @@ const sampleNotifications: Notification[] = [
   {
     id: "2",
     title: "Grade Submitted",
-    message: "Mathematics grades for Semester 1 have been submitted by Dr. Smith",
+    message:
+      "Mathematics grades for Semester 1 have been submitted by Dr. Smith",
     type: "grade",
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
     read: false,
@@ -87,30 +100,27 @@ const getTypeColor = (type: string) => {
 };
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
+  const [notifications, setNotifications] =
+    useState<Notification[]>(sampleNotifications);
 
   const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
+    setNotifications((prev) =>
+      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)),
     );
     toast.success("Notification marked as read");
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif => ({ ...notif, read: true }))
-    );
+    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
     toast.success("All notifications marked as read");
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
     toast.success("Notification deleted");
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -146,7 +156,9 @@ export default function Notifications() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Notifications</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Notifications
+              </CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -169,10 +181,14 @@ export default function Notifications() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {notifications.filter(n => {
-                  const weekAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7);
-                  return n.timestamp > weekAgo;
-                }).length}
+                {
+                  notifications.filter((n) => {
+                    const weekAgo = new Date(
+                      Date.now() - 1000 * 60 * 60 * 24 * 7,
+                    );
+                    return n.timestamp > weekAgo;
+                  }).length
+                }
               </div>
             </CardContent>
           </Card>
@@ -207,12 +223,16 @@ export default function Notifications() {
                         : "bg-accent/50 border-accent"
                     }`}
                   >
-                    <div className={`p-2 rounded-full ${getTypeColor(notification.type)}`}>
+                    <div
+                      className={`p-2 rounded-full ${getTypeColor(notification.type)}`}
+                    >
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">{notification.title}</h4>
+                        <h4 className="text-sm font-medium">
+                          {notification.title}
+                        </h4>
                         <div className="flex items-center space-x-2">
                           <Badge variant="secondary" className="text-xs">
                             {notification.type}
