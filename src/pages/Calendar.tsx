@@ -171,19 +171,22 @@ export default function Calendar() {
     setCurrentDate(subMonths(currentDate, 1));
   };
 
-  const addEvent = () => {
+  const addEvent = async () => {
     if (newEvent.title && newEvent.date && newEvent.type) {
-      const event: Event = {
-        id: Date.now().toString(),
-        title: newEvent.title,
-        date: newEvent.date,
-        dueDate: newEvent.dueDate,
-        type: newEvent.type as Event["type"],
-        description: newEvent.description,
-      };
-      setEvents([...events, event]);
-      setNewEvent({});
-      setIsAddEventOpen(false);
+      try {
+        await addDoc(collection(db, "AcademicCalendar"), {
+          title: newEvent.title,
+          date: newEvent.date,
+          dueDate: newEvent.dueDate || null,
+          type: newEvent.type,
+          description: newEvent.description || "",
+          isActive: true,
+        });
+        setNewEvent({});
+        setIsAddEventOpen(false);
+      } catch (error) {
+        console.error("Error adding event:", error);
+      }
     }
   };
 
