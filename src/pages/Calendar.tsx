@@ -22,13 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
@@ -61,7 +54,7 @@ interface Event {
   title: string;
   date: Date;
   dueDate?: Date;
-  type: "exam" | "deadline" | "meeting" | "holiday";
+  type: string;
   description?: string;
   isActive: boolean;
 }
@@ -190,6 +183,16 @@ export default function Calendar() {
     }
   };
 
+  const toggleEventActive = async (eventId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, "AcademicCalendar", eventId), {
+        isActive: !currentStatus,
+      });
+    } catch (error) {
+      console.error("Error updating event:", error);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -273,22 +276,20 @@ export default function Calendar() {
                   <Label htmlFor="type" className="text-right">
                     Type
                   </Label>
-                  <Select
+                  <Input
+                    id="type"
                     value={newEvent.type || ""}
-                    onValueChange={(value) =>
-                      setNewEvent({ ...newEvent, type: value as Event["type"] })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="exam">Exam</SelectItem>
-                      <SelectItem value="deadline">Deadline</SelectItem>
-                      <SelectItem value="meeting">Meeting</SelectItem>
-                      <SelectItem value="holiday">Holiday</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                    list="event-types"
+                    placeholder="Type or select event type"
+                    className="col-span-3"
+                  />
+                  <datalist id="event-types">
+                    <option value="exam" />
+                    <option value="deadline" />
+                    <option value="meeting" />
+                    <option value="holiday" />
+                  </datalist>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="description" className="text-right">
@@ -345,7 +346,9 @@ export default function Calendar() {
                 </div>
                 <div className="grid grid-cols-7 gap-1">
                   {calendarDays.map((day) => {
-                    const dayEvents = eventsForDate(day);
+                    const dayEvents = eventsForDate(day).filter(
+                      (event) => event.isActive,
+                    );
                     const isSelected =
                       selectedDate && isSameDay(day, selectedDate);
                     const isCurrentMonth = isSameMonth(day, currentDate);
@@ -411,9 +414,16 @@ export default function Calendar() {
                     <div key={event.id} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">{event.title}</h4>
-                        <Badge className={getEventColor(event.type)}>
-                          {event.type}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getEventColor(event.type)}>
+                            {event.type}
+                          </Badge>
+                          <Badge
+                            variant={event.isActive ? "default" : "secondary"}
+                          >
+                            {event.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
                       </div>
                       {event.description && (
                         <p className="text-sm text-muted-foreground">
@@ -425,6 +435,16 @@ export default function Calendar() {
                           Due: {format(event.dueDate, "MMM d, yyyy")}
                         </p>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          toggleEventActive(event.id, event.isActive)
+                        }
+                        className="w-full"
+                      >
+                        {event.isActive ? "Deactivate" : "Activate"}
+                      </Button>
                     </div>
                   ))
                 )}
@@ -438,7 +458,7 @@ export default function Calendar() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {events
-                  .filter((event) => event.date >= new Date())
+                  .filter((event) => event.date >= new Date() && event.isActive)
                   .sort((a, b) => a.date.getTime() - b.date.getTime())
                   .slice(0, 5)
                   .map((event) => (
