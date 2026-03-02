@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,17 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  doc,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface Event {
   id: string;
@@ -87,6 +98,7 @@ const sampleEvents: Event[] = [
     date: new Date(2026, 2, 25),
     type: "holiday",
     description: "Spring break begins",
+    isActive: true,
   },
 ];
 
