@@ -49,6 +49,7 @@ interface Event {
   id: string;
   title: string;
   date: Date;
+  dueDate?: Date;
   type: "exam" | "deadline" | "meeting" | "holiday";
   description?: string;
 }
@@ -130,7 +131,7 @@ export default function Calendar() {
         id: Date.now().toString(),
         title: newEvent.title,
         date: newEvent.date,
-        type: newEvent.type as Event['type'],
+        type: newEvent.type as Event["type"],
         description: newEvent.description,
       };
       setEvents([...events, event]);
@@ -172,7 +173,9 @@ export default function Calendar() {
                   <Input
                     id="title"
                     value={newEvent.title || ""}
-                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                    onChange={(e) =>
+                      setNewEvent({ ...newEvent, title: e.target.value })
+                    }
                     className="col-span-3"
                   />
                 </div>
@@ -183,8 +186,15 @@ export default function Calendar() {
                   <Input
                     id="date"
                     type="date"
-                    value={newEvent.date ? format(newEvent.date, "yyyy-MM-dd") : ""}
-                    onChange={(e) => setNewEvent({ ...newEvent, date: new Date(e.target.value) })}
+                    value={
+                      newEvent.date ? format(newEvent.date, "yyyy-MM-dd") : ""
+                    }
+                    onChange={(e) =>
+                      setNewEvent({
+                        ...newEvent,
+                        date: new Date(e.target.value),
+                      })
+                    }
                     className="col-span-3"
                   />
                 </div>
@@ -194,7 +204,9 @@ export default function Calendar() {
                   </Label>
                   <Select
                     value={newEvent.type || ""}
-                    onValueChange={(value) => setNewEvent({ ...newEvent, type: value as Event['type'] })}
+                    onValueChange={(value) =>
+                      setNewEvent({ ...newEvent, type: value as Event["type"] })
+                    }
                   >
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Select type" />
@@ -214,7 +226,9 @@ export default function Calendar() {
                   <Textarea
                     id="description"
                     value={newEvent.description || ""}
-                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    onChange={(e) =>
+                      setNewEvent({ ...newEvent, description: e.target.value })
+                    }
                     className="col-span-3"
                   />
                 </div>
