@@ -226,6 +226,7 @@ export default function Dashboard() {
                   variant="outline"
                   size="sm"
                   className="gap-2 hover:bg-accent transition-colors w-full sm:w-auto"
+                  onClick={() => navigate("/calendar")}
                 >
                   <Calendar className="h-5 w-5" />
                   <span className="hidden sm:inline">View Calendar</span>
