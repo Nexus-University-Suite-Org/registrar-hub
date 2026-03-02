@@ -120,9 +120,38 @@ const getEventColor = (type: string) => {
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [events, setEvents] = useState<Event[]>(sampleEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
   const [newEvent, setNewEvent] = useState<Partial<Event>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const eventsCollection = collection(db, "AcademicCalendar");
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(eventsCollection, (snapshot) => {
+      const eventsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date.toDate(),
+        dueDate: doc.data().dueDate?.toDate(),
+      })) as Event[];
+      setEvents(eventsData);
+      setLoading(false);
+
+      // Check for expired events and deactivate them
+      const now = new Date();
+      eventsData.forEach((event) => {
+        if (event.dueDate && event.dueDate < now && event.isActive) {
+          updateDoc(doc(db, "AcademicCalendar", event.id), {
+            isActive: false,
+          });
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
