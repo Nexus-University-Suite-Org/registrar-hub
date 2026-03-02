@@ -66,6 +66,7 @@ const sampleEvents: Event[] = [
     id: "2",
     title: "Grade Submission Deadline",
     date: new Date(2026, 2, 20),
+    dueDate: new Date(2026, 2, 20),
     type: "deadline",
     description: "All grades must be submitted by end of day",
   },
