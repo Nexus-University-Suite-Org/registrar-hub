@@ -1,10 +1,49 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isSameDay,
+  addMonths,
+  subMonths,
+} from "date-fns";
 
 interface Event {
   id: string;
@@ -63,13 +102,16 @@ const getEventColor = (type: string) => {
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [events, setEvents] = useState<Event[]>(sampleEvents);
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState<Partial<Event>>({});
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const eventsForDate = (date: Date) => {
-    return sampleEvents.filter(event => isSameDay(event.date, date));
+    return events.filter((event) => isSameDay(event.date, date));
   };
 
   const selectedDateEvents = selectedDate ? eventsForDate(selectedDate) : [];
@@ -80,6 +122,21 @@ export default function Calendar() {
 
   const prevMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
+  };
+
+  const addEvent = () => {
+    if (newEvent.title && newEvent.date && newEvent.type) {
+      const event: Event = {
+        id: Date.now().toString(),
+        title: newEvent.title,
+        date: newEvent.date,
+        type: newEvent.type as Event['type'],
+        description: newEvent.description,
+      };
+      setEvents([...events, event]);
+      setNewEvent({});
+      setIsAddEventOpen(false);
+    }
   };
 
   return (
@@ -93,10 +150,82 @@ export default function Calendar() {
               View important dates, deadlines, and events
             </p>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Event
-          </Button>
+          <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Event</DialogTitle>
+                <DialogDescription>
+                  Create a new event for the calendar.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="title" className="text-right">
+                    Title
+                  </Label>
+                  <Input
+                    id="title"
+                    value={newEvent.title || ""}
+                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">
+                    Date
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={newEvent.date ? format(newEvent.date, "yyyy-MM-dd") : ""}
+                    onChange={(e) => setNewEvent({ ...newEvent, date: new Date(e.target.value) })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="type" className="text-right">
+                    Type
+                  </Label>
+                  <Select
+                    value={newEvent.type || ""}
+                    onValueChange={(value) => setNewEvent({ ...newEvent, type: value as Event['type'] })}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="exam">Exam</SelectItem>
+                      <SelectItem value="deadline">Deadline</SelectItem>
+                      <SelectItem value="meeting">Meeting</SelectItem>
+                      <SelectItem value="holiday">Holiday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="description" className="text-right">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={newEvent.description || ""}
+                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" onClick={addEvent}>
+                  Add Event
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -105,9 +234,7 @@ export default function Calendar() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>
-                    {format(currentDate, "MMMM yyyy")}
-                  </CardTitle>
+                  <CardTitle>{format(currentDate, "MMMM yyyy")}</CardTitle>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm" onClick={prevMonth}>
                       <ChevronLeft className="h-4 w-4" />
@@ -120,16 +247,22 @@ export default function Calendar() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-7 gap-1 mb-4">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                    <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
-                      {day}
-                    </div>
-                  ))}
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                    (day) => (
+                      <div
+                        key={day}
+                        className="p-2 text-center text-sm font-medium text-muted-foreground"
+                      >
+                        {day}
+                      </div>
+                    ),
+                  )}
                 </div>
                 <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map(day => {
+                  {calendarDays.map((day) => {
                     const dayEvents = eventsForDate(day);
-                    const isSelected = selectedDate && isSameDay(day, selectedDate);
+                    const isSelected =
+                      selectedDate && isSameDay(day, selectedDate);
                     const isCurrentMonth = isSameMonth(day, currentDate);
 
                     return (
@@ -137,7 +270,9 @@ export default function Calendar() {
                         key={day.toISOString()}
                         variant={isSelected ? "default" : "ghost"}
                         className={`h-12 w-full p-1 relative ${
-                          !isCurrentMonth ? "text-muted-foreground opacity-50" : ""
+                          !isCurrentMonth
+                            ? "text-muted-foreground opacity-50"
+                            : ""
                         }`}
                         onClick={() => setSelectedDate(day)}
                       >
@@ -147,7 +282,7 @@ export default function Calendar() {
                             {dayEvents.slice(0, 3).map((event, index) => (
                               <div
                                 key={event.id}
-                                className={`w-1.5 h-1.5 rounded-full ${getEventColor(event.type).split(' ')[0]}`}
+                                className={`w-1.5 h-1.5 rounded-full ${getEventColor(event.type).split(" ")[0]}`}
                               />
                             ))}
                             {dayEvents.length > 3 && (
@@ -168,13 +303,14 @@ export default function Calendar() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a date"}
+                  {selectedDate
+                    ? format(selectedDate, "MMMM d, yyyy")
+                    : "Select a date"}
                 </CardTitle>
                 <CardDescription>
                   {selectedDateEvents.length > 0
                     ? `${selectedDateEvents.length} event${selectedDateEvents.length > 1 ? "s" : ""}`
-                    : "No events scheduled"
-                  }
+                    : "No events scheduled"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -186,7 +322,7 @@ export default function Calendar() {
                     </p>
                   </div>
                 ) : (
-                  selectedDateEvents.map(event => (
+                  selectedDateEvents.map((event) => (
                     <div key={event.id} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium">{event.title}</h4>
@@ -212,12 +348,14 @@ export default function Calendar() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {sampleEvents
-                  .filter(event => event.date >= new Date())
+                  .filter((event) => event.date >= new Date())
                   .sort((a, b) => a.date.getTime() - b.date.getTime())
                   .slice(0, 5)
-                  .map(event => (
+                  .map((event) => (
                     <div key={event.id} className="flex items-start space-x-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${getEventColor(event.type).split(' ')[0]}`} />
+                      <div
+                        className={`w-2 h-2 rounded-full mt-2 ${getEventColor(event.type).split(" ")[0]}`}
+                      />
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium">{event.title}</p>
                         <p className="text-xs text-muted-foreground">
