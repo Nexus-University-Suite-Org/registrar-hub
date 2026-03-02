@@ -4,14 +4,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Users,
   UserCheck,
   UserX,
@@ -238,42 +230,17 @@ export default function Dashboard() {
                   <Calendar className="h-5 w-5" />
                   <span className="hidden sm:inline">View Calendar</span>
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="relative hover:bg-accent transition-colors"
-                    >
-                      <Bell className="h-5 w-5" />
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-pulse">
-                        3
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
-                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">New Student Enrollment</p>
-                        <p className="text-xs text-muted-foreground">John Doe has been enrolled in Computer Science</p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">Grade Submitted</p>
-                        <p className="text-xs text-muted-foreground">Mathematics grades for Semester 1 have been submitted</p>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium">Course Assignment</p>
-                        <p className="text-xs text-muted-foreground">Dr. Smith has been assigned to Data Structures</p>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative hover:bg-accent transition-colors"
+                  onClick={() => navigate("/notifications")}
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-pulse">
+                    3
+                  </span>
+                </Button>
               </div>
             </div>
           </div>
