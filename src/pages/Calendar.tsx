@@ -279,7 +279,9 @@ export default function Calendar() {
                   <Input
                     id="type"
                     value={newEvent.type || ""}
-                    onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                    onChange={(e) =>
+                      setNewEvent({ ...newEvent, type: e.target.value })
+                    }
                     list="event-types"
                     placeholder="Type or select event type"
                     className="col-span-3"
@@ -480,6 +482,79 @@ export default function Calendar() {
             </Card>
           </div>
         </div>
+
+        {/* All Events List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>All Events</CardTitle>
+            <CardDescription>
+              Complete list of all calendar events
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            ) : events.length === 0 ? (
+              <div className="text-center py-8">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium">No events</h3>
+                <p className="text-muted-foreground">
+                  No events have been added yet. Click "Add Event" to create your first event.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {events
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .map((event) => (
+                    <div
+                      key={event.id}
+                      className={`flex items-center justify-between p-4 rounded-lg border ${
+                        event.isActive
+                          ? "bg-background border-border"
+                          : "bg-muted/50 border-muted"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-3 h-3 rounded-full ${getEventColor(event.type).split(" ")[0]}`} />
+                        <div>
+                          <h4 className={`font-medium ${!event.isActive && "text-muted-foreground"}`}>
+                            {event.title}
+                          </h4>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <span>{format(event.date, "MMM d, yyyy")}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {event.type}
+                            </Badge>
+                            {event.dueDate && (
+                              <span>Due: {format(event.dueDate, "MMM d, yyyy")}</span>
+                            )}
+                            <Badge variant={event.isActive ? "default" : "secondary"} className="text-xs">
+                              {event.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          {event.description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleEventActive(event.id, event.isActive)}
+                      >
+                        {event.isActive ? "Deactivate" : "Activate"}
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
