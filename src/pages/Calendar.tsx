@@ -62,6 +62,7 @@ const sampleEvents: Event[] = [
     date: new Date(2026, 2, 15),
     type: "exam",
     description: "Computer Science mid-term examinations",
+    isActive: true,
   },
   {
     id: "2",
@@ -70,6 +71,7 @@ const sampleEvents: Event[] = [
     dueDate: new Date(2026, 2, 20),
     type: "deadline",
     description: "All grades must be submitted by end of day",
+    isActive: true,
   },
   {
     id: "3",
@@ -77,6 +79,7 @@ const sampleEvents: Event[] = [
     date: new Date(2026, 2, 10),
     type: "meeting",
     description: "Monthly faculty meeting in conference room A",
+    isActive: true,
   },
   {
     id: "4",
