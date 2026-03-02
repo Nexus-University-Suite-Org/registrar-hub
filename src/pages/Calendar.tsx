@@ -52,13 +52,14 @@ interface Event {
   dueDate?: Date;
   type: "exam" | "deadline" | "meeting" | "holiday";
   description?: string;
+  isActive: boolean;
 }
 
 const sampleEvents: Event[] = [
   {
     id: "1",
     title: "Mid-term Exams",
-    date: new Date(2026, 2, 15), // March 15, 2026
+    date: new Date(2026, 2, 15),
     type: "exam",
     description: "Computer Science mid-term examinations",
   },
@@ -132,6 +133,7 @@ export default function Calendar() {
         id: Date.now().toString(),
         title: newEvent.title,
         date: newEvent.date,
+        dueDate: newEvent.dueDate,
         type: newEvent.type as Event["type"],
         description: newEvent.description,
       };
@@ -207,7 +209,9 @@ export default function Calendar() {
                     id="dueDate"
                     type="date"
                     value={
-                      newEvent.dueDate ? format(newEvent.dueDate, "yyyy-MM-dd") : ""
+                      newEvent.dueDate
+                        ? format(newEvent.dueDate, "yyyy-MM-dd")
+                        : ""
                     }
                     onChange={(e) =>
                       setNewEvent({
@@ -369,6 +373,11 @@ export default function Calendar() {
                           {event.description}
                         </p>
                       )}
+                      {event.dueDate && (
+                        <p className="text-sm text-muted-foreground">
+                          Due: {format(event.dueDate, "MMM d, yyyy")}
+                        </p>
+                      )}
                     </div>
                   ))
                 )}
@@ -394,6 +403,8 @@ export default function Calendar() {
                         <p className="text-sm font-medium">{event.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {format(event.date, "MMM d, yyyy")}
+                          {event.dueDate &&
+                            ` • Due: ${format(event.dueDate, "MMM d")}`}
                         </p>
                       </div>
                     </div>
