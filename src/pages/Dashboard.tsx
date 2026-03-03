@@ -64,57 +64,6 @@ const quickActions = [
   },
 ];
 
-const recentActivities = [
-  {
-    id: "activity-1",
-    action: "New student enrolled",
-    student: "Sarah Johnson",
-    time: "2 hours ago",
-    icon: UserCheck,
-    type: "enrollment",
-    title: "New student enrolled",
-    description: "Sarah Johnson has been successfully enrolled",
-    color: "from-green-500 to-emerald-500",
-    details: "Computer Science - Year 1",
-  },
-  {
-    id: "activity-2",
-    action: "Transcript requested",
-    student: "Michael Brown",
-    time: "4 hours ago",
-    icon: FileText,
-    type: "request",
-    title: "Transcript requested",
-    description: "Michael Brown requested transcript access",
-    color: "from-blue-500 to-cyan-500",
-    details: "Business Administration",
-  },
-  {
-    id: "activity-3",
-    action: "Status updated",
-    student: "Emily Davis",
-    time: "5 hours ago",
-    icon: TrendingUp,
-    type: "update",
-    title: "Status updated",
-    description: "Emily Davis status has been updated",
-    color: "from-orange-500 to-amber-500",
-    details: "Changed to Active status",
-  },
-  {
-    id: "activity-4",
-    action: "Record modified",
-    student: "James Wilson",
-    time: "Yesterday",
-    icon: Clock,
-    type: "modification",
-    title: "Record modified",
-    description: "James Wilson record has been modified",
-    color: "from-purple-500 to-indigo-500",
-    details: "Contact information updated",
-  },
-];
-
 const systemMetrics = [
   {
     label: "System Uptime",
@@ -155,6 +104,7 @@ export default function Dashboard() {
     graduated: 0,
     suspended: 0,
   });
+  const [activities, setActivities] = useState<ActivityType[]>([]);
   const [greeting, setGreeting] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -178,6 +128,25 @@ export default function Dashboard() {
       console.error("Error fetching stats from Firestore:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const activitiesQuery = query(
+        collection(db, "activities"),
+        orderBy("timestamp", "desc"),
+        limit(10)
+      );
+      const querySnapshot = await getDocs(activitiesQuery);
+      const activitiesData: ActivityType[] = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate() || new Date(),
+      })) as ActivityType[];
+      setActivities(activitiesData);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
     }
   };
 
