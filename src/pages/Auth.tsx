@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  onAuthStateChanged,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
@@ -54,6 +55,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Registrar profile fields
   const [firstName, setFirstName] = useState("");
@@ -61,6 +63,21 @@ export default function Auth() {
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
   const [college, setCollege] = useState("");
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is logged in, redirect to dashboard
+        navigate("/dashboard");
+      } else {
+        // No user logged in, show auth page
+        setIsCheckingAuth(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const colleges = [
     "College of Computing and Information Sciences (COCIS)",
@@ -243,7 +260,18 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <>
+      {isCheckingAuth && (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      )}
+
+      {!isCheckingAuth && (
+        <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background layers */}
@@ -691,6 +719,8 @@ export default function Auth() {
           </div>
         </div>
       </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
