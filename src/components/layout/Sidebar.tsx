@@ -14,6 +14,7 @@ import {
   UserCheck,
   X,
   BookOpen,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ const navigation = [
   { name: "Results", href: "/results", icon: GraduationCap },
   { name: "Transcripts", href: "/transcripts", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Tools", href: "/tools", icon: Wrench },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
