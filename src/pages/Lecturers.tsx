@@ -145,6 +145,18 @@ export default function Lecturers() {
           updated_at: serverTimestamp(),
         });
 
+        // Log activity
+        await addDoc(collection(db, "activities"), {
+          action: "lecturer_updated",
+          entity: "lecturer",
+          entityId: selectedLecturer.id,
+          entityName: `${lecturerData.first_name} ${lecturerData.last_name}`,
+          details: lecturerData.department || "",
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser?.uid || "",
+          userName: "Registrar",
+        });
+
         setLecturers(
           lecturers.map((lecturer) =>
             lecturer.id === selectedLecturer.id
