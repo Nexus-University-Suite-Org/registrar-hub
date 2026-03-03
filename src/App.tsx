@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Courses from "./pages/Courses";
 import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
+import Tools from "./pages/Tools";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
