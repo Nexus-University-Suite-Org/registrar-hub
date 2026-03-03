@@ -27,7 +27,8 @@ const allTools = [
     name: "Manage Students",
     href: "/students",
     icon: Users,
-    description: "View and manage student records, enrollment, and academic information",
+    description:
+      "View and manage student records, enrollment, and academic information",
     color: "from-primary to-orange-400",
     category: "Student Management",
   },
@@ -35,7 +36,8 @@ const allTools = [
     name: "Manage Lecturers",
     href: "/lecturers",
     icon: UserCheck,
-    description: "Handle lecturer profiles, assignments, and course allocations",
+    description:
+      "Handle lecturer profiles, assignments, and course allocations",
     color: "from-green-500 to-emerald-500",
     category: "Academic Staff",
   },
@@ -43,7 +45,8 @@ const allTools = [
     name: "Course Management",
     href: "/courses",
     icon: BookOpen,
-    description: "Create and manage course offerings, prerequisites, and curriculum",
+    description:
+      "Create and manage course offerings, prerequisites, and curriculum",
     color: "from-blue-500 to-cyan-500",
     category: "Academic Management",
   },
@@ -59,7 +62,8 @@ const allTools = [
     name: "Generate Reports",
     href: "/reports",
     icon: BarChart3,
-    description: "Create comprehensive reports on enrollment, performance, and analytics",
+    description:
+      "Create comprehensive reports on enrollment, performance, and analytics",
     color: "from-orange-500 to-red-400",
     category: "Analytics & Reporting",
   },
@@ -67,7 +71,8 @@ const allTools = [
     name: "Results Management",
     href: "/results",
     icon: Award,
-    description: "Manage examination results, grades, and academic performance tracking",
+    description:
+      "Manage examination results, grades, and academic performance tracking",
     color: "from-purple-500 to-indigo-500",
     category: "Assessment",
   },
@@ -75,7 +80,8 @@ const allTools = [
     name: "Calendar",
     href: "/calendar",
     icon: Calendar,
-    description: "View academic calendar, important dates, and schedule management",
+    description:
+      "View academic calendar, important dates, and schedule management",
     color: "from-pink-500 to-rose-500",
     category: "Scheduling",
   },
@@ -83,7 +89,8 @@ const allTools = [
     name: "Notifications",
     href: "/notifications",
     icon: Bell,
-    description: "Manage system notifications, alerts, and communication preferences",
+    description:
+      "Manage system notifications, alerts, and communication preferences",
     color: "from-yellow-500 to-orange-500",
     category: "Communication",
   },
@@ -91,13 +98,14 @@ const allTools = [
     name: "System Settings",
     href: "/settings",
     icon: Settings,
-    description: "Configure system preferences, user permissions, and administrative settings",
+    description:
+      "Configure system preferences, user permissions, and administrative settings",
     color: "from-red-400 to-primary",
     category: "Administration",
   },
 ];
 
-const categories = [...new Set(allTools.map(tool => tool.category))];
+const categories = [...new Set(allTools.map((tool) => tool.category))];
 
 export default function Tools() {
   const navigate = useNavigate();
@@ -131,7 +139,9 @@ export default function Tools() {
                   Registrar Tools & Features
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-2xl">
-                  Access all available tools and features in the registrar portal. Everything you need to manage academic operations efficiently.
+                  Access all available tools and features in the registrar
+                  portal. Everything you need to manage academic operations
+                  efficiently.
                 </p>
               </div>
             </div>
@@ -150,13 +160,15 @@ export default function Tools() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {allTools
-                .filter(tool => tool.category === category)
+                .filter((tool) => tool.category === category)
                 .map((tool, index) => (
                   <button
                     key={tool.name}
                     onClick={() => navigate(tool.href)}
                     className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-6 text-left transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 hover:border-primary/30 animate-scale-in opacity-0"
-                    style={{ animationDelay: `${(categoryIndex * 3 + index) * 0.1}s` }}
+                    style={{
+                      animationDelay: `${(categoryIndex * 3 + index) * 0.1}s`,
+                    }}
                   >
                     {/* Enhanced gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-accent/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -209,12 +221,20 @@ export default function Tools() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
-                <p className="text-2xl font-bold text-primary mb-1">{allTools.length}</p>
-                <p className="text-sm text-primary/80 font-medium">Available Tools</p>
+                <p className="text-2xl font-bold text-primary mb-1">
+                  {allTools.length}
+                </p>
+                <p className="text-sm text-primary/80 font-medium">
+                  Available Tools
+                </p>
               </div>
               <div className="text-center p-4 rounded-xl bg-success/10 border border-success/20 hover:bg-success/15 transition-colors">
-                <p className="text-2xl font-bold text-success mb-1">{categories.length}</p>
-                <p className="text-sm text-success/80 font-medium">Categories</p>
+                <p className="text-2xl font-bold text-success mb-1">
+                  {categories.length}
+                </p>
+                <p className="text-sm text-success/80 font-medium">
+                  Categories
+                </p>
               </div>
               <div className="text-center p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors">
                 <p className="text-2xl font-bold text-orange-500 mb-1">24/7</p>
@@ -222,7 +242,9 @@ export default function Tools() {
               </div>
               <div className="text-center p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/15 transition-colors">
                 <p className="text-2xl font-bold text-purple-500 mb-1">100%</p>
-                <p className="text-sm text-purple-500/80 font-medium">Integrated</p>
+                <p className="text-sm text-purple-500/80 font-medium">
+                  Integrated
+                </p>
               </div>
             </div>
           </div>
