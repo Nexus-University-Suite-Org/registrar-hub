@@ -25,8 +25,9 @@ import {
 } from "lucide-react";
 import { StudentStats } from "@/types/student";
 import { LecturerStats } from "@/types/lecturer";
+import { Activity as ActivityType } from "@/types/activity";
 import { auth, db } from "@/lib/firebase";
-import { collection, getCountFromServer } from "firebase/firestore";
+import { collection, getCountFromServer, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 const quickActions = [
   {

@@ -501,7 +501,8 @@ export default function Calendar() {
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium">No events</h3>
                 <p className="text-muted-foreground">
-                  No events have been added yet. Click "Add Event" to create your first event.
+                  No events have been added yet. Click "Add Event" to create
+                  your first event.
                 </p>
               </div>
             ) : (
@@ -518,9 +519,13 @@ export default function Calendar() {
                       }`}
                     >
                       <div className="flex items-center space-x-4">
-                        <div className={`w-3 h-3 rounded-full ${getEventColor(event.type).split(" ")[0]}`} />
+                        <div
+                          className={`w-3 h-3 rounded-full ${getEventColor(event.type).split(" ")[0]}`}
+                        />
                         <div>
-                          <h4 className={`font-medium ${!event.isActive && "text-muted-foreground"}`}>
+                          <h4
+                            className={`font-medium ${!event.isActive && "text-muted-foreground"}`}
+                          >
                             {event.title}
                           </h4>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -529,9 +534,14 @@ export default function Calendar() {
                               {event.type}
                             </Badge>
                             {event.dueDate && (
-                              <span>Due: {format(event.dueDate, "MMM d, yyyy")}</span>
+                              <span>
+                                Due: {format(event.dueDate, "MMM d, yyyy")}
+                              </span>
                             )}
-                            <Badge variant={event.isActive ? "default" : "secondary"} className="text-xs">
+                            <Badge
+                              variant={event.isActive ? "default" : "secondary"}
+                              className="text-xs"
+                            >
                               {event.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </div>
@@ -545,7 +555,9 @@ export default function Calendar() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => toggleEventActive(event.id, event.isActive)}
+                        onClick={() =>
+                          toggleEventActive(event.id, event.isActive)
+                        }
                       >
                         {event.isActive ? "Deactivate" : "Activate"}
                       </Button>
