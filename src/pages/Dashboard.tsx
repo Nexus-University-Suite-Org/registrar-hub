@@ -437,46 +437,54 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-4">
-              {recentActivities.map((activity, index) => (
-                <div
-                  key={activity.id}
-                  className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-5 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 animate-scale-in opacity-0"
-                  style={{ animationDelay: `${index * 0.1 + 0.3}s` }}
-                >
-                  {/* Subtle gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-background via-accent/20 to-background opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              {activities.length > 0 ? activities.map((activity, index) => {
+                const displayData = getActivityDisplayData(activity);
+                return (
+                  <div
+                    key={activity.id || index}
+                    className="group relative overflow-hidden rounded-xl border border-border/50 bg-card p-5 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 animate-scale-in opacity-0"
+                    style={{ animationDelay: `${index * 0.1 + 0.3}s` }}
+                  >
+                    {/* Subtle gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-background via-accent/20 to-background opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                  <div className="relative flex items-start space-x-4">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${activity.color} shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}
-                    >
-                      <activity.icon className="h-5 w-5 text-white" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                          {activity.title}
-                        </p>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                          {activity.time}
-                        </span>
+                    <div className="relative flex items-start space-x-4">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${displayData.color} shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`}
+                      >
+                        <displayData.icon className="h-5 w-5 text-white" />
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {activity.description}
-                      </p>
-                      {activity.details && (
-                        <div className="mt-3 flex items-center space-x-2">
-                          <div className="h-1.5 w-1 bg-primary rounded-full"></div>
-                          <span className="text-xs text-muted-foreground">
-                            {activity.details}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-foreground group-hover:text-primary transition-colors">
+                            {displayData.title}
+                          </p>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                            {displayData.time}
                           </span>
                         </div>
-                      )}
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {displayData.description}
+                        </p>
+                        {displayData.details && (
+                          <div className="mt-3 flex items-center space-x-2">
+                            <div className="h-1.5 w-1 bg-primary rounded-full"></div>
+                            <span className="text-xs text-muted-foreground">
+                              {displayData.details}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                );
+              }) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No recent activities</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
