@@ -315,6 +315,18 @@ export default function Students() {
         const docRef = doc(db, "profiles", selectedStudent?.id!);
         await updateDoc(docRef, updateData);
 
+        // Log activity
+        await addDoc(collection(db, "activities"), {
+          action: "student_updated",
+          entity: "student",
+          entityId: selectedStudent?.id || "",
+          entityName: `${data.first_name} ${data.last_name}`,
+          details: `${data.department} - Year ${data.year_of_study}`,
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser?.uid || "",
+          userName: "Registrar",
+        });
+
         const updatedStudent: Student = {
           ...selectedStudent!,
           ...data,

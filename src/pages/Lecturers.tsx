@@ -118,6 +118,18 @@ export default function Lecturers() {
           created_at: serverTimestamp(),
         });
 
+        // Log activity
+        await addDoc(collection(db, "activities"), {
+          action: "lecturer_added",
+          entity: "lecturer",
+          entityId: docRef.id,
+          entityName: `${lecturerData.first_name} ${lecturerData.last_name}`,
+          details: lecturerData.department || "",
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser?.uid || "",
+          userName: "Registrar",
+        });
+
         const newLecturer = {
           id: docRef.id,
           ...lecturerData,
