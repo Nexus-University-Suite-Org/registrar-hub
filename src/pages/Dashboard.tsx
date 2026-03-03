@@ -150,6 +150,70 @@ export default function Dashboard() {
     }
   };
 
+  const getActivityDisplayData = (activity: ActivityType) => {
+    const timeAgo = getTimeAgo(activity.timestamp);
+    
+    switch (activity.action) {
+      case "student_added":
+        return {
+          title: "New student enrolled",
+          description: `${activity.entityName} has been successfully enrolled`,
+          details: activity.details || "",
+          time: timeAgo,
+          icon: UserCheck,
+          color: "from-green-500 to-emerald-500",
+        };
+      case "student_updated":
+        return {
+          title: "Student record updated",
+          description: `${activity.entityName}'s record has been modified`,
+          details: activity.details || "Information updated",
+          time: timeAgo,
+          icon: TrendingUp,
+          color: "from-orange-500 to-amber-500",
+        };
+      case "lecturer_added":
+        return {
+          title: "New lecturer added",
+          description: `${activity.entityName} has been added to the system`,
+          details: activity.details || "",
+          time: timeAgo,
+          icon: UserPlus,
+          color: "from-blue-500 to-cyan-500",
+        };
+      case "lecturer_updated":
+        return {
+          title: "Lecturer record updated",
+          description: `${activity.entityName}'s record has been modified`,
+          details: activity.details || "Information updated",
+          time: timeAgo,
+          icon: Clock,
+          color: "from-purple-500 to-indigo-500",
+        };
+      default:
+        return {
+          title: activity.action,
+          description: activity.details || "",
+          details: "",
+          time: timeAgo,
+          icon: Activity,
+          color: "from-gray-500 to-gray-600",
+        };
+    }
+  };
+
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    if (diffInDays === 1) return "Yesterday";
+    return `${diffInDays} days ago`;
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const user = auth.currentUser;
@@ -165,6 +229,7 @@ export default function Dashboard() {
       else setGreeting("Good evening");
 
       fetchStats();
+      fetchActivities();
     };
 
     checkAuth();
