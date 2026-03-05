@@ -31,6 +31,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
@@ -205,6 +206,27 @@ export default function Auth() {
     } catch (err: any) {
       console.error("Error creating account:", err);
       setError(err.message || "An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+
+    if (!validateEmail(email)) {
+      setError("Please go back and enter a valid email address first.");
+      setStep("email");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success("Password reset email sent. Please check your inbox.");
+    } catch (err: any) {
+      console.error("Password reset error:", err);
+      setError(err.message || "Failed to send password reset email");
     } finally {
       setIsLoading(false);
     }
@@ -634,6 +656,8 @@ export default function Auth() {
                     </Label>
                     <button
                       type="button"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
                       className="text-sm text-primary hover:underline font-medium"
                     >
                       Forgot password?
