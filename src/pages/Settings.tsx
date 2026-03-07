@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
@@ -25,6 +25,26 @@ const settingsSections = [
 
 export default function Settings() {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState("profile");
+  const profileRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const securityRef = useRef<HTMLDivElement>(null);
+  const databaseRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLDivElement>(null);
+
+  const sectionRefs: Record<string, React.RefObject<HTMLDivElement | null>> = {
+    profile: profileRef,
+    notifications: notificationsRef,
+    security: securityRef,
+    database: databaseRef,
+    email: emailRef,
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const ref = sectionRefs[sectionId];
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     const checkAuth = () => {
@@ -54,11 +74,12 @@ export default function Settings() {
           {/* Settings Navigation */}
           <div className="lg:col-span-1">
             <nav className="space-y-1">
-              {settingsSections.map((section, index) => (
+              {settingsSections.map((section) => (
                 <button
                   key={section.id}
+                  onClick={() => scrollToSection(section.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    index === 0
+                    activeSection === section.id
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
@@ -112,7 +133,7 @@ export default function Settings() {
             </div>
 
             {/* Notifications Section */}
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div ref={notificationsRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Bell className="h-5 w-5 text-primary" />
@@ -154,7 +175,7 @@ export default function Settings() {
             </div>
 
             {/* Security Section */}
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div ref={securityRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Shield className="h-5 w-5 text-primary" />
@@ -180,6 +201,46 @@ export default function Settings() {
                   </div>
                   <Switch />
                 </div>
+              </div>
+            </div>
+
+            {/* Database Section */}
+            <div ref={databaseRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
+                  <Database className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground">Database</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Database configuration and backups
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Button variant="outline">Export Database</Button>
+                <Button variant="outline">Run Backup</Button>
+              </div>
+            </div>
+
+            {/* Email Templates Section */}
+            <div ref={emailRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground">Email Templates</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Customize email notifications sent to users
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Manage templates for enrollment confirmations, password resets, and other notifications.
+                </p>
+                <Button variant="outline">Manage Templates</Button>
               </div>
             </div>
           </div>
