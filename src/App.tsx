@@ -13,6 +13,7 @@ import Transcripts from "./pages/Transcripts";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Courses from "./pages/Courses";
+import Fees from "./pages/Fees";
 import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
 import Tools from "./pages/Tools";
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/fees" element={<Fees />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/tools" element={<Tools />} />

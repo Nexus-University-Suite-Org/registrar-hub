@@ -15,6 +15,7 @@ import {
   X,
   BookOpen,
   Wrench,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Students", href: "/students", icon: Users },
   { name: "Lecturers", href: "/lecturers", icon: UserCheck },
   { name: "Courses", href: "/courses", icon: BookOpen },
+  { name: "Fees", href: "/fees", icon: DollarSign },
   { name: "Results", href: "/results", icon: GraduationCap },
   { name: "Transcripts", href: "/transcripts", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
