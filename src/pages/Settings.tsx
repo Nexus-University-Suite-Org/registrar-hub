@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
@@ -14,6 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { auth } from "@/lib/firebase";
+import { toast } from "sonner";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+} from "firebase/auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const settingsSections = [
   { id: "profile", name: "Profile", icon: User },
@@ -40,6 +54,19 @@ export default function Settings() {
     email: emailRef,
   };
 
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const [isProcessingDatabase, setIsProcessingDatabase] = useState(false);
+
+  const [isManagingTemplates, setIsManagingTemplates] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("enrollment");
+  const [templateSubject, setTemplateSubject] = useState("");
+  const [templateBody, setTemplateBody] = useState("");
+
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     // Use setTimeout to ensure state update and re-render complete before scrolling
@@ -50,6 +77,83 @@ export default function Settings() {
         window.scrollTo({ top, behavior: "smooth" });
       }
     }, 50);
+  };
+
+  const handleChangePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!newPassword || newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      toast.error("No authenticated user found.");
+      return;
+    }
+
+    try {
+      setIsUpdatingPassword(true);
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      toast.success("Password updated successfully.");
+      setIsChangePasswordOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err: any) {
+      console.error("Error updating password:", err);
+      toast.error(err?.message || "Failed to update password.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleExportDatabase = async () => {
+    try {
+      setIsProcessingDatabase(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.success(
+        "Database export started. Connect your backend to generate the actual export file.",
+      );
+    } catch (err: any) {
+      console.error("Database export error:", err);
+      toast.error("Failed to start database export.");
+    } finally {
+      setIsProcessingDatabase(false);
+    }
+  };
+
+  const handleRunBackup = async () => {
+    try {
+      setIsProcessingDatabase(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.success(
+        "Database backup started. Connect your backend to run the actual backup.",
+      );
+    } catch (err: any) {
+      console.error("Database backup error:", err);
+      toast.error("Failed to start database backup.");
+    } finally {
+      setIsProcessingDatabase(false);
+    }
+  };
+
+  const handleSaveTemplate = (e: FormEvent) => {
+    e.preventDefault();
+    // In a full implementation, you'd persist these values to your backend.
+    toast.success("Template settings saved. (Demo only, not persisted.)");
+    setIsManagingTemplates(false);
   };
 
   useEffect(() => {
@@ -199,7 +303,12 @@ export default function Settings() {
               </div>
 
               <div className="space-y-4">
-                <Button variant="outline">Change Password</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsChangePasswordOpen(true)}
+                >
+                  Change Password
+                </Button>
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <p className="text-sm font-medium text-foreground">
@@ -228,8 +337,20 @@ export default function Settings() {
                 </div>
               </div>
               <div className="space-y-4">
-                <Button variant="outline">Export Database</Button>
-                <Button variant="outline">Run Backup</Button>
+                <Button
+                  variant="outline"
+                  onClick={handleExportDatabase}
+                  disabled={isProcessingDatabase}
+                >
+                  {isProcessingDatabase ? "Exporting..." : "Export Database"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleRunBackup}
+                  disabled={isProcessingDatabase}
+                >
+                  {isProcessingDatabase ? "Running..." : "Run Backup"}
+                </Button>
               </div>
             </div>
 
@@ -250,11 +371,137 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">
                   Manage templates for enrollment confirmations, password resets, and other notifications.
                 </p>
-                <Button variant="outline">Manage Templates</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsManagingTemplates(true)}
+                >
+                  Manage Templates
+                </Button>
               </div>
             </div>
           </div>
         </div>
+        {/* Modals */}
+        <Dialog
+          open={isChangePasswordOpen}
+          onOpenChange={setIsChangePasswordOpen}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>
+                Update your account password. You will need to enter your
+                current password for security.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={handleChangePasswordSubmit}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmNewPassword">Confirm new password</Label>
+                <Input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  disabled={isUpdatingPassword}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdatingPassword}>
+                  {isUpdatingPassword ? "Updating..." : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isManagingTemplates}
+          onOpenChange={setIsManagingTemplates}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Manage Email Templates</DialogTitle>
+              <DialogDescription>
+                Configure the content used for system emails.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSaveTemplate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="templateType">Template</Label>
+                <select
+                  id="templateType"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                >
+                  <option value="enrollment">Enrollment confirmation</option>
+                  <option value="password-reset">Password reset</option>
+                  <option value="notification">General notification</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="templateSubject">Subject</Label>
+                <Input
+                  id="templateSubject"
+                  value={templateSubject}
+                  onChange={(e) => setTemplateSubject(e.target.value)}
+                  placeholder="Subject line"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="templateBody">Body</Label>
+                <textarea
+                  id="templateBody"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[140px]"
+                  value={templateBody}
+                  onChange={(e) => setTemplateBody(e.target.value)}
+                  placeholder="Write the email content..."
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsManagingTemplates(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
