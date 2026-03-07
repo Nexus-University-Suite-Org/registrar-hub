@@ -42,8 +42,14 @@ export default function Settings() {
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
-    const ref = sectionRefs[sectionId];
-    ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Use setTimeout to ensure state update and re-render complete before scrolling
+    setTimeout(() => {
+      const el = sectionRefs[sectionId]?.current;
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top, behavior: "smooth" });
+      }
+    }, 50);
   };
 
   useEffect(() => {
@@ -133,7 +139,7 @@ export default function Settings() {
             </div>
 
             {/* Notifications Section */}
-            <div ref={notificationsRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+            <div ref={notificationsRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-24" data-section="notifications">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Bell className="h-5 w-5 text-primary" />
@@ -175,7 +181,7 @@ export default function Settings() {
             </div>
 
             {/* Security Section */}
-            <div ref={securityRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+            <div ref={securityRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-24" data-section="security">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Shield className="h-5 w-5 text-primary" />
@@ -205,7 +211,7 @@ export default function Settings() {
             </div>
 
             {/* Database Section */}
-            <div ref={databaseRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+            <div ref={databaseRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-24" data-section="database">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Database className="h-5 w-5 text-primary" />
@@ -224,7 +230,7 @@ export default function Settings() {
             </div>
 
             {/* Email Templates Section */}
-            <div ref={emailRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-4">
+            <div ref={emailRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-24" data-section="email">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
                   <Mail className="h-5 w-5 text-primary" />
