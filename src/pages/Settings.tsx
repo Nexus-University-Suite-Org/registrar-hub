@@ -78,7 +78,7 @@ export default function Settings() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Settings Navigation */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 lg:sticky lg:top-24 self-start">
             <nav className="space-y-1">
               {settingsSections.map((section) => (
                 <button
