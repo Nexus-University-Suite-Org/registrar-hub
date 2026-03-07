@@ -174,7 +174,7 @@ export default function Reports() {
 
         {/* View Report Dialog */}
         <Dialog open={!!viewingReport} onOpenChange={() => setViewingReport(null)}>
-          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {viewingReport}

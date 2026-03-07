@@ -386,7 +386,7 @@ export default function Settings() {
           open={isChangePasswordOpen}
           onOpenChange={setIsChangePasswordOpen}
         >
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Change Password</DialogTitle>
               <DialogDescription>
@@ -449,7 +449,7 @@ export default function Settings() {
           open={isManagingTemplates}
           onOpenChange={setIsManagingTemplates}
         >
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Manage Email Templates</DialogTitle>
               <DialogDescription>

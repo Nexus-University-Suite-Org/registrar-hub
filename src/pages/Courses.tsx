@@ -501,7 +501,7 @@ export default function Courses() {
 
         {/* Course Modal */}
         <Dialog open={isCourseModalOpen} onOpenChange={setIsCourseModalOpen}>
-          <DialogContent className="rounded-2xl border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:max-w-2xl rounded-2xl border-none shadow-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-primary" />

@@ -354,7 +354,7 @@ export default function Fees() {
         </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {modalMode === "add" ? "Assign Fee" : "Edit Fee"}
