@@ -1,13 +1,28 @@
-import { useEffect } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FileText, Search, Download, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { auth } from "@/lib/firebase";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function Transcripts() {
   const navigate = useNavigate();
+
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [studentNumber, setStudentNumber] = useState("");
+  const [academicYear, setAcademicYear] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -20,6 +35,31 @@ export default function Transcripts() {
 
     checkAuth();
   }, [navigate]);
+
+  const handleGenerateTranscript = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!studentNumber.trim()) {
+      toast.error("Please enter a student number.");
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      toast.success(
+        "Transcript generated successfully. Connect your backend to download the actual file.",
+      );
+      setIsGenerateOpen(false);
+      setStudentNumber("");
+      setAcademicYear("");
+    } catch (err: any) {
+      console.error("Transcript generation error:", err);
+      toast.error("Failed to generate transcript.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -34,7 +74,7 @@ export default function Transcripts() {
               Access and manage student academic transcripts
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setIsGenerateOpen(true)}>
             <Download className="h-5 w-5 mr-2" />
             Generate Transcript
           </Button>
@@ -73,10 +113,60 @@ export default function Transcripts() {
               <Button variant="outline" onClick={() => navigate("/students")}>
                 View Students
               </Button>
-              <Button>Generate New Transcript</Button>
+              <Button onClick={() => setIsGenerateOpen(true)}>
+                Generate New Transcript
+              </Button>
             </div>
           </div>
         </div>
+        {/* Generate transcript modal */}
+        <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Generate Transcript</DialogTitle>
+              <DialogDescription>
+                Enter the student details to generate an academic transcript.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={handleGenerateTranscript}
+              className="space-y-4 mt-2"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="studentNumber">Student number</Label>
+                <Input
+                  id="studentNumber"
+                  value={studentNumber}
+                  onChange={(e) => setStudentNumber(e.target.value)}
+                  placeholder="e.g. 21/U/12345/PS"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="academicYear">Academic year (optional)</Label>
+                <Input
+                  id="academicYear"
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  placeholder="e.g. 2023/2024"
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsGenerateOpen(false)}
+                  disabled={isGenerating}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isGenerating}>
+                  {isGenerating ? "Generating..." : "Generate"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
