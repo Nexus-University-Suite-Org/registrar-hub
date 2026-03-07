@@ -321,7 +321,7 @@ export default function Auth() {
       </div>
 
       {/* Right Panel - Auth Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background relative">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-y-auto">
         {/* Subtle background pattern */}
         <div className="absolute inset-0 gradient-mesh opacity-30" />
 
@@ -647,22 +647,12 @@ export default function Auth() {
             {step === "login" && (
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label
-                      htmlFor="loginPassword"
-                      className="text-sm font-medium"
-                    >
-                      Password
-                    </Label>
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      disabled={isLoading}
-                      className="text-sm text-primary hover:underline font-medium"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
+                  <Label
+                    htmlFor="loginPassword"
+                    className="text-sm font-medium"
+                  >
+                    Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
@@ -694,6 +684,16 @@ export default function Auth() {
                 >
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
+                    className="text-sm font-medium text-primary hover:text-primary/90 hover:underline transition-colors disabled:opacity-50"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </form>
             )}
 
