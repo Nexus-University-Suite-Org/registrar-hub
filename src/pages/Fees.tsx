@@ -141,7 +141,7 @@ export default function Fees() {
     }
   };
 
-  const openAddModal = () => {
+  const openAddModal = async () => {
     setModalMode("add");
     setSelectedFee(null);
     setFeeForm({
@@ -151,9 +151,24 @@ export default function Fees() {
       amount: "",
     });
     setIsModalOpen(true);
+    if (registrarCollege) {
+      try {
+        const coursesQuery = query(
+          collection(db, "courses"),
+          where("college", "==", registrarCollege),
+        );
+        const coursesSnap = await getDocs(coursesQuery);
+        const coursesData = coursesSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as Course))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setCourses(coursesData);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      }
+    }
   };
 
-  const openEditModal = (fee: FeeAssignment) => {
+  const openEditModal = async (fee: FeeAssignment) => {
     setModalMode("edit");
     setSelectedFee(fee);
     setFeeForm({
@@ -163,6 +178,21 @@ export default function Fees() {
       amount: String(fee.amount),
     });
     setIsModalOpen(true);
+    if (registrarCollege) {
+      try {
+        const coursesQuery = query(
+          collection(db, "courses"),
+          where("college", "==", registrarCollege),
+        );
+        const coursesSnap = await getDocs(coursesQuery);
+        const coursesData = coursesSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as Course))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setCourses(coursesData);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+      }
+    }
   };
 
   const handleSaveFee = async () => {
@@ -344,11 +374,17 @@ export default function Fees() {
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
-                    {courses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.code} - {c.name}
-                      </SelectItem>
-                    ))}
+                    {courses.length === 0 ? (
+                      <div className="py-6 px-4 text-center text-sm text-muted-foreground">
+                        No courses found. Add courses in the Courses page first.
+                      </div>
+                    ) : (
+                      courses.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.code} - {c.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
