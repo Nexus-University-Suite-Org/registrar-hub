@@ -116,7 +116,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
         {/* Bottom section */}
         <div className="p-3 border-t border-border/50 space-y-1">
           <Link
-            to="#"
+            to="/help-support"
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
               collapsed && "justify-center",
@@ -209,7 +209,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
         {/* Bottom section */}
         <div className="p-3 border-t border-border/50 space-y-1">
           <Link
-            to="#"
+            to="/help-support"
             onClick={onClose}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
           >

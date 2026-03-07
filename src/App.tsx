@@ -16,6 +16,7 @@ import Courses from "./pages/Courses";
 import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
 import Tools from "./pages/Tools";
+import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/help-support" element={<HelpSupport />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
