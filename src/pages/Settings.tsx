@@ -67,7 +67,7 @@ export default function Settings() {
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div>
+        <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-sm pb-4">
           <h1 className="font-display text-3xl font-bold text-foreground">
             Settings
           </h1>
