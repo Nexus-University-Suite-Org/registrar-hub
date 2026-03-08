@@ -10,7 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, Download, FileText, RefreshCw } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Search, Filter, Download, FileText, RefreshCw, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
 import {
@@ -19,8 +27,6 @@ import {
   query,
   where,
   orderBy,
-  doc,
-  getDoc,
 } from "firebase/firestore";
 
 interface ResultCourse {
@@ -51,6 +57,8 @@ interface StudentResults {
   studentId: string;
   studentName: string;
   studentNumber: string;
+  program: string;
+  yearOfStudy: number;
   cgpa: number;
   totalCredits: number;
   terms: TermResult[];
@@ -86,73 +94,104 @@ const calculateSemesterRemark = (gp: number, grade: string | null): string => {
   return "Fail";
 };
 
+const ACADEMIC_YEARS = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
+
 export default function Results() {
   const navigate = useNavigate();
   const [results, setResults] = useState<StudentResults[]>([]);
   const [filteredResults, setFilteredResults] = useState<StudentResults[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [academicYearFilter, setAcademicYearFilter] = useState<string>("all");
+  const [semesterFilter, setSemesterFilter] = useState<string>("all");
+  const [courseUnitFilter, setCourseUnitFilter] = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-
-  
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [printScope, setPrintScope] = useState<"filtered" | "student" | "semester" | "course">("filtered");
+  const [printStudentId, setPrintStudentId] = useState("");
+  const [printYearSem, setPrintYearSem] = useState({ year: "", semester: "" });
+  const [printCourseId, setPrintCourseId] = useState("");
+  const [courseUnitOptions, setCourseUnitOptions] = useState<{ id: string; label: string }[]>([]);
+  const [classOptions, setClassOptions] = useState<string[]>([]);
 
   const fetchResults = async () => {
     try {
       setLoading(true);
-      console.log(
-        "🔍 FETCHING RESULTS - Starting fetchResults function via Firestore...",
-      );
+      let students: any[] = [];
+      try {
+        const profilesSnap = await getDocs(
+          query(collection(db, "profiles"), where("role", "==", "student")),
+        );
+        students = profilesSnap.docs.map((d) => {
+          const p = d.data();
+          const full = p.full_name || "";
+          const parts = full.split(" ");
+          return {
+            id: d.id,
+            first_name: parts[0] || p.firstName || "",
+            last_name: parts.slice(1).join(" ") || p.lastName || "",
+            student_number: p.student_number || p.studentNumber || "",
+            program: p.program || "",
+            year_of_study: p.year_of_study ?? p.yearOfStudy ?? 1,
+          };
+        });
+      } catch {
+        const studentsSnap = await getDocs(
+          query(collection(db, "students"), orderBy("last_name", "asc")),
+        );
+        students = studentsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+      }
 
-      // Get all students from Firestore
-      const studentsSnapshot = await getDocs(
-        query(collection(db, "students"), orderBy("last_name", "asc")),
-      );
-      const students = studentsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as any[];
-
-      if (!students || students.length === 0) {
+      if (!students.length) {
         setResults([]);
         setFilteredResults([]);
-        toast.success("No students found");
+        setCourseUnitOptions([]);
+        setClassOptions([]);
+        toast.info("No students found");
         return;
       }
 
-      console.log(`Found ${students.length} students`);
-
-      // Get all student grades
       const gradesSnapshot = await getDocs(collection(db, "student_grades"));
-      const studentGrades = gradesSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as any[];
+      const studentGrades = gradesSnapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
 
-      // Get all courses to map them to grades
-      const coursesSnapshot = await getDocs(collection(db, "courses"));
-      const coursesMap = new Map();
-      coursesSnapshot.docs.forEach((doc) => {
-        coursesMap.set(doc.id, { id: doc.id, ...doc.data() });
+      const coursesSnap = await getDocs(collection(db, "courses"));
+      const courseUnitsSnap = await getDocs(collection(db, "course_units"));
+      const coursesMap = new Map<string, { title?: string; name?: string; code: string; credits?: number }>();
+      coursesSnap.docs.forEach((d) => {
+        const o = d.data();
+        coursesMap.set(d.id, {
+          title: o.title || o.name,
+          name: o.name || o.title,
+          code: o.code || "N/A",
+          credits: o.credits ?? 3,
+        });
+      });
+      courseUnitsSnap.docs.forEach((d) => {
+        const o = d.data();
+        coursesMap.set(d.id, {
+          title: o.name || o.title,
+          name: o.name || o.title,
+          code: o.code || "N/A",
+          credits: o.credits ?? 3,
+        });
       });
 
-      // Group transcripts by student and organize by academic year/semester
       const studentResultsMap = new Map<string, StudentResults>();
+      const courseIdsSeen = new Set<string>();
+      const classSet = new Set<string>();
 
       students.forEach((student) => {
-        const studentGradesData = studentGrades.filter(
-          (g) => g.student_id === student.id,
-        );
-
-        console.log(
-          `Student ${student.first_name} ${student.last_name} (${student.student_number}): ${studentGradesData.length} grades`,
-        );
-
-        // Group grades by academic year and semester
+        const studentGradesData = studentGrades.filter((g) => g.student_id === student.id);
         const termsMap = new Map<string, TermResult>();
 
         studentGradesData.forEach((grade) => {
           const termKey = `${grade.academic_year} · ${grade.semester}`;
           const courseData = coursesMap.get(grade.course_id);
+          const title = courseData?.title || courseData?.name || "Unknown Course";
+          const code = courseData?.code || "N/A";
+          const credits = courseData?.credits ?? 3;
+          courseIdsSeen.add(grade.course_id);
 
           if (!termsMap.has(termKey)) {
             termsMap.set(termKey, {
@@ -163,10 +202,7 @@ export default function Results() {
               entries: [],
             });
           }
-
           const term = termsMap.get(termKey)!;
-          const credits = courseData?.credits || 3;
-
           term.entries.push({
             id: grade.id,
             course_id: grade.course_id,
@@ -175,64 +211,62 @@ export default function Results() {
             marks: grade.total || 0,
             grade: grade.grade,
             grade_point: grade.gp || 0,
-            courseTitle: courseData?.title || "Unknown Course",
-            courseCode: courseData?.code || "N/A",
-            credits: credits,
+            courseTitle: title,
+            courseCode: code,
+            credits,
             student_id: grade.student_id,
-            semester_remark: calculateSemesterRemark(
-              grade.gp || 0,
-              grade.grade,
-            ),
+            semester_remark: calculateSemesterRemark(grade.gp || 0, grade.grade),
           });
-
           term.totalCredits += credits;
         });
 
-        // Calculate GPA for each term
         termsMap.forEach((term) => {
           if (term.entries.length > 0) {
             const totalGradePoints = term.entries.reduce(
               (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
               0,
             );
-            term.gpa =
-              term.totalCredits > 0 ? totalGradePoints / term.totalCredits : 0;
+            term.gpa = term.totalCredits > 0 ? totalGradePoints / term.totalCredits : 0;
             term.remark = calculateSemesterRemark(term.gpa, null);
           }
         });
 
-        // Calculate overall CGPA
-        const allEntries = Array.from(termsMap.values()).flatMap(
-          (term) => term.entries,
-        );
+        const allEntries = Array.from(termsMap.values()).flatMap((t) => t.entries);
         const totalGradePoints = allEntries.reduce(
           (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
           0,
         );
-        const totalCredits = allEntries.reduce(
-          (sum, entry) => sum + entry.credits,
-          0,
-        );
+        const totalCredits = allEntries.reduce((sum, entry) => sum + entry.credits, 0);
         const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
+        const program = student.program || "—";
+        const yearOfStudy = student.year_of_study ?? 1;
+        classSet.add(`${program} - Year ${yearOfStudy}`);
 
         studentResultsMap.set(student.id, {
           studentId: student.id,
-          studentName: `${student.first_name} ${student.last_name}`,
-          studentNumber: student.student_number,
+          studentName: `${student.first_name} ${student.last_name}`.trim() || student.student_number,
+          studentNumber: student.student_number || "",
+          program,
+          yearOfStudy,
           cgpa: Math.round(cgpa * 100) / 100,
           totalCredits,
-          terms: Array.from(termsMap.values()).sort((a, b) =>
-            b.term.localeCompare(a.term),
-          ),
+          terms: Array.from(termsMap.values()).sort((a, b) => b.term.localeCompare(a.term)),
         });
       });
 
       const resultsArray = Array.from(studentResultsMap.values());
       setResults(resultsArray);
       setFilteredResults(resultsArray);
-      toast.success(`Loaded results for ${resultsArray.length} students`);
+      setCourseUnitOptions(
+        Array.from(courseIdsSeen).map((id) => ({
+          id,
+          label: coursesMap.get(id)?.code + " - " + (coursesMap.get(id)?.title || coursesMap.get(id)?.name || id),
+        })),
+      );
+      setClassOptions(Array.from(classSet).sort());
+      toast.success(`Loaded results for ${resultsArray.length} students (lecturer-submitted)`);
     } catch (error) {
-      console.error("❌ FETCH ERROR:", error);
+      console.error("Fetch results error:", error);
       toast.error("Failed to load results");
     } finally {
       setLoading(false);
@@ -263,20 +297,14 @@ export default function Results() {
 
     if (searchQuery) {
       filtered = filtered.filter(
-        (result) =>
-          result.studentName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          result.studentNumber
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()),
+        (r) =>
+          r.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.studentNumber.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
-
     if (statusFilter !== "all") {
-      // Filter by CGPA range
-      filtered = filtered.filter((result) => {
-        const cgpa = result.cgpa;
+      filtered = filtered.filter((r) => {
+        const cgpa = r.cgpa;
         if (statusFilter === "excellent") return cgpa >= 4.5;
         if (statusFilter === "very-good") return cgpa >= 4.0 && cgpa < 4.5;
         if (statusFilter === "good") return cgpa >= 3.5 && cgpa < 4.0;
@@ -284,9 +312,103 @@ export default function Results() {
         return true;
       });
     }
+    if (academicYearFilter !== "all") {
+      filtered = filtered.filter((r) =>
+        r.terms.some((t) => t.term.startsWith(academicYearFilter)),
+      );
+    }
+    if (semesterFilter !== "all") {
+      filtered = filtered.filter((r) =>
+        r.terms.some((t) => t.term.endsWith("· " + semesterFilter)),
+      );
+    }
+    if (courseUnitFilter !== "all") {
+      filtered = filtered.filter((r) =>
+        r.terms.some((t) =>
+          t.entries.some((e) => e.course_id === courseUnitFilter),
+        ),
+      );
+    }
+    if (classFilter !== "all") {
+      filtered = filtered.filter(
+        (r) => `${r.program} - Year ${r.yearOfStudy}` === classFilter,
+      );
+    }
 
     setFilteredResults(filtered);
-  }, [results, searchQuery, statusFilter]);
+  }, [results, searchQuery, statusFilter, academicYearFilter, semesterFilter, courseUnitFilter, classFilter]);
+
+  const getPrintData = (): StudentResults[] => {
+    if (printScope === "filtered") return filteredResults;
+    if (printScope === "student" && printStudentId)
+      return results.filter((r) => r.studentId === printStudentId);
+    if (printScope === "semester" && printYearSem.year && printYearSem.semester) {
+      return results.filter((r) =>
+        r.terms.some(
+          (t) =>
+            t.term.startsWith(printYearSem.year) &&
+            t.term.endsWith("· " + printYearSem.semester),
+        ),
+      );
+    }
+    if (printScope === "course" && printCourseId) {
+      return results.filter((r) =>
+        r.terms.some((t) =>
+          t.entries.some((e) => e.course_id === printCourseId),
+        ),
+      );
+    }
+    return filteredResults;
+  };
+
+  const buildPrintHtml = (data: StudentResults[]) => {
+    let html = "";
+    data.forEach((result) => {
+      html += `<div class="student-block" style="margin-bottom: 28px; page-break-inside: avoid;">`;
+      html += `<table style="width:100%; border-collapse: collapse; margin-bottom: 12px;"><tr><td colspan="4" style="font-weight: 700; padding: 8px 0;">${result.studentName} · ${result.studentNumber} · ${result.program} · Year ${result.yearOfStudy}</td></tr>`;
+      html += `<tr><th style="border:1px solid #ddd; padding: 8px; text-align:left;">Course</th><th style="border:1px solid #ddd; padding: 8px;">Year/Sem</th><th style="border:1px solid #ddd; padding: 8px;">Marks</th><th style="border:1px solid #ddd; padding: 8px;">Grade</th></tr>`;
+      result.terms.forEach((term) => {
+        term.entries.forEach((e) => {
+          html += `<tr><td style="border:1px solid #ddd; padding: 8px;">${e.courseCode} - ${e.courseTitle}</td><td style="border:1px solid #ddd; padding: 8px;">${e.academic_year} · Sem ${e.semester}</td><td style="border:1px solid #ddd; padding: 8px;">${e.marks}</td><td style="border:1px solid #ddd; padding: 8px;">${e.grade ?? "—"}</td></tr>`;
+        });
+      });
+      html += `<tr><td colspan="2" style="border:1px solid #ddd; padding: 8px; font-weight: 600;">CGPA</td><td colspan="2" style="border:1px solid #ddd; padding: 8px;">${result.cgpa.toFixed(2)}</td></tr></table></div>`;
+    });
+    return html;
+  };
+
+  const handlePrint = () => {
+    const data = getPrintData();
+    if (!data.length) {
+      toast.error("No results to print for the selected scope.");
+      return;
+    }
+    setPrintDialogOpen(false);
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(`
+        <!DOCTYPE html><html><head>
+          <title>Results - Registrar</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 24px; }
+            table { width: 100%; border-collapse: collapse; }
+            .print-header { margin-bottom: 20px; }
+            .print-header h1 { margin: 0; font-size: 1.5rem; }
+          </style>
+        </head><body>
+          <div class="print-header">
+            <h1>Academic Results</h1>
+            <p>Generated by Registrar · ${new Date().toLocaleDateString()}</p>
+          </div>
+          ${buildPrintHtml(data)}
+        </body></html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -298,7 +420,7 @@ export default function Results() {
               Student Results
             </h1>
             <p className="text-muted-foreground">
-              View and manage student academic results
+              View lecturer-submitted results; filter and print by student, year, semester, or course unit
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -313,6 +435,15 @@ export default function Results() {
               />
               Refresh
             </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setPrintDialogOpen(true)}
+              disabled={loading || filteredResults.length === 0}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Results
+            </Button>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -321,31 +452,73 @@ export default function Results() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by student name or number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by student name or number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="CGPA" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All performance</SelectItem>
+                <SelectItem value="excellent">Excellent (4.5+)</SelectItem>
+                <SelectItem value="very-good">Very Good (4.0-4.4)</SelectItem>
+                <SelectItem value="good">Good (3.5-3.9)</SelectItem>
+                <SelectItem value="satisfactory">Satisfactory (3.0-3.4)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Academic year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All years</SelectItem>
+                {ACADEMIC_YEARS.map((y) => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={semesterFilter} onValueChange={setSemesterFilter}>
+              <SelectTrigger className="w-full sm:w-36">
+                <SelectValue placeholder="Semester" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="1">Semester 1</SelectItem>
+                <SelectItem value="2">Semester 2</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={courseUnitFilter} onValueChange={setCourseUnitFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Course unit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All units</SelectItem>
+                {courseUnitOptions.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={classFilter} onValueChange={setClassFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All classes</SelectItem>
+                {classOptions.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by CGPA" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Students</SelectItem>
-              <SelectItem value="excellent">Excellent (4.5+)</SelectItem>
-              <SelectItem value="very-good">Very Good (4.0-4.4)</SelectItem>
-              <SelectItem value="good">Good (3.5-3.9)</SelectItem>
-              <SelectItem value="satisfactory">
-                Satisfactory (3.0-3.4)
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Results Table */}
@@ -371,16 +544,11 @@ export default function Results() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-3 font-medium">
-                        Student Number
-                      </th>
-                      <th className="text-left p-3 font-medium">
-                        Student Name
-                      </th>
+                      <th className="text-left p-3 font-medium">Student Number</th>
+                      <th className="text-left p-3 font-medium">Student Name</th>
+                      <th className="text-left p-3 font-medium">Program / Class</th>
                       <th className="text-left p-3 font-medium">CGPA</th>
-                      <th className="text-left p-3 font-medium">
-                        Total Credits
-                      </th>
+                      <th className="text-left p-3 font-medium">Total Credits</th>
                       <th className="text-left p-3 font-medium">Performance</th>
                       <th className="text-left p-3 font-medium">Terms</th>
                     </tr>
@@ -391,10 +559,11 @@ export default function Results() {
                         key={result.studentId}
                         className="border-b hover:bg-muted/50"
                       >
-                        <td className="p-3 font-mono">
-                          {result.studentNumber}
-                        </td>
+                        <td className="p-3 font-mono">{result.studentNumber}</td>
                         <td className="p-3">{result.studentName}</td>
+                        <td className="p-3 text-muted-foreground">
+                          {result.program} · Y{result.yearOfStudy}
+                        </td>
                         <td className="p-3 font-bold text-lg">
                           {result.cgpa.toFixed(2)}
                         </td>
@@ -433,6 +602,102 @@ export default function Results() {
             )}
           </div>
         </div>
+
+        {/* Print dialog */}
+        <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Print Results</DialogTitle>
+              <DialogDescription>
+                Choose what to print: current filtered list, a specific student, all results for a semester, or for a course unit.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Print scope</label>
+                <Select value={printScope} onValueChange={(v: "filtered" | "student" | "semester" | "course") => setPrintScope(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="filtered">Currently filtered results ({filteredResults.length})</SelectItem>
+                    <SelectItem value="student">Specific student</SelectItem>
+                    <SelectItem value="semester">All results for semester</SelectItem>
+                    <SelectItem value="course">All results for course unit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {printScope === "student" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Student</label>
+                  <Select value={printStudentId} onValueChange={setPrintStudentId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {results.map((r) => (
+                        <SelectItem key={r.studentId} value={r.studentId}>
+                          {r.studentNumber} - {r.studentName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {printScope === "semester" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Academic year</label>
+                    <Select value={printYearSem.year} onValueChange={(v) => setPrintYearSem((p) => ({ ...p, year: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ACADEMIC_YEARS.map((y) => (
+                          <SelectItem key={y} value={y}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Semester</label>
+                    <Select value={printYearSem.semester} onValueChange={(v) => setPrintYearSem((p) => ({ ...p, semester: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              {printScope === "course" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Course unit</label>
+                  <Select value={printCourseId} onValueChange={setPrintCourseId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courseUnitOptions.map((o) => (
+                        <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
