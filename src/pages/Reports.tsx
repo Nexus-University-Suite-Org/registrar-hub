@@ -72,11 +72,11 @@ export default function Reports() {
   const [viewingReport, setViewingReport] = useState<string | null>(null);
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
   const [isExportingAll, setIsExportingAll] = useState(false);
-  
+
   const [loading, setLoading] = useState(true);
-  const [students, setStudents] = useState<any[]>([]);
-  const [grades, setGrades] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
+  const [students, setStudents] = useState<Record<string, unknown>[]>([]);
+  const [grades, setGrades] = useState<Record<string, unknown>[]>([]);
+  const [courses, setCourses] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -94,7 +94,7 @@ export default function Reports() {
     try {
       setLoading(true);
       // Fetch students
-      let studentsData: any[] = [];
+      let studentsData: Record<string, unknown>[] = [];
       try {
         const profilesSnap = await getDocs(
           query(collection(db, "profiles"), where("role", "==", "student"))
@@ -119,7 +119,7 @@ export default function Reports() {
         ...courseUnitsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
       ];
       setCourses(coursesData);
-      
+
     } catch (error) {
       console.error("Error fetching report data:", error);
       toast.error("Failed to load report data");
@@ -131,13 +131,13 @@ export default function Reports() {
   // Memoized Report Data
   const reportData = useMemo(() => {
     // 1. Enrollment by Program
-    const programCounts = students.reduce((acc, s) => {
-      const prog = s.program || "Unknown Core";
+    const programCounts = students.reduce((acc: Record<string, number>, s: any) => {
+      const prog = typeof s.program === 'string' ? s.program : "Unknown Core";
       acc[prog] = (acc[prog] || 0) + 1;
       return acc;
     }, {});
     const enrollment = Object.keys(programCounts).map(k => ({ name: k, value: programCounts[k] }))
-      .sort((a: any, b: any) => b.value - a.value);
+      .sort((a, b) => b.value - a.value);
 
     // 2. Academic Performance (CGPA bands)
     const cgpas = students.map(student => {
@@ -146,8 +146,8 @@ export default function Reports() {
       let totalCredits = 0;
       studentGrades.forEach(g => {
         const c = courses.find(cr => cr.id === g.course_id);
-        const credits = c?.credits ?? 3;
-        totalPoints += (g.gp || 0) * credits;
+        const credits = typeof c?.credits === 'number' ? c.credits : 3;
+        totalPoints += (typeof g.gp === 'number' ? g.gp : 0) * credits;
         totalCredits += credits;
       });
       return totalCredits > 0 ? totalPoints / totalCredits : 0;
@@ -164,29 +164,29 @@ export default function Reports() {
     const performance = Object.keys(bands).map(k => ({ name: k, value: bands[k] })).filter(b => b.value > 0);
 
     // 3. Graduation Statistics (By Year of Study)
-    const yearCounts = students.reduce((acc, s) => {
+    const yearCounts = students.reduce((acc: Record<string, number>, s: any) => {
       const yr = `Year ${s.year_of_study || s.yearOfStudy || 1}`;
       acc[yr] = (acc[yr] || 0) + 1;
       return acc;
     }, {});
     const graduation = Object.keys(yearCounts).map(k => ({ name: k, value: yearCounts[k] }))
-      .sort((a: any, b: any) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     // 4. Department Summary (Grouping programs roughly by "Department" if they contain keywords, otherwise just top programs)
     const departmentMap: Record<string, number> = {};
-    students.forEach(s => {
-      const p = (s.program || "").toLowerCase();
+    students.forEach((s: any) => {
+      const p = (typeof s.program === 'string' ? s.program : "").toLowerCase();
       let dept = "Other";
       if (p.includes("computer") || p.includes("software") || p.includes("it")) dept = "Computing & IT";
       else if (p.includes("business") || p.includes("accounting") || p.includes("finance")) dept = "Business School";
       else if (p.includes("engineer") || p.includes("civil") || p.includes("electrical")) dept = "Engineering";
       else if (p.includes("law") || p.includes("legal")) dept = "Law School";
       else if (p.includes("medicine") || p.includes("nursing") || p.includes("health")) dept = "Health Sciences";
-      
+
       departmentMap[dept] = (departmentMap[dept] || 0) + 1;
     });
     const department = Object.keys(departmentMap).map(k => ({ name: k, value: departmentMap[k] }))
-      .sort((a: any, b: any) => b.value - a.value);
+      .sort((a, b) => b.value - a.value);
 
     return { enrollment, performance, graduation, department };
   }, [students, grades, courses]);
@@ -194,12 +194,12 @@ export default function Reports() {
   const generateCSVContent = (reportName: string) => {
     let reportConf = reportTypes.find(r => r.name === reportName);
     if (!reportConf) return "";
-    
-    const data = reportData[reportConf.dataKey as keyof typeof reportData];
-    if (!data.length) return "Category,Count\nNo Data,0";
+
+    const data = reportData[reportConf.dataKey as keyof typeof reportData] as Array<{ name: string; value: number }>;
+    if (!data || !data.length) return "Category,Count\nNo Data,0";
 
     const rows: string[] = ["Category,Count"];
-    data.forEach((d: any) => {
+    data.forEach(d => {
       rows.push(`"${d.name}",${d.value}`);
     });
     return rows.join("\n");
@@ -235,19 +235,19 @@ export default function Reports() {
     setIsExportingAll(true);
     try {
       if (students.length === 0) throw new Error("No data available");
-      
+
       reportTypes.forEach((report, idx) => {
         setTimeout(() => {
           const csvContent = generateCSVContent(report.name);
           downloadCSV(`${report.name.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`, csvContent);
         }, idx * 500); // Stagger downloads slightly
       });
-      
+
       setTimeout(() => {
         toast.success("All reports exported successfully.");
         setIsExportingAll(false);
       }, reportTypes.length * 500);
-      
+
     } catch {
       toast.error("Failed to export all reports.");
       setIsExportingAll(false);
@@ -255,12 +255,12 @@ export default function Reports() {
   };
 
   const renderChart = (dataKey: string, chartType: string) => {
-    const data = reportData[dataKey as keyof typeof reportData];
+    const data = reportData[dataKey as keyof typeof reportData] as Array<{ name: string; value: number }>;
     if (!data || data.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center h-full">
-           <BarChart3 className="h-12 w-12 text-muted-foreground opacity-50 mb-4" />
-           <p className="text-muted-foreground">No data available for this report.</p>
+          <BarChart3 className="h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+          <p className="text-muted-foreground">No data available for this report.</p>
         </div>
       );
     }
@@ -279,7 +279,7 @@ export default function Reports() {
               fill="#8884d8"
               dataKey="value"
             >
-              {data.map((entry: any, index: number) => (
+              {data.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -294,18 +294,18 @@ export default function Reports() {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
           <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis 
-            dataKey="name" 
-            angle={-45} 
-            textAnchor="end" 
-            height={80} 
+          <XAxis
+            dataKey="name"
+            angle={-45}
+            textAnchor="end"
+            height={80}
             interval={0}
-            tick={{fontSize: 12}}
+            tick={{ fontSize: 12 }}
           />
           <YAxis allowDecimals={false} />
-          <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => [`${value} students`, "Count"]} />
+          <Tooltip cursor={{ fill: 'transparent' }} formatter={(value) => [`${value} students`, "Count"]} />
           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]}>
-             {data.map((entry: any, index: number) => (
+            {data.map((_entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>
@@ -392,12 +392,12 @@ export default function Reports() {
           </div>
           <div className="w-full h-[350px]">
             {loading ? (
-               <div className="flex flex-col items-center justify-center h-full">
-                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-                 <p className="text-muted-foreground">Loading school data...</p>
-               </div>
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                <p className="text-muted-foreground">Loading school data...</p>
+              </div>
             ) : (
-               renderChart("enrollment", "bar")
+              renderChart("enrollment", "bar")
             )}
           </div>
         </div>
