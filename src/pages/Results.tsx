@@ -410,6 +410,64 @@ export default function Results() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (!filteredResults.length) {
+      toast.error("No results to export.");
+      return;
+    }
+
+    const headers = [
+      "Student Number",
+      "Student Name",
+      "Program",
+      "Year of Study",
+      "Course Code",
+      "Course Title",
+      "Academic Year",
+      "Semester",
+      "Marks",
+      "Grade",
+      "CGPA"
+    ];
+
+    const rows: string[] = [];
+    rows.push(headers.join(","));
+
+    filteredResults.forEach(result => {
+      result.terms.forEach(term => {
+        term.entries.forEach(e => {
+          const row = [
+            `"${result.studentNumber}"`,
+            `"${result.studentName}"`,
+            `"${result.program}"`,
+            result.yearOfStudy,
+            `"${e.courseCode}"`,
+            `"${e.courseTitle}"`,
+            `"${e.academic_year}"`,
+            e.semester,
+            e.marks,
+            `"${e.grade ?? "—"}"`,
+            result.cgpa.toFixed(2)
+          ];
+          rows.push(row.join(","));
+        });
+      });
+    });
+
+    const csvContent = rows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `results_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Results exported to CSV");
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -444,7 +502,12 @@ export default function Results() {
               <Printer className="h-4 w-4 mr-2" />
               Print Results
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCSV}
+              disabled={loading || filteredResults.length === 0}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -570,8 +633,7 @@ export default function Results() {
                         <td className="p-3">{result.totalCredits}</td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              result.cgpa >= 4.5
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${result.cgpa >= 4.5
                                 ? "bg-green-100 text-green-800"
                                 : result.cgpa >= 4.0
                                   ? "bg-blue-100 text-blue-800"
@@ -580,7 +642,7 @@ export default function Results() {
                                     : result.cgpa >= 3.0
                                       ? "bg-yellow-100 text-yellow-800"
                                       : "bg-red-100 text-red-800"
-                            }`}
+                              }`}
                           >
                             {result.cgpa >= 4.5
                               ? "Excellent"
