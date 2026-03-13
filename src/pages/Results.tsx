@@ -410,62 +410,66 @@ export default function Results() {
     }
   };
 
-  const handleExportCSV = () => {
-    if (!filteredResults.length) {
-      toast.error("No results to export.");
+  const handleExportCsv = () => {
+    if (filteredResults.length === 0) {
+      toast.error("No results to export. Adjust your filters first.");
       return;
     }
 
-    const headers = [
+    const rows: string[] = [];
+    const header = [
       "Student Number",
       "Student Name",
       "Program",
-      "Year of Study",
-      "Course Code",
-      "Course Title",
+      "Year Of Study",
+      "CGPA",
+      "Total Credits",
       "Academic Year",
       "Semester",
+      "Course Code",
+      "Course Title",
       "Marks",
       "Grade",
-      "CGPA"
     ];
+    rows.push(header.join(","));
 
-    const rows: string[] = [];
-    rows.push(headers.join(","));
-
-    filteredResults.forEach(result => {
-      result.terms.forEach(term => {
-        term.entries.forEach(e => {
-          const row = [
-            `"${result.studentNumber}"`,
-            `"${result.studentName}"`,
-            `"${result.program}"`,
-            result.yearOfStudy,
-            `"${e.courseCode}"`,
-            `"${e.courseTitle}"`,
-            `"${e.academic_year}"`,
-            e.semester,
-            e.marks,
-            `"${e.grade ?? "—"}"`,
-            result.cgpa.toFixed(2)
+    filteredResults.forEach((result) => {
+      result.terms.forEach((term) => {
+        term.entries.forEach((e) => {
+          const record = [
+            result.studentNumber,
+            `"${result.studentName.replace(/"/g, '""')}"`,
+            `"${result.program.replace(/"/g, '""')}"`,
+            String(result.yearOfStudy),
+            result.cgpa.toFixed(2),
+            String(result.totalCredits),
+            e.academic_year,
+            String(e.semester),
+            e.courseCode,
+            `"${e.courseTitle.replace(/"/g, '""')}"`,
+            String(e.marks),
+            e.grade ?? "",
           ];
-          rows.push(row.join(","));
+          rows.push(record.join(","));
         });
       });
     });
 
     const csvContent = rows.join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `results_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `results-export-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    toast.success("Results exported to CSV");
+    toast.success("Results exported as CSV for the current filters.");
   };
 
   return (
@@ -505,7 +509,7 @@ export default function Results() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportCSV}
+              onClick={handleExportCsv}
               disabled={loading || filteredResults.length === 0}
             >
               <Download className="h-4 w-4 mr-2" />
@@ -633,7 +637,8 @@ export default function Results() {
                         <td className="p-3">{result.totalCredits}</td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${result.cgpa >= 4.5
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              result.cgpa >= 4.5
                                 ? "bg-green-100 text-green-800"
                                 : result.cgpa >= 4.0
                                   ? "bg-blue-100 text-blue-800"
@@ -642,7 +647,7 @@ export default function Results() {
                                     : result.cgpa >= 3.0
                                       ? "bg-yellow-100 text-yellow-800"
                                       : "bg-red-100 text-red-800"
-                              }`}
+                            }`}
                           >
                             {result.cgpa >= 4.5
                               ? "Excellent"
