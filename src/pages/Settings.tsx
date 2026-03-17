@@ -8,12 +8,19 @@ import {
   Shield,
   Database,
   Mail,
+  FileText,
+  Activity,
+  CheckCircle,
+  AlertCircle,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { auth } from "@/lib/firebase";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { toast } from "sonner";
 import {
   EmailAuthProvider,
@@ -33,6 +40,7 @@ const settingsSections = [
   { id: "profile", name: "Profile", icon: User },
   { id: "notifications", name: "Notifications", icon: Bell },
   { id: "security", name: "Security", icon: Shield },
+  { id: "evaluations", name: "Evaluations", icon: FileText },
   { id: "database", name: "Database", icon: Database },
   { id: "email", name: "Email Templates", icon: Mail },
 ];
@@ -43,6 +51,7 @@ export default function Settings() {
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const securityRef = useRef<HTMLDivElement>(null);
+  const evaluationsRef = useRef<HTMLDivElement>(null);
   const databaseRef = useRef<HTMLDivElement>(null);
   const emailRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +59,7 @@ export default function Settings() {
     profile: profileRef,
     notifications: notificationsRef,
     security: securityRef,
+    evaluations: evaluationsRef,
     database: databaseRef,
     email: emailRef,
   };
@@ -66,6 +76,76 @@ export default function Settings() {
   const [selectedTemplate, setSelectedTemplate] = useState("enrollment");
   const [templateSubject, setTemplateSubject] = useState("");
   const [templateBody, setTemplateBody] = useState("");
+
+  const [lecturers, setLecturers] = useState<any[]>([]);
+  const [selectedLecturerId, setSelectedLecturerId] = useState("");
+  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
+  const [isSendingSurvey, setIsSendingSurvey] = useState(false);
+  const [analysisReport, setAnalysisReport] = useState<{ strengths: string[], weaknesses: string[], actionable: string } | null>(null);
+
+  useEffect(() => {
+    const fetchLecturers = async () => {
+      try {
+        const q = query(
+          collection(db, "profiles"),
+          where("role", "==", "lecturer"),
+        );
+        const querySnapshot = await getDocs(q);
+        const lecturersData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLecturers(lecturersData);
+      } catch (error) {
+        console.error("Error fetching lecturers:", error);
+      }
+    };
+    fetchLecturers();
+  }, []);
+
+  const handleSendSurvey = async () => {
+    if (!selectedLecturerId) {
+      toast.error("Please select a lecturer to create a survey for.");
+      return;
+    }
+    setIsSendingSurvey(true);
+    
+    // Simulate sending survey
+    setTimeout(() => {
+      setIsSendingSurvey(false);
+      const selectedLecturer = lecturers.find(l => l.id === selectedLecturerId);
+      const name = selectedLecturer ? `${selectedLecturer.first_name} ${selectedLecturer.last_name}` : "the selected lecturer";
+      toast.success(`Evaluation survey created and sent to all students enrolled with ${name}.`);
+    }, 1500);
+  };
+
+  const handleGenerateAnalysis = async () => {
+    if (!selectedLecturerId) {
+      toast.error("Please select a lecturer to evaluate.");
+      return;
+    }
+    setIsGeneratingAnalysis(true);
+    setAnalysisReport(null);
+    
+    // Simulate AI processing time
+    setTimeout(() => {
+      setIsGeneratingAnalysis(false);
+      setAnalysisReport({
+        strengths: [
+          "Clear explanation of complex concepts.",
+          "High availability during office hours.",
+          "Engaging and interactive lecture style."
+        ],
+        weaknesses: [
+          "Occasional delays in grading assignments.",
+          "Course material could be updated more frequently with modern examples.",
+          "Pacing in the latter half of the semester felt rushed to some students."
+        ],
+        actionable: "Focus on establishing a stricter timeline for grading feedback. Consider integrating a few more recent case studies into the syllabus. Distribute the final few weeks' coursework more evenly."
+      });
+      toast.success("AI analysis generated successfully.");
+    }, 2500);
+  };
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -320,6 +400,104 @@ export default function Settings() {
                   </div>
                   <Switch />
                 </div>
+              </div>
+            </div>
+
+            {/* Evaluations Section */}
+            <div ref={evaluationsRef} className="rounded-xl border border-border bg-card p-6 scroll-mt-24" data-section="evaluations">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground">Lecturer Evaluations</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Analyze student feedback and generate performance reports
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Select Lecturer to Evaluate</Label>
+                  <Select value={selectedLecturerId} onValueChange={setSelectedLecturerId}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose a lecturer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {lecturers.map((lecturer) => (
+                        <SelectItem key={lecturer.id} value={lecturer.id}>
+                          {lecturer.first_name} {lecturer.last_name} ({lecturer.department || 'No dept'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    onClick={handleSendSurvey} 
+                    disabled={!selectedLecturerId || isSendingSurvey || isGeneratingAnalysis}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    <Send className={`h-4 w-4 ${isSendingSurvey ? 'animate-pulse' : ''}`} />
+                    {isSendingSurvey ? 'Sending Survey...' : 'Send Survey to Students'}
+                  </Button>
+                  
+                  <Button 
+                    variant="secondary"
+                    onClick={handleGenerateAnalysis} 
+                    disabled={!selectedLecturerId || isGeneratingAnalysis || isSendingSurvey}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    <Activity className={`h-4 w-4 ${isGeneratingAnalysis ? 'animate-spin' : ''}`} />
+                    {isGeneratingAnalysis ? 'Analyzing Student Feedback...' : 'Generate AI Analysis'}
+                  </Button>
+                </div>
+
+                {analysisReport && (
+                  <div className="mt-6 p-6 rounded-lg border bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-sm">
+                    <div className="flex items-center justify-between mb-4 border-b pb-4">
+                      <h3 className="font-display text-xl font-bold text-foreground">AI Evaluation Report</h3>
+                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">Automated Insight</span>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <h4 className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
+                          <CheckCircle className="h-4 w-4" /> Strong Points
+                        </h4>
+                        <ul className="space-y-2">
+                          {analysisReport.strengths.map((str, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
+                              <span className="text-green-500 mt-0.5">•</span> {str}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="flex items-center gap-2 font-semibold text-amber-600 dark:text-amber-400">
+                          <AlertCircle className="h-4 w-4" /> Areas for Improvement (Weaknesses)
+                        </h4>
+                        <ul className="space-y-2">
+                          {analysisReport.weaknesses.map((weak, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
+                              <span className="text-amber-500 mt-0.5">•</span> {weak}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-primary/5 p-4 rounded-md border border-primary/10 mt-4">
+                        <h4 className="font-semibold text-primary text-sm mb-2">Actionable Feedback for Lecturer</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {analysisReport.actionable}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
