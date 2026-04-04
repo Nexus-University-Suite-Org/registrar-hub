@@ -1,41 +1,388 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { GraduationCap, ArrowRight, Users, FileText, BarChart3, Shield, Sparkles, Zap, Check, Play, X } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  GraduationCap,
+  ArrowRight,
+  Users,
+  FileText,
+  BarChart3,
+  Shield,
+  Sparkles,
+  Zap,
+  Check,
+  Play,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Palette,
+  Settings,
+  Upload,
+  Eye,
+} from "lucide-react";
+import { useBranding } from "@/hooks/useBranding";
+
+const DemoWalkthrough = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const { branding } = useBranding();
+
+  const demoSteps = [
+    {
+      title: "Welcome to Your Customizable Academic Portal",
+      content: (
+        <div className="space-y-4">
+          <p className="text-lg text-muted-foreground">
+            This open-source academic management system is fully customizable for any institution.
+            Let's walk through the key features and customization options.
+          </p>
+          <div className="bg-gradient-to-r from-primary/10 to-orange-500/10 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">What makes this portal special?</h4>
+            <ul className="space-y-1 text-sm">
+              <li>• Fully customizable branding without code changes</li>
+              <li>• Real-time customization via web interface</li>
+              <li>• Firebase-powered backend for scalability</li>
+              <li>• Modern React/TypeScript architecture</li>
+            </ul>
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="aspect-video bg-gradient-to-br from-primary/20 to-orange-500/20 rounded-lg flex items-center justify-center">
+          <div className="text-center">
+            <GraduationCap className="h-16 w-16 mx-auto text-primary mb-4" />
+            <h3 className="text-xl font-bold">Academic Portal</h3>
+            <p className="text-muted-foreground">Customizable & Open Source</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Branding Customization - Site Name",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Change the portal name to match your institution. This updates everywhere in the app.
+          </p>
+          <div className="bg-card p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">Current Settings:</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Site Name:</span>
+                <span className="font-mono text-primary">{branding.siteName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Meta Description:</span>
+                <span className="font-mono text-sm">{branding.metaDescription}</span>
+              </div>
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <strong>How to change:</strong> Settings → Branding → Site Name field
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="space-y-4">
+          <div className="bg-card p-4 rounded-lg border">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
+                <GraduationCap className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <span className="font-display font-bold text-xl">{branding.siteName}</span>
+            </div>
+            <p className="text-sm text-muted-foreground">This appears in the sidebar, title bar, and throughout the app</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Logo Customization",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Upload your institution's logo. Supports PNG, JPG, and SVG formats.
+          </p>
+          <div className="bg-card p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">Logo Upload Process:</h4>
+            <ol className="space-y-2 text-sm list-decimal list-inside">
+              <li>Go to Settings → Branding</li>
+              <li>Click "Choose File" in the Logo section</li>
+              <li>Select your logo image</li>
+              <li>Click "Save Branding Settings"</li>
+              <li>Logo appears instantly across the app</li>
+            </ol>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <strong>Storage:</strong> Logos are securely stored in Firebase Storage
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="space-y-4">
+          <div className="bg-card p-6 rounded-lg border">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20">
+                {branding.logoUrl ? (
+                  <img src={branding.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />
+                ) : (
+                  <GraduationCap className="h-8 w-8 text-primary" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold">{branding.siteName}</h3>
+                <p className="text-sm text-muted-foreground">Logo appears here and in navigation</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Color Theme Customization",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Customize the primary color to match your institution's brand colors.
+          </p>
+          <div className="bg-card p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">Current Theme:</h4>
+            <div className="flex items-center gap-4">
+              <div
+                className="w-8 h-8 rounded-full border-2 border-white shadow-lg"
+                style={{ backgroundColor: branding.primaryColor }}
+              ></div>
+              <span className="font-mono text-sm">{branding.primaryColor}</span>
+            </div>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <strong>How to change:</strong> Settings → Branding → Primary Color picker
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-card p-4 rounded-lg border">
+              <Button className="w-full" style={{ backgroundColor: branding.primaryColor }}>
+                Primary Button
+              </Button>
+            </div>
+            <div className="bg-card p-4 rounded-lg border">
+              <Button variant="outline" className="w-full">
+                Outline Button
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Colors update instantly across the entire application
+          </p>
+        </div>
+      )
+    },
+    {
+      title: "Firebase-Powered Backend",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            All customization settings are stored in Firebase Firestore and Storage.
+          </p>
+          <div className="bg-card p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">Data Structure:</h4>
+            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+{`settings/branding:
+{
+  "siteName": "${branding.siteName}",
+  "logoUrl": "${branding.logoUrl || 'null'}",
+  "primaryColor": "${branding.primaryColor}",
+  "metaDescription": "${branding.metaDescription}"
+}`}
+            </pre>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <strong>Benefits:</strong> Real-time sync, secure storage, scalable architecture
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-blue-500/10 to-green-500/10 p-6 rounded-lg">
+            <div className="flex items-center justify-center gap-4">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                  <Settings className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold">Firestore</p>
+                <p className="text-xs text-muted-foreground">Settings Storage</p>
+              </div>
+              <ArrowRight className="h-6 w-6 text-muted-foreground" />
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-2">
+                  <Upload className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold">Storage</p>
+                <p className="text-xs text-muted-foreground">Logo Files</p>
+              </div>
+              <ArrowRight className="h-6 w-6 text-muted-foreground" />
+              <div className="text-center">
+                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-2">
+                  <Eye className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-semibold">Live App</p>
+                <p className="text-xs text-muted-foreground">Real-time Updates</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Open Source & Deployment Ready",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            This portal is fully open source and ready for institutional deployment.
+          </p>
+          <div className="bg-card p-4 rounded-lg border">
+            <h4 className="font-semibold mb-2">Deployment Steps:</h4>
+            <ol className="space-y-2 text-sm list-decimal list-inside">
+              <li>Clone the repository</li>
+              <li>Set up Firebase project</li>
+              <li>Configure environment variables</li>
+              <li>Deploy to your hosting platform</li>
+              <li>Customize branding via web interface</li>
+            </ol>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            <strong>Tech Stack:</strong> React, TypeScript, Tailwind CSS, Firebase, Vite
+          </div>
+        </div>
+      ),
+      visual: (
+        <div className="space-y-4">
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-6 rounded-lg">
+            <div className="text-center">
+              <Sparkles className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="font-bold text-lg mb-2">Ready to Deploy</h3>
+              <p className="text-sm text-muted-foreground">
+                Clone, configure, customize, and deploy your own branded academic portal
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const nextStep = () => {
+    if (currentStep < demoSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Progress Bar */}
+      <div className="w-full bg-muted rounded-full h-2">
+        <div
+          className="bg-primary h-2 rounded-full transition-all duration-300"
+          style={{ width: `${((currentStep + 1) / demoSteps.length) * 100}%` }}
+        ></div>
+      </div>
+
+      {/* Step Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <h3 className="text-xl font-bold">{demoSteps[currentStep].title}</h3>
+          {demoSteps[currentStep].content}
+        </div>
+        <div className="flex items-center justify-center">
+          {demoSteps[currentStep].visual}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-4 border-t">
+        <Button
+          variant="outline"
+          onClick={prevStep}
+          disabled={currentStep === 0}
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+
+        <div className="text-sm text-muted-foreground">
+          Step {currentStep + 1} of {demoSteps.length}
+        </div>
+
+        <Button
+          onClick={currentStep === demoSteps.length - 1 ? () => window.open('/auth', '_blank') : nextStep}
+        >
+          {currentStep === demoSteps.length - 1 ? (
+            <>
+              Get Started
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </>
+          ) : (
+            <>
+              Next
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const features = [
   {
     icon: Users,
-    title: 'Student Management',
-    description: 'Complete CRUD operations for student records with powerful search and filtering capabilities',
-    color: 'from-primary to-orange-400',
+    title: "Student Management",
+    description:
+      "Complete CRUD operations for student records with powerful search and filtering capabilities",
+    color: "from-primary to-orange-400",
   },
   {
     icon: FileText,
-    title: 'Transcript Access',
-    description: 'Generate and manage academic transcripts with secure, instant access',
-    color: 'from-amber-500 to-orange-500',
+    title: "Transcript Access",
+    description:
+      "Generate and manage academic transcripts with secure, instant access",
+    color: "from-amber-500 to-orange-500",
   },
   {
     icon: BarChart3,
-    title: 'Analytics & Reports',
-    description: 'Comprehensive insights on enrollment trends and academic performance',
-    color: 'from-orange-500 to-red-400',
+    title: "Analytics & Reports",
+    description:
+      "Comprehensive insights on enrollment trends and academic performance",
+    color: "from-orange-500 to-red-400",
   },
   {
     icon: Shield,
-    title: 'Secure Access',
-    description: 'Enterprise-grade security with role-based authentication',
-    color: 'from-red-400 to-primary',
+    title: "Secure Access",
+    description: "Enterprise-grade security with role-based authentication",
+    color: "from-red-400 to-primary",
   },
 ];
 
 const stats = [
-  { value: '10,000+', label: 'Students Managed' },
-  { value: '99.9%', label: 'Uptime' },
-  { value: '50+', label: 'Universities' },
-  { value: '24/7', label: 'Support' },
+  { value: "10,000+", label: "Students Managed" },
+  { value: "99.9%", label: "Uptime" },
+  { value: "50+", label: "Universities" },
+  { value: "24/7", label: "Support" },
 ];
 
 export default function Index() {
@@ -43,9 +390,9 @@ export default function Index() {
   const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem('registrar_authenticated');
+    const isAuthenticated = localStorage.getItem("registrar_authenticated");
     if (isAuthenticated) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [navigate]);
 
@@ -66,10 +413,17 @@ export default function Index() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" className="hidden sm:flex" onClick={() => navigate('/auth')}>
+            <Button
+              variant="ghost"
+              className="hidden sm:flex"
+              onClick={() => navigate("/auth")}
+            >
               Sign In
             </Button>
-            <Button onClick={() => navigate('/auth')} className="shadow-primary">
+            <Button
+              onClick={() => navigate("/auth")}
+              className="shadow-primary"
+            >
               Get Started
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -84,7 +438,7 @@ export default function Index() {
         <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-primary/10 blur-3xl animate-pulse-soft" />
         <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-primary/5 blur-3xl animate-float" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/5 to-transparent blur-3xl" />
-        
+
         <div className="container mx-auto relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
@@ -96,11 +450,20 @@ export default function Index() {
 
             {/* Main heading */}
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold text-foreground leading-[1.1] tracking-tight animate-slide-up">
-              Streamline Your{' '}
+              Streamline Your{" "}
               <span className="relative">
                 <span className="text-gradient">Student Records</span>
-                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                  <path d="M2 10C50 4 100 2 150 6C200 10 250 8 298 4" stroke="url(#gradient)" strokeWidth="3" strokeLinecap="round"/>
+                <svg
+                  className="absolute -bottom-2 left-0 w-full"
+                  viewBox="0 0 300 12"
+                  fill="none"
+                >
+                  <path
+                    d="M2 10C50 4 100 2 150 6C200 10 250 8 298 4"
+                    stroke="url(#gradient)"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
                   <defs>
                     <linearGradient id="gradient" x1="0" y1="0" x2="300" y2="0">
                       <stop stopColor="hsl(24, 100%, 50%)" />
@@ -108,20 +471,21 @@ export default function Index() {
                     </linearGradient>
                   </defs>
                 </svg>
-              </span>{' '}
+              </span>{" "}
               Management
             </h1>
 
             <p className="mt-8 text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed animate-slide-up stagger-1 opacity-0">
-              A comprehensive portal for registrars to manage student records, 
-              enrollment, transcripts, and academic data with unmatched ease and efficiency.
+              A comprehensive portal for registrars to manage student records,
+              enrollment, transcripts, and academic data with unmatched ease and
+              efficiency.
             </p>
 
             {/* CTA Buttons */}
             <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center animate-slide-up stagger-2 opacity-0">
-              <Button 
-                size="lg" 
-                onClick={() => navigate('/auth')}
+              <Button
+                size="lg"
+                onClick={() => navigate("/auth")}
                 className="h-14 px-8 text-base shadow-primary hover:shadow-glow transition-all duration-300"
               >
                 <Zap className="mr-2 h-5 w-5" />
@@ -129,8 +493,8 @@ export default function Index() {
               </Button>
               <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     variant="outline"
                     className="h-14 px-8 text-base glass border-border/50 hover:border-primary/30 hover:bg-accent/50"
                   >
@@ -138,113 +502,26 @@ export default function Index() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-2xl">
                       <Play className="h-6 w-6 text-primary" />
-                      Product Demo
+                      Interactive Demo: Customizable Academic Portal
                     </DialogTitle>
                   </DialogHeader>
-                  
-                  <div className="space-y-6">
-                    {/* Demo Video Placeholder */}
-                    <div className="aspect-video bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-lg flex items-center justify-center border-2 border-dashed border-primary/20">
-                      <div className="text-center space-y-4">
-                        <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                          <Play className="h-8 w-8 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">Demo Video Coming Soon</h3>
-                          <p className="text-muted-foreground">We're working on an amazing demo video to showcase all features</p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Demo Features */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-lg flex items-center gap-2">
-                          <Users className="h-5 w-5 text-primary" />
-                          Student Management
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li>• Add, edit, and manage student records</li>
-                          <li>• Advanced search and filtering</li>
-                          <li>• Bulk operations and data import</li>
-                          <li>• Student progress tracking</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-lg flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-primary" />
-                          Academic Records
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li>• Generate transcripts instantly</li>
-                          <li>• Secure document access</li>
-                          <li>• Automated grade calculations</li>
-                          <li>• Academic history tracking</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-lg flex items-center gap-2">
-                          <BarChart3 className="h-5 w-5 text-primary" />
-                          Analytics & Reports
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li>• Enrollment trend analysis</li>
-                          <li>• Performance dashboards</li>
-                          <li>• Custom report generation</li>
-                          <li>• Data export capabilities</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-lg flex items-center gap-2">
-                          <Shield className="h-5 w-5 text-primary" />
-                          Security & Access
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li>• Role-based authentication</li>
-                          <li>• Secure data encryption</li>
-                          <li>• Audit logs and tracking</li>
-                          <li>• Multi-factor authentication</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* Call to Action */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                      <Button 
-                        className="flex-1" 
-                        size="lg"
-                        onClick={() => {
-                          setDemoOpen(false);
-                          navigate('/auth');
-                        }}
-                      >
-                        <Zap className="mr-2 h-5 w-5" />
-                        Get Started Free
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="lg"
-                        className="flex-1"
-                        onClick={() => setDemoOpen(false)}
-                      >
-                        Close Demo
-                      </Button>
-                    </div>
-                  </div>
+                  <DemoWalkthrough />
                 </DialogContent>
               </Dialog>
             </div>
 
             {/* Trust indicators */}
             <div className="mt-16 flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground animate-slide-up stagger-3 opacity-0">
-              {['No credit card required', 'Free 14-day trial', 'Cancel anytime'].map((item) => (
+              {[
+                "No credit card required",
+                "Free 14-day trial",
+                "Cancel anytime",
+              ].map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-success" />
                   <span>{item}</span>
@@ -256,8 +533,8 @@ export default function Index() {
           {/* Stats */}
           <div className="mt-24 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {stats.map((stat, i) => (
-              <div 
-                key={stat.label} 
+              <div
+                key={stat.label}
                 className={`text-center p-6 rounded-2xl glass border border-border/50 hover-lift animate-scale-in stagger-${i + 1} opacity-0`}
               >
                 <div className="text-3xl sm:text-4xl font-display font-bold text-gradient">
@@ -275,15 +552,18 @@ export default function Index() {
       {/* Features Section */}
       <section className="py-32 px-6 relative">
         <div className="absolute inset-0 pattern-dots opacity-30" />
-        
+
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-20">
-            <span className="text-primary font-semibold text-sm uppercase tracking-wider">Features</span>
+            <span className="text-primary font-semibold text-sm uppercase tracking-wider">
+              Features
+            </span>
             <h2 className="mt-4 font-display text-4xl md:text-5xl font-bold text-foreground tracking-tight">
               Everything You Need
             </h2>
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Powerful features designed specifically for university registrars to streamline their workflow
+              Powerful features designed specifically for university registrars
+              to streamline their workflow
             </p>
           </div>
 
@@ -294,10 +574,14 @@ export default function Index() {
                 className="group relative overflow-hidden rounded-3xl border border-border/50 bg-card p-8 transition-all duration-500 hover:shadow-xl hover:-translate-y-2 hover:border-primary/20"
               >
                 {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-                
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}
+                />
+
                 {/* Icon */}
-                <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} shadow-lg mb-6 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}>
+                <div
+                  className={`relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.color} shadow-lg mb-6 transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl`}
+                >
                   <feature.icon className="h-8 w-8 text-white" />
                 </div>
 
@@ -327,18 +611,19 @@ export default function Index() {
             <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-white/10 blur-3xl -translate-y-1/2 translate-x-1/4" />
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-white/10 blur-3xl translate-y-1/2 -translate-x-1/4" />
             <div className="absolute inset-0 pattern-grid opacity-10" />
-            
+
             <div className="relative z-10 text-center max-w-3xl mx-auto">
               <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
                 Ready to Transform Your Workflow?
               </h2>
               <p className="mt-6 text-white/80 text-xl max-w-xl mx-auto leading-relaxed">
-                Join thousands of registrars who trust our platform to manage their student records efficiently
+                Join thousands of registrars who trust our platform to manage
+                their student records efficiently
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   size="lg"
-                  onClick={() => navigate('/auth')}
+                  onClick={() => navigate("/auth")}
                   className="h-14 px-8 text-base bg-white text-primary hover:bg-white/90 shadow-xl"
                 >
                   Start Free Trial
@@ -364,12 +649,20 @@ export default function Index() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-sm">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg text-foreground">Registrar Portal</span>
+            <span className="font-display font-bold text-lg text-foreground">
+              Registrar Portal
+            </span>
           </div>
           <div className="flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-            <a href="#" className="hover:text-foreground transition-colors">Support</a>
+            <a href="#" className="hover:text-foreground transition-colors">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-foreground transition-colors">
+              Terms
+            </a>
+            <a href="#" className="hover:text-foreground transition-colors">
+              Support
+            </a>
           </div>
           <p className="text-sm text-muted-foreground">
             © 2024 Registrar Portal. All rights reserved.
