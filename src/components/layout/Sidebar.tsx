@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/hooks/useBranding";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -45,6 +46,7 @@ interface SidebarProps {
 export function Sidebar({ onLogout, isOpen = false, onClose, unreadNotificationCount = 0 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { branding } = useBranding();
 
   return (
     <>
@@ -61,12 +63,21 @@ export function Sidebar({ onLogout, isOpen = false, onClose, unreadNotificationC
             <div className="relative">
               <div className="absolute inset-0 gradient-primary rounded-xl blur-md opacity-30" />
               <div className="relative flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
-                <GraduationCap className="h-6 w-6 text-primary-foreground" />
+                {branding.logoUrl ? (
+                  <img
+                    src={branding.logoUrl}
+                    alt="Logo"
+                    className="h-6 w-6 object-contain"
+                  />
+                ) : (
+                  <GraduationCap className="h-6 w-6 text-primary-foreground" />
+                )}
               </div>
             </div>
             {!collapsed && (
               <span className="font-display font-bold text-xl text-foreground">
-                Registrar
+                {branding.siteName.split(" ")[0]}{" "}
+                {/* Use first word or full name */}
               </span>
             )}
           </Link>

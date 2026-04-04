@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/hooks/useBranding";
 import {
   Users,
   UserCheck,
@@ -109,6 +110,7 @@ const categories = [...new Set(allTools.map((tool) => tool.category))];
 
 export default function Tools() {
   const navigate = useNavigate();
+  const { branding } = useBranding();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -136,7 +138,7 @@ export default function Tools() {
                   All Tools
                 </div>
                 <h1 className="font-display text-4xl lg:text-5xl font-bold text-foreground mb-2">
-                  Registrar Tools & Features
+                  {branding.siteName} Tools & Features
                 </h1>
                 <p className="text-muted-foreground text-lg max-w-2xl">
                   Access all available tools and features in the registrar
