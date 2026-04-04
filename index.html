@@ -1,29 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Registrar Portal</title>
-    <meta name="description" content="Registrar Portal" />
-    <meta name="author" content="Alvin" />
+    <!-- TODO: Update title dynamically based on branding settings -->
+    <title>Academic Portal</title>
+    <meta name="description" content="Academic Portal" />
+    <meta name="author" content="Your Institution" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Registrar Portal" />
-    <meta property="og:description" content="Registrar Portal" />
+    <!-- TODO: Update og:title and og:description dynamically -->
+    <meta property="og:title" content="Academic Portal" />
+    <meta property="og:description" content="Academic Portal" />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:image"
-      content=""
-    />
+    <meta property="og:image" content="" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="" />
-    <meta
-      name="twitter:image"
-      content=""
-    />
+    <meta name="twitter:image" content="" />
 
+    <!-- TODO: Update favicon dynamically if custom favicon is uploaded -->
     <link
       rel="icon"
       type="image/svg+xml"
@@ -34,5 +29,35 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Update meta tags dynamically when branding changes
+      window.updateMetaTags = function (branding) {
+        document.title = branding.siteName;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc)
+          metaDesc.setAttribute("content", branding.metaDescription);
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute("content", branding.siteName);
+        const ogDesc = document.querySelector(
+          'meta[property="og:description"]',
+        );
+        if (ogDesc) ogDesc.setAttribute("content", branding.metaDescription);
+        if (branding.ogImageUrl) {
+          const ogImage = document.querySelector('meta[property="og:image"]');
+          if (ogImage) ogImage.setAttribute("content", branding.ogImageUrl);
+          const twitterImage = document.querySelector(
+            'meta[name="twitter:image"]',
+          );
+          if (twitterImage)
+            twitterImage.setAttribute("content", branding.ogImageUrl);
+        }
+        if (branding.faviconUrl) {
+          const favicon = document.querySelector('link[rel="icon"]');
+          if (favicon) {
+            favicon.href = branding.faviconUrl;
+          }
+        }
+      };
+    </script>
   </body>
 </html>

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, ArrowRight, Users, FileText, BarChart3, Shield, Sparkles, Zap, Check } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { GraduationCap, ArrowRight, Users, FileText, BarChart3, Shield, Sparkles, Zap, Check, Play, X } from 'lucide-react';
 
 const features = [
   {
@@ -39,6 +40,7 @@ const stats = [
 
 export default function Index() {
   const navigate = useNavigate();
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('registrar_authenticated');
@@ -125,14 +127,119 @@ export default function Index() {
                 <Zap className="mr-2 h-5 w-5" />
                 Get Started Free
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="h-14 px-8 text-base glass border-border/50 hover:border-primary/30 hover:bg-accent/50"
-              >
-                Watch Demo
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              <Dialog open={demoOpen} onOpenChange={setDemoOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="h-14 px-8 text-base glass border-border/50 hover:border-primary/30 hover:bg-accent/50"
+                  >
+                    Watch Demo
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-2xl">
+                      <Play className="h-6 w-6 text-primary" />
+                      Product Demo
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6">
+                    {/* Demo Video Placeholder */}
+                    <div className="aspect-video bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-lg flex items-center justify-center border-2 border-dashed border-primary/20">
+                      <div className="text-center space-y-4">
+                        <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+                          <Play className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Demo Video Coming Soon</h3>
+                          <p className="text-muted-foreground">We're working on an amazing demo video to showcase all features</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Demo Features */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg flex items-center gap-2">
+                          <Users className="h-5 w-5 text-primary" />
+                          Student Management
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>• Add, edit, and manage student records</li>
+                          <li>• Advanced search and filtering</li>
+                          <li>• Bulk operations and data import</li>
+                          <li>• Student progress tracking</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-primary" />
+                          Academic Records
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>• Generate transcripts instantly</li>
+                          <li>• Secure document access</li>
+                          <li>• Automated grade calculations</li>
+                          <li>• Academic history tracking</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-primary" />
+                          Analytics & Reports
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>• Enrollment trend analysis</li>
+                          <li>• Performance dashboards</li>
+                          <li>• Custom report generation</li>
+                          <li>• Data export capabilities</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-primary" />
+                          Security & Access
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>• Role-based authentication</li>
+                          <li>• Secure data encryption</li>
+                          <li>• Audit logs and tracking</li>
+                          <li>• Multi-factor authentication</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Call to Action */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                      <Button 
+                        className="flex-1" 
+                        size="lg"
+                        onClick={() => {
+                          setDemoOpen(false);
+                          navigate('/auth');
+                        }}
+                      >
+                        <Zap className="mr-2 h-5 w-5" />
+                        Get Started Free
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="lg"
+                        className="flex-1"
+                        onClick={() => setDemoOpen(false)}
+                      >
+                        Close Demo
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Trust indicators */}
