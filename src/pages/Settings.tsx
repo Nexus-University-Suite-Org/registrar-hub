@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { useBranding } from "@/hooks/useBranding";
+import { updateExistingStudents } from "@/lib/studentMigration";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { branding } = useBranding();
@@ -116,7 +118,31 @@ export default function SettingsPage() {
         {/* Database */}
         <div ref={sectionRefs.database}>
           <h2 className="text-xl font-bold mb-4">Database</h2>
-          <p>Database management tools</p>
+          <p className="mb-4">Database management tools</p>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <h3 className="font-semibold mb-2">Student Data Migration</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Update existing students that may be missing department and program information.
+                This will set default values for students created before these fields were added.
+              </p>
+              <Button
+                onClick={async () => {
+                  try {
+                    const updatedCount = await updateExistingStudents();
+                    toast.success(`Successfully updated ${updatedCount} students with missing data`);
+                  } catch (error) {
+                    console.error("Migration failed:", error);
+                    toast.error("Failed to update student data");
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Run Student Migration
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Email Templates */}

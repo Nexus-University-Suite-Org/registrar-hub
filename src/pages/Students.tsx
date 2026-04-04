@@ -79,8 +79,8 @@ export default function Students() {
             profile.lastName ||
             "",
           email: profile.email || "",
-          department: profile.department || "",
-          program: profile.program || "",
+          department: profile.department || "Not Assigned",
+          program: profile.program || "Not Assigned",
           year_of_study: profile.year_of_study || profile.yearOfStudy || 1,
           status: profile.status || "Active",
           admission_date:

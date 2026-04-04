@@ -238,7 +238,7 @@ export default function Results() {
         );
         const totalCredits = allEntries.reduce((sum, entry) => sum + entry.credits, 0);
         const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
-        const program = student.program || "—";
+        const program = student.program || "Not Assigned";
         const yearOfStudy = student.year_of_study ?? 1;
         classSet.add(`${program} - Year ${yearOfStudy}`);
 
