@@ -42,12 +42,7 @@ import {
 import { toast } from "sonner";
 import { FeeAssignment } from "@/types/fee";
 
-const ACADEMIC_YEARS = [
-  "2025/2026",
-  "2024/2025",
-  "2023/2024",
-  "2022/2023",
-];
+const ACADEMIC_YEARS = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
 
 const YEAR_LEVELS = [1, 2, 3, 4, 5];
 const SEMESTERS = [1, 2];
@@ -80,6 +75,35 @@ const COMMON_CATEGORIES = [
   "Other",
 ];
 
+const DEFAULT_SEMESTER_TARGET = 2000000;
+
+const FEE_TEMPLATES = [
+  {
+    label: "Tuition",
+    item_name: "Bachelor of Science in Computer Science",
+    category: "Tuition Fees",
+    amount: "1900000",
+  },
+  {
+    label: "Registration",
+    item_name: "Registration",
+    category: "Functional Fees",
+    amount: "132250",
+  },
+  {
+    label: "Examination",
+    item_name: "Examination",
+    category: "Functional Fees",
+    amount: "132250",
+  },
+  {
+    label: "Technology",
+    item_name: "Technology",
+    category: "Functional Fees",
+    amount: "66125",
+  },
+];
+
 export default function Fees() {
   const navigate = useNavigate();
   const [feeAssignments, setFeeAssignments] = useState<FeeAssignment[]>([]);
@@ -89,10 +113,12 @@ export default function Fees() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedFee, setSelectedFee] = useState<FeeAssignment | null>(null);
+  const [semesterTargetTotal] = useState(DEFAULT_SEMESTER_TARGET);
 
   const [feeForm, setFeeForm] = useState({
     item_name: "",
     category: COMMON_CATEGORIES[0],
+    custom_category: "",
     year_level: 1,
     semester: 1,
     academic_year: ACADEMIC_YEARS[0],
@@ -145,11 +171,15 @@ export default function Fees() {
           return {
             id: d.id,
             item_name:
-              data.item_name || data.course_name || data.course_code || "Untitled item",
+              data.item_name ||
+              data.course_name ||
+              data.course_code ||
+              "Untitled item",
             category: data.category || "Uncategorized",
             year_level: data.year_level || data.yearLevel || 1,
             semester: data.semester || 1,
-            academic_year: data.academic_year || data.academicYear || ACADEMIC_YEARS[0],
+            academic_year:
+              data.academic_year || data.academicYear || ACADEMIC_YEARS[0],
             amount: Number(data.amount || 0),
             currency: data.currency || "UGX",
             college: data.college || college,
@@ -161,7 +191,8 @@ export default function Fees() {
           if (a.semester !== b.semester) return a.semester - b.semester;
           if (a.academic_year !== b.academic_year)
             return b.academic_year.localeCompare(a.academic_year);
-          if (a.category !== b.category) return a.category.localeCompare(b.category);
+          if (a.category !== b.category)
+            return a.category.localeCompare(b.category);
           return a.item_name.localeCompare(b.item_name);
         });
       setFeeAssignments(feesData);
@@ -177,6 +208,7 @@ export default function Fees() {
     setFeeForm({
       item_name: "",
       category: COMMON_CATEGORIES[0],
+      custom_category: "",
       year_level: 1,
       semester: 1,
       academic_year: ACADEMIC_YEARS[0],
@@ -192,6 +224,9 @@ export default function Fees() {
     setFeeForm({
       item_name: fee.item_name,
       category: fee.category,
+      custom_category: COMMON_CATEGORIES.includes(fee.category)
+        ? ""
+        : fee.category,
       year_level: fee.year_level,
       semester: fee.semester,
       academic_year: fee.academic_year,
@@ -201,11 +236,27 @@ export default function Fees() {
     setIsModalOpen(true);
   };
 
-  const handleSaveFee = async () => {
+  const getStructureTotalForForm = () => {
+    return feeAssignments
+      .filter(
+        (fee) =>
+          fee.academic_year === feeForm.academic_year &&
+          fee.year_level === feeForm.year_level &&
+          fee.semester === feeForm.semester,
+      )
+      .reduce((sum, fee) => {
+        if (modalMode === "edit" && selectedFee?.id === fee.id) {
+          return sum;
+        }
+        return sum + Number(fee.amount || 0);
+      }, 0);
+  };
+
+  const handleSaveFee = async (keepOpen = false) => {
     const amountNum = parseFloat(feeForm.amount);
     if (
       !feeForm.item_name ||
-      !feeForm.category ||
+      !(feeForm.category || feeForm.custom_category) ||
       !feeForm.academic_year ||
       isNaN(amountNum) ||
       amountNum < 0
@@ -217,7 +268,7 @@ export default function Fees() {
     try {
       const payload = {
         item_name: feeForm.item_name.trim(),
-        category: feeForm.category.trim(),
+        category: (feeForm.custom_category || feeForm.category).trim(),
         year_level: feeForm.year_level,
         semester: feeForm.semester,
         academic_year: feeForm.academic_year,
@@ -235,7 +286,28 @@ export default function Fees() {
         toast.success("Fee updated successfully");
       }
 
-      setIsModalOpen(false);
+      const nextStructureTotal =
+        getStructureTotalForForm() + (modalMode === "add" ? amountNum : amountNum - Number(selectedFee?.amount || 0));
+
+      if (nextStructureTotal !== semesterTargetTotal) {
+        const difference = semesterTargetTotal - nextStructureTotal;
+        toast.message(
+          difference > 0
+            ? `Semester total is UGX ${difference.toLocaleString()} below the target of UGX ${semesterTargetTotal.toLocaleString()}`
+            : `Semester total is UGX ${Math.abs(difference).toLocaleString()} above the target of UGX ${semesterTargetTotal.toLocaleString()}`,
+        );
+      }
+
+      if (keepOpen && modalMode === "add") {
+        setFeeForm((current) => ({
+          ...current,
+          item_name: "",
+          amount: "",
+          currency: "UGX",
+        }));
+      } else {
+        setIsModalOpen(false);
+      }
       if (registrarCollege) await fetchData(registrarCollege);
     } catch (error) {
       console.error("Error saving fee:", error);
@@ -264,7 +336,10 @@ export default function Fees() {
       String(f.semester).includes(searchTerm.toLowerCase()),
   );
 
-  const grandTotal = filteredFees.reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+  const grandTotal = filteredFees.reduce(
+    (sum, fee) => sum + Number(fee.amount || 0),
+    0,
+  );
 
   const structureGroups = Object.values(
     filteredFees.reduce(
@@ -300,6 +375,48 @@ export default function Fees() {
     return b.academic_year.localeCompare(a.academic_year);
   });
 
+  const categoryGroups = Object.values(
+    filteredFees.reduce(
+      (groups, fee) => {
+        const key = `${fee.academic_year}|${fee.year_level}|${fee.semester}|${fee.category}`;
+        if (!groups[key]) {
+          groups[key] = {
+            academic_year: fee.academic_year,
+            year_level: fee.year_level,
+            semester: fee.semester,
+            category: fee.category,
+            items: [] as FeeAssignment[],
+            total: 0,
+          };
+        }
+        groups[key].items.push(fee);
+        groups[key].total += Number(fee.amount || 0);
+        return groups;
+      },
+      {} as Record<
+        string,
+        {
+          academic_year: string;
+          year_level: number;
+          semester: number;
+          category: string;
+          items: FeeAssignment[];
+          total: number;
+        }
+      >,
+    ),
+  ).sort((a, b) => {
+    if (a.year_level !== b.year_level) return a.year_level - b.year_level;
+    if (a.semester !== b.semester) return a.semester - b.semester;
+    if (a.academic_year !== b.academic_year) {
+      return b.academic_year.localeCompare(a.academic_year);
+    }
+    return a.category.localeCompare(b.category);
+  });
+
+  const activeFormStructureTotal = getStructureTotalForForm();
+  const activeFormTargetDelta = semesterTargetTotal - activeFormStructureTotal;
+
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -309,8 +426,8 @@ export default function Fees() {
               Fee Structure
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Add manual fee items by year and semester, then review the total
-              for each structure
+              Add manual fee items by year, semester, and category, then review
+              the total for each structure
             </p>
           </div>
           <Button onClick={openAddModal}>
@@ -331,8 +448,27 @@ export default function Fees() {
             </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
-            <p className="text-sm text-muted-foreground">Year/Semester Groups</p>
-            <div className="mt-2 text-2xl font-bold">{structureGroups.length}</div>
+            <p className="text-sm text-muted-foreground">
+              Year/Semester Groups
+            </p>
+            <div className="mt-2 text-2xl font-bold">
+              {structureGroups.length}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Target total per semester</p>
+              <div className="mt-1 text-2xl font-bold">
+                UGX {semesterTargetTotal.toLocaleString()}
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Current saved semester structure shown in the modal will warn if it
+              does not match this target.
+            </div>
           </div>
         </div>
 
@@ -354,10 +490,49 @@ export default function Fees() {
               </TableHeader>
               <TableBody>
                 {structureGroups.map((group) => (
-                  <TableRow key={`${group.academic_year}-${group.year_level}-${group.semester}`}>
+                  <TableRow
+                    key={`${group.academic_year}-${group.year_level}-${group.semester}`}
+                  >
                     <TableCell>{group.academic_year}</TableCell>
                     <TableCell>Year {group.year_level}</TableCell>
                     <TableCell>Semester {group.semester}</TableCell>
+                    <TableCell>{group.items.length}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      UGX {group.total.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {categoryGroups.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              No category breakdown yet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Academic Year</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Semester</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead className="text-right">Category Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categoryGroups.map((group) => (
+                  <TableRow
+                    key={`${group.academic_year}-${group.year_level}-${group.semester}-${group.category}`}
+                  >
+                    <TableCell>{group.academic_year}</TableCell>
+                    <TableCell>Year {group.year_level}</TableCell>
+                    <TableCell>Semester {group.semester}</TableCell>
+                    <TableCell>{group.category}</TableCell>
                     <TableCell>{group.items.length}</TableCell>
                     <TableCell className="text-right font-medium">
                       UGX {group.total.toLocaleString()}
@@ -395,8 +570,9 @@ export default function Fees() {
                 No fee items yet
               </h3>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Add the fee items for each year and semester, then the system
-                will calculate the subtotal and overall total automatically.
+                Add multiple items under the same semester and category. The
+                system will calculate the category subtotal and overall total
+                automatically.
               </p>
               <Button className="mt-6" onClick={openAddModal}>
                 <Plus className="h-5 w-5 mr-2" />
@@ -421,9 +597,7 @@ export default function Fees() {
                   <TableRow key={fee.id}>
                     <TableCell>
                       <div>
-                        <span className="font-medium">
-                          {fee.item_name}
-                        </span>
+                        <span className="font-medium">{fee.item_name}</span>
                       </div>
                     </TableCell>
                     <TableCell>{fee.category}</TableCell>
@@ -431,7 +605,8 @@ export default function Fees() {
                     <TableCell>Semester {fee.semester}</TableCell>
                     <TableCell>{fee.academic_year}</TableCell>
                     <TableCell className="text-right font-medium">
-                      {fee.currency || "UGX"} {Number(fee.amount).toLocaleString()}
+                      {fee.currency || "UGX"}{" "}
+                      {Number(fee.amount).toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -467,6 +642,57 @@ export default function Fees() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    Current semester total
+                  </span>
+                  <span className="font-semibold">
+                    UGX {activeFormStructureTotal.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    Target gap
+                  </span>
+                  <span
+                    className={
+                      activeFormTargetDelta === 0
+                        ? "font-semibold text-green-600"
+                        : "font-semibold text-amber-600"
+                    }
+                  >
+                    {activeFormTargetDelta === 0
+                      ? "Matched"
+                      : activeFormTargetDelta > 0
+                        ? `UGX ${activeFormTargetDelta.toLocaleString()} remaining`
+                        : `Over by UGX ${Math.abs(activeFormTargetDelta).toLocaleString()}`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {FEE_TEMPLATES.map((template) => (
+                  <Button
+                    key={template.label}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setFeeForm((current) => ({
+                        ...current,
+                        item_name: template.item_name,
+                        category: template.category,
+                        custom_category: "",
+                        amount: template.amount,
+                      }))
+                    }
+                  >
+                    {template.label}
+                  </Button>
+                ))}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="item_name">Fee Item</Label>
                 <Input
@@ -487,21 +713,52 @@ export default function Fees() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  list="fee-category-options"
-                  placeholder="Type or select a category"
-                  value={feeForm.category}
-                  onChange={(e) =>
-                    setFeeForm({ ...feeForm, category: e.target.value })
+                <Select
+                  value={
+                    feeForm.custom_category ? "__custom__" : feeForm.category
                   }
-                  required
-                />
-                <datalist id="fee-category-options">
-                  {COMMON_CATEGORIES.map((category) => (
-                    <option key={category} value={category} />
-                  ))}
-                </datalist>
+                  onValueChange={(value) => {
+                    if (value === "__custom__") {
+                      setFeeForm({
+                        ...feeForm,
+                        category: "",
+                        custom_category: feeForm.custom_category || "",
+                      });
+                      return;
+                    }
+
+                    setFeeForm({
+                      ...feeForm,
+                      category: value,
+                      custom_category: "",
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__custom__">Custom category</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(feeForm.custom_category || feeForm.category === "") && (
+                  <Input
+                    className="mt-2"
+                    placeholder="Type a custom category"
+                    value={feeForm.custom_category}
+                    onChange={(e) =>
+                      setFeeForm({
+                        ...feeForm,
+                        custom_category: e.target.value,
+                      })
+                    }
+                  />
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -525,24 +782,24 @@ export default function Fees() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                <Label>Semester</Label>
-                <Select
-                  value={String(feeForm.semester)}
-                  onValueChange={(v) =>
-                    setFeeForm({ ...feeForm, semester: parseInt(v, 10) })
-                  }
-                >
-                  <SelectTrigger>
+                  <Label>Semester</Label>
+                  <Select
+                    value={String(feeForm.semester)}
+                    onValueChange={(v) =>
+                      setFeeForm({ ...feeForm, semester: parseInt(v, 10) })
+                    }
+                  >
+                    <SelectTrigger>
                       <SelectValue placeholder="Select semester" />
-                  </SelectTrigger>
-                  <SelectContent>
+                    </SelectTrigger>
+                    <SelectContent>
                       {SEMESTERS.map((semester) => (
                         <SelectItem key={semester} value={String(semester)}>
                           Semester {semester}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-2">
@@ -593,6 +850,11 @@ export default function Fees() {
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>
+              {modalMode === "add" && (
+                <Button variant="secondary" onClick={() => handleSaveFee(true)}>
+                  Save & Add Another
+                </Button>
+              )}
               <Button onClick={handleSaveFee}>
                 {modalMode === "add" ? "Add Item" : "Save changes"}
               </Button>
