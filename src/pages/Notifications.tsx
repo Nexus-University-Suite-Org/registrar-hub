@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,70 +18,26 @@ import {
   User,
   FileText,
   GraduationCap,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "enrollment" | "grade" | "assignment" | "system";
-  timestamp: Date;
-  read: boolean;
-}
-
-const sampleNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "New Student Enrollment",
-    message: "John Doe has been enrolled in Computer Science program",
-    type: "enrollment",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Grade Submitted",
-    message:
-      "Mathematics grades for Semester 1 have been submitted by Dr. Smith",
-    type: "grade",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Course Assignment",
-    message: "Dr. Johnson has been assigned to teach Data Structures",
-    type: "assignment",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-    read: true,
-  },
-  {
-    id: "4",
-    title: "System Maintenance",
-    message: "Scheduled maintenance will occur tonight from 2 AM to 4 AM",
-    type: "system",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-  },
-  {
-    id: "5",
-    title: "Transcript Request",
-    message: "Transcript request for Jane Smith has been processed",
-    type: "enrollment",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    read: true,
-  },
-];
+import { auth } from "@/lib/firebase";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { Notification as NotificationType } from "@/types/notification";
 
 const getIcon = (type: string) => {
   switch (type) {
     case "enrollment":
       return User;
+    case "grade_submitted":
     case "grade":
       return FileText;
     case "assignment":
       return GraduationCap;
+    case "deadline":
+      return Clock;
+    case "request":
+      return AlertCircle;
     default:
       return Bell;
   }
@@ -90,79 +47,111 @@ const getTypeColor = (type: string) => {
   switch (type) {
     case "enrollment":
       return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    case "grade_submitted":
     case "grade":
       return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
     case "assignment":
       return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+    case "deadline":
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300";
+    case "request":
+      return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300";
     default:
       return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
   }
 };
 
+function formatTime(date: Date) {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
 export default function Notifications() {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(sampleNotifications);
+  const navigate = useNavigate();
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications();
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)),
-    );
-    toast.success("Notification marked as read");
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      navigate("/");
+      return;
+    }
+  }, [navigate]);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await markAsRead(id);
+      toast.success("Marked as read");
+    } catch {
+      toast.error("Failed to update");
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
-    toast.success("All notifications marked as read");
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead();
+      toast.success("All marked as read");
+    } catch {
+      toast.error("Failed to update");
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
-    toast.success("Notification deleted");
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteNotification(id);
+      toast.success("Notification removed");
+    } catch {
+      toast.error("Failed to delete");
+    }
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
+  const thisWeekCount = notifications.filter((n) => {
+    const weekAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7);
+    return n.createdAt > weekAgo;
+  }).length;
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
             <p className="text-muted-foreground">
-              Stay updated with the latest activities in your registrar system
+              Real-time updates: grades submitted by lecturers, requests, and upcoming deadlines
             </p>
           </div>
           {unreadCount > 0 && (
-            <Button onClick={markAllAsRead} variant="outline">
-              Mark All as Read ({unreadCount})
+            <Button onClick={handleMarkAllAsRead} variant="outline">
+              Mark all as read ({unreadCount})
             </Button>
           )}
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Notifications
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Total</CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{notifications.length}</div>
+              <div className="text-2xl font-bold">
+                {loading ? "—" : notifications.length}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -171,48 +160,46 @@ export default function Notifications() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{unreadCount}</div>
+              <div className="text-2xl font-bold">
+                {loading ? "—" : unreadCount}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
+              <CardTitle className="text-sm font-medium">This week</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {
-                  notifications.filter((n) => {
-                    const weekAgo = new Date(
-                      Date.now() - 1000 * 60 * 60 * 24 * 7,
-                    );
-                    return n.timestamp > weekAgo;
-                  }).length
-                }
+                {loading ? "—" : thisWeekCount}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Notifications List */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Notifications</CardTitle>
+            <CardTitle>Recent notifications</CardTitle>
             <CardDescription>
-              All your notifications in chronological order
+              Lecturer submissions, requests, and deadlines from your system
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading…
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium">No notifications</h3>
                 <p className="text-muted-foreground">
-                  You're all caught up! New notifications will appear here.
+                  When lecturers submit grades or deadlines approach, they will appear here.
                 </p>
               </div>
             ) : (
-              notifications.map((notification) => {
+              notifications.map((notification: NotificationType) => {
                 const Icon = getIcon(notification.type);
                 return (
                   <div
@@ -224,21 +211,21 @@ export default function Notifications() {
                     }`}
                   >
                     <div
-                      className={`p-2 rounded-full ${getTypeColor(notification.type)}`}
+                      className={`p-2 rounded-full shrink-0 ${getTypeColor(notification.type)}`}
                     >
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <h4 className="text-sm font-medium">
                           {notification.title}
                         </h4>
                         <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {notification.type}
+                          <Badge variant="secondary" className="text-xs capitalize">
+                            {notification.type.replace("_", " ")}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatTime(notification.timestamp)}
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatTime(notification.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -246,13 +233,14 @@ export default function Notifications() {
                         {notification.message}
                       </p>
                     </div>
-                    <div className="flex space-x-1">
+                    <div className="flex shrink-0 space-x-1">
                       {!notification.read && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markAsRead(notification.id)}
+                          onClick={() => handleMarkAsRead(notification.id)}
                           className="h-8 w-8 p-0"
+                          title="Mark as read"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -260,8 +248,9 @@ export default function Notifications() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteNotification(notification.id)}
+                        onClick={() => handleDelete(notification.id)}
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        title="Delete"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

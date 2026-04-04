@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useBranding } from "@/hooks/useBranding";
+
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -15,9 +16,11 @@ import Transcripts from "./pages/Transcripts";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Courses from "./pages/Courses";
+import Fees from "./pages/Fees";
 import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
 import Tools from "./pages/Tools";
+import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +30,10 @@ const AppContent = () => {
 
   // Update document title when branding changes
   React.useEffect(() => {
-    document.title = branding.siteName;
-  }, [branding.siteName]);
+    if (branding?.siteName) {
+      document.title = branding.siteName;
+    }
+  }, [branding]);
 
   return (
     <BrowserRouter>
@@ -43,9 +48,11 @@ const AppContent = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/courses" element={<Courses />} />
+        <Route path="/fees" element={<Fees />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/tools" element={<Tools />} />
+        <Route path="/help-support" element={<HelpSupport />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

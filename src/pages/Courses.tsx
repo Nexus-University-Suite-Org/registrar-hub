@@ -34,6 +34,7 @@ import {
   GraduationCap,
   Building,
   Filter,
+  DollarSign,
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase";
 import {
@@ -48,7 +49,23 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { toast } from "sonner";
-import { Course, CourseUnit } from "@/types/course";
+import { Course, CourseUnit, CourseFeeEntry } from "@/types/course";
+
+const ACADEMIC_YEARS = [
+  "2025/2026",
+  "2024/2025",
+  "2023/2024",
+  "2022/2023",
+];
+
+const emptyFeeEntry = (): CourseFeeEntry => ({
+  academic_year: ACADEMIC_YEARS[0],
+  semester_1_tuition: 0,
+  semester_2_tuition: 0,
+  recess: 0,
+  semester_1_functional: 0,
+  semester_2_functional: 0,
+});
 
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -85,6 +102,7 @@ export default function Courses() {
 
   const [activeTab, setActiveTab] = useState<"courses" | "units">("courses");
   const [searchTerm, setSearchTerm] = useState("");
+  const [feeEntries, setFeeEntries] = useState<CourseFeeEntry[]>([]);
 
   useEffect(() => {
     fetchRegistrarData();
@@ -152,18 +170,47 @@ export default function Courses() {
     }
   };
 
+  const updateFeeEntry = (index: number, field: keyof CourseFeeEntry, value: string | number) => {
+    const next = feeEntries.map((entry, i) =>
+      i === index ? { ...entry, [field]: value } : entry,
+    );
+    setFeeEntries(next);
+  };
+
+  const addFeeEntry = () => {
+    const usedYears = feeEntries.map((e) => e.academic_year);
+    const nextYear = ACADEMIC_YEARS.find((y) => !usedYears.includes(y)) || ACADEMIC_YEARS[0];
+    setFeeEntries([...feeEntries, { ...emptyFeeEntry(), academic_year: nextYear }]);
+  };
+
+  const removeFeeEntry = (index: number) => {
+    setFeeEntries(feeEntries.filter((_, i) => i !== index));
+  };
+
   // Course Actions
   const handleSaveCourse = async () => {
     if (!registrarCollege) return;
     try {
+      const payload = {
+        ...courseForm,
+        fee_structure: feeEntries.filter(
+          (e) =>
+            e.academic_year &&
+            (e.semester_1_tuition > 0 ||
+              e.semester_2_tuition > 0 ||
+              e.recess > 0 ||
+              e.semester_1_functional > 0 ||
+              e.semester_2_functional > 0),
+        ),
+      };
       if (modalMode === "add") {
         await addDoc(collection(db, "courses"), {
-          ...courseForm,
+          ...payload,
           college: registrarCollege,
         });
         toast.success("Course added successfully");
       } else if (selectedCourse) {
-        await updateDoc(doc(db, "courses", selectedCourse.id), courseForm);
+        await updateDoc(doc(db, "courses", selectedCourse.id), payload);
         toast.success("Course updated successfully");
       }
       setIsCourseModalOpen(false);
@@ -282,6 +329,7 @@ export default function Courses() {
                   department: "",
                   duration_years: 3,
                 });
+                setFeeEntries([]);
                 setIsCourseModalOpen(true);
               } else {
                 setSelectedCourseForUnits(null);
@@ -342,6 +390,7 @@ export default function Courses() {
                                 department: c.department,
                                 duration_years: c.duration_years,
                               });
+                              setFeeEntries(c.fee_structure || []);
                               setModalMode("edit");
                               setIsCourseModalOpen(true);
                             }}
@@ -452,7 +501,7 @@ export default function Courses() {
 
         {/* Course Modal */}
         <Dialog open={isCourseModalOpen} onOpenChange={setIsCourseModalOpen}>
-          <DialogContent className="rounded-2xl border-none shadow-2xl">
+          <DialogContent className="w-[95vw] sm:max-w-2xl rounded-2xl border-none shadow-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-primary" />
@@ -504,6 +553,161 @@ export default function Courses() {
                   }
                   placeholder="e.g., Computing"
                 />
+              </div>
+
+              {/* Fee Structure Section */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2 text-base font-semibold">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    Fee Structure (Tuition, Recess, Functional Fees per Semester)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addFeeEntry}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add for Academic Year
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Define tuition, recess (if any), and functional fees for each
+                  academic year and semester.
+                </p>
+                <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                  {feeEntries.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">
+                      No fee structure added. Click &quot;Add for Academic
+                      Year&quot; to set tuition and functional fees.
+                    </p>
+                  ) : (
+                    feeEntries.map((entry, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Select
+                            value={entry.academic_year}
+                            onValueChange={(v) =>
+                              updateFeeEntry(idx, "academic_year", v)
+                            }
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue placeholder="Academic Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ACADEMIC_YEARS.map((y) => (
+                                <SelectItem
+                                  key={y}
+                                  value={y}
+                                  disabled={feeEntries.some(
+                                    (e, i) => i !== idx && e.academic_year === y,
+                                  )}
+                                >
+                                  {y}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFeeEntry(idx)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sem 1 Tuition</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={entry.semester_1_tuition ?? ""}
+                              onChange={(e) =>
+                                updateFeeEntry(
+                                  idx,
+                                  "semester_1_tuition",
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sem 2 Tuition</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={entry.semester_2_tuition ?? ""}
+                              onChange={(e) =>
+                                updateFeeEntry(
+                                  idx,
+                                  "semester_2_tuition",
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Recess (if any)</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={entry.recess ?? ""}
+                              onChange={(e) =>
+                                updateFeeEntry(
+                                  idx,
+                                  "recess",
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sem 1 Functional</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={entry.semester_1_functional ?? ""}
+                              onChange={(e) =>
+                                updateFeeEntry(
+                                  idx,
+                                  "semester_1_functional",
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sem 2 Functional</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={entry.semester_2_functional ?? ""}
+                              onChange={(e) =>
+                                updateFeeEntry(
+                                  idx,
+                                  "semester_2_functional",
+                                  parseInt(e.target.value, 10) || 0,
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>

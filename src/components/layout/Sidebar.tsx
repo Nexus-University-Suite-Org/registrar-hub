@@ -15,6 +15,8 @@ import {
   X,
   BookOpen,
   Wrench,
+  DollarSign,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,9 +27,11 @@ const navigation = [
   { name: "Students", href: "/students", icon: Users },
   { name: "Lecturers", href: "/lecturers", icon: UserCheck },
   { name: "Courses", href: "/courses", icon: BookOpen },
+  { name: "Fees", href: "/fees", icon: DollarSign },
   { name: "Results", href: "/results", icon: GraduationCap },
   { name: "Transcripts", href: "/transcripts", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Tools", href: "/tools", icon: Wrench },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
@@ -36,9 +40,10 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  unreadNotificationCount?: number;
 }
 
-export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ onLogout, isOpen = false, onClose, unreadNotificationCount = 0 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { branding } = useBranding();
@@ -100,24 +105,41 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
             )}
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const showBadge = item.name === "Notifications" && unreadNotificationCount > 0;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
+                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 relative",
                     isActive
                       ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
-                  <item.icon
-                    className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-transform duration-200",
-                      !isActive && "group-hover:scale-110",
+                  <span className="relative inline-flex">
+                    <item.icon
+                      className={cn(
+                        "h-5 w-5 flex-shrink-0 transition-transform duration-200",
+                        !isActive && "group-hover:scale-110",
+                      )}
+                    />
+                    {showBadge && (
+                      <span
+                        className={cn(
+                          "absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
+                          isActive ? "bg-white text-primary" : "bg-primary text-primary-foreground",
+                        )}
+                      >
+                        {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                      </span>
                     )}
-                  />
-                  {!collapsed && <span>{item.name}</span>}
+                  </span>
+                  {!collapsed && (
+                    <span className="flex-1 flex items-center justify-between">
+                      {item.name}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -127,7 +149,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
         {/* Bottom section */}
         <div className="p-3 border-t border-border/50 space-y-1">
           <Link
-            to="#"
+            to="/help-support"
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200",
               collapsed && "justify-center",
@@ -192,24 +214,37 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
             </p>
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const showBadge = item.name === "Notifications" && unreadNotificationCount > 0;
               return (
                 <Link
                   key={item.name}
                   to={item.href}
                   onClick={onClose}
                   className={cn(
-                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200",
+                    "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-200 relative",
                     isActive
                       ? "bg-gradient-to-r from-primary to-orange-400 text-white shadow-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
-                  <item.icon
-                    className={cn(
-                      "h-5 w-5 flex-shrink-0 transition-transform duration-200",
-                      !isActive && "group-hover:scale-110",
+                  <span className="relative inline-flex">
+                    <item.icon
+                      className={cn(
+                        "h-5 w-5 flex-shrink-0 transition-transform duration-200",
+                        !isActive && "group-hover:scale-110",
+                      )}
+                    />
+                    {showBadge && (
+                      <span
+                        className={cn(
+                          "absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold",
+                          isActive ? "bg-white text-primary" : "bg-primary text-primary-foreground",
+                        )}
+                      >
+                        {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                      </span>
                     )}
-                  />
+                  </span>
                   <span>{item.name}</span>
                 </Link>
               );
@@ -220,7 +255,7 @@ export function Sidebar({ onLogout, isOpen = false, onClose }: SidebarProps) {
         {/* Bottom section */}
         <div className="p-3 border-t border-border/50 space-y-1">
           <Link
-            to="#"
+            to="/help-support"
             onClick={onClose}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
           >

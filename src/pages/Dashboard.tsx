@@ -35,6 +35,7 @@ import {
   limit,
   getDocs,
 } from "firebase/firestore";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const quickActions = [
   {
@@ -114,6 +115,7 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [greeting, setGreeting] = useState("");
   const [loading, setLoading] = useState(true);
+  const { unreadCount: unreadNotificationCount } = useNotifications();
 
   const fetchStats = async () => {
     try {
@@ -280,9 +282,11 @@ export default function Dashboard() {
                   onClick={() => navigate("/notifications")}
                 >
                   <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-pulse">
-                    3
-                  </span>
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                    </span>
+                  )}
                 </Button>
               </div>
             </div>

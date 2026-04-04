@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { toast } from "sonner";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { unreadCount: unreadNotificationCount } = useNotifications();
 
   const handleLogout = async () => {
     try {
@@ -48,6 +50,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         onLogout={handleLogout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        unreadNotificationCount={unreadNotificationCount}
       />
 
       {/* Mobile overlay */}
