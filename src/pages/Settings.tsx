@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +10,15 @@ import {
   FileText,
   Database,
   Mail,
-  Palette
+  Palette,
+  ArrowLeft
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { useBranding } from "@/hooks/useBranding";
 
 export default function SettingsPage() {
   const { branding } = useBranding();
+  const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState("profile");
 
@@ -63,6 +66,19 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-20 overflow-y-auto h-screen">
+
+        {/* Back Button */}
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-2 hover:bg-gray-100"
+          >
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Button>
+        </div>
 
         {/* Branding */}
         <div ref={sectionRefs.branding}>
