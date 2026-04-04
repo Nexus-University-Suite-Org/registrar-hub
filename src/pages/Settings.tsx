@@ -11,7 +11,7 @@ import {
   Database,
   Mail,
   Palette,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { useBranding } from "@/hooks/useBranding";
@@ -68,7 +68,6 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 p-6 space-y-20 overflow-y-auto h-screen">
-
         {/* Back Button */}
         <div className="flex items-center gap-4 mb-6">
           <Button
@@ -124,14 +123,17 @@ export default function SettingsPage() {
             <div className="p-4 border rounded-lg">
               <h3 className="font-semibold mb-2">Student Data Migration</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Update existing students that may be missing department and program information.
-                This will set default values for students created before these fields were added.
+                Update existing students that may be missing department and
+                program information. This will set default values for students
+                created before these fields were added.
               </p>
               <Button
                 onClick={async () => {
                   try {
                     const updatedCount = await updateExistingStudents();
-                    toast.success(`Successfully updated ${updatedCount} students with missing data`);
+                    toast.success(
+                      `Successfully updated ${updatedCount} students with missing data`,
+                    );
                   } catch (error) {
                     console.error("Migration failed:", error);
                     toast.error("Failed to update student data");
@@ -150,7 +152,6 @@ export default function SettingsPage() {
           <h2 className="text-xl font-bold mb-4">Email Templates</h2>
           <p>Manage system emails</p>
         </div>
-
       </div>
     </div>
   );

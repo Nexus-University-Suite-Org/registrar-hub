@@ -1,4 +1,11 @@
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export const updateExistingStudents = async () => {
@@ -8,7 +15,7 @@ export const updateExistingStudents = async () => {
     // Fetch all students
     const studentsQuery = query(
       collection(db, "profiles"),
-      where("role", "==", "student")
+      where("role", "==", "student"),
     );
 
     const querySnapshot = await getDocs(studentsQuery);
@@ -34,7 +41,7 @@ export const updateExistingStudents = async () => {
       if (Object.keys(updates).length > 0) {
         await updateDoc(doc(db, "profiles", docSnapshot.id), {
           ...updates,
-          updated_at: new Date()
+          updated_at: new Date(),
         });
         updatedCount++;
         console.log(`Updated student ${docSnapshot.id}:`, updates);

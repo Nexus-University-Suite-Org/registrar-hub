@@ -18,16 +18,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Filter, Download, FileText, RefreshCw, Printer } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Download,
+  FileText,
+  RefreshCw,
+  Printer,
+} from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
 interface ResultCourse {
   title: string;
@@ -108,11 +109,15 @@ export default function Results() {
   const [classFilter, setClassFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
-  const [printScope, setPrintScope] = useState<"filtered" | "student" | "semester" | "course">("filtered");
+  const [printScope, setPrintScope] = useState<
+    "filtered" | "student" | "semester" | "course"
+  >("filtered");
   const [printStudentId, setPrintStudentId] = useState("");
   const [printYearSem, setPrintYearSem] = useState({ year: "", semester: "" });
   const [printCourseId, setPrintCourseId] = useState("");
-  const [courseUnitOptions, setCourseUnitOptions] = useState<{ id: string; label: string }[]>([]);
+  const [courseUnitOptions, setCourseUnitOptions] = useState<
+    { id: string; label: string }[]
+  >([]);
   const [classOptions, setClassOptions] = useState<string[]>([]);
 
   const fetchResults = async () => {
@@ -140,7 +145,9 @@ export default function Results() {
         const studentsSnap = await getDocs(
           query(collection(db, "students"), orderBy("last_name", "asc")),
         );
-        students = studentsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+        students = studentsSnap.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as any,
+        );
       }
 
       if (!students.length) {
@@ -153,11 +160,17 @@ export default function Results() {
       }
 
       const gradesSnapshot = await getDocs(collection(db, "student_grades"));
-      const studentGrades = gradesSnapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+      const studentGrades = gradesSnapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as any[];
 
       const coursesSnap = await getDocs(collection(db, "courses"));
       const courseUnitsSnap = await getDocs(collection(db, "course_units"));
-      const coursesMap = new Map<string, { title?: string; name?: string; code: string; credits?: number }>();
+      const coursesMap = new Map<
+        string,
+        { title?: string; name?: string; code: string; credits?: number }
+      >();
       coursesSnap.docs.forEach((d) => {
         const o = d.data();
         coursesMap.set(d.id, {
@@ -182,13 +195,16 @@ export default function Results() {
       const classSet = new Set<string>();
 
       students.forEach((student) => {
-        const studentGradesData = studentGrades.filter((g) => g.student_id === student.id);
+        const studentGradesData = studentGrades.filter(
+          (g) => g.student_id === student.id,
+        );
         const termsMap = new Map<string, TermResult>();
 
         studentGradesData.forEach((grade) => {
           const termKey = `${grade.academic_year} · ${grade.semester}`;
           const courseData = coursesMap.get(grade.course_id);
-          const title = courseData?.title || courseData?.name || "Unknown Course";
+          const title =
+            courseData?.title || courseData?.name || "Unknown Course";
           const code = courseData?.code || "N/A";
           const credits = courseData?.credits ?? 3;
           courseIdsSeen.add(grade.course_id);
@@ -215,7 +231,10 @@ export default function Results() {
             courseCode: code,
             credits,
             student_id: grade.student_id,
-            semester_remark: calculateSemesterRemark(grade.gp || 0, grade.grade),
+            semester_remark: calculateSemesterRemark(
+              grade.gp || 0,
+              grade.grade,
+            ),
           });
           term.totalCredits += credits;
         });
@@ -226,17 +245,23 @@ export default function Results() {
               (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
               0,
             );
-            term.gpa = term.totalCredits > 0 ? totalGradePoints / term.totalCredits : 0;
+            term.gpa =
+              term.totalCredits > 0 ? totalGradePoints / term.totalCredits : 0;
             term.remark = calculateSemesterRemark(term.gpa, null);
           }
         });
 
-        const allEntries = Array.from(termsMap.values()).flatMap((t) => t.entries);
+        const allEntries = Array.from(termsMap.values()).flatMap(
+          (t) => t.entries,
+        );
         const totalGradePoints = allEntries.reduce(
           (sum, entry) => sum + (entry.grade_point || 0) * entry.credits,
           0,
         );
-        const totalCredits = allEntries.reduce((sum, entry) => sum + entry.credits, 0);
+        const totalCredits = allEntries.reduce(
+          (sum, entry) => sum + entry.credits,
+          0,
+        );
         const cgpa = totalCredits > 0 ? totalGradePoints / totalCredits : 0;
         const program = student.program || "Not Assigned";
         const yearOfStudy = student.year_of_study ?? 1;
@@ -244,13 +269,17 @@ export default function Results() {
 
         studentResultsMap.set(student.id, {
           studentId: student.id,
-          studentName: `${student.first_name} ${student.last_name}`.trim() || student.student_number,
+          studentName:
+            `${student.first_name} ${student.last_name}`.trim() ||
+            student.student_number,
           studentNumber: student.student_number || "",
           program,
           yearOfStudy,
           cgpa: Math.round(cgpa * 100) / 100,
           totalCredits,
-          terms: Array.from(termsMap.values()).sort((a, b) => b.term.localeCompare(a.term)),
+          terms: Array.from(termsMap.values()).sort((a, b) =>
+            b.term.localeCompare(a.term),
+          ),
         });
       });
 
@@ -260,11 +289,16 @@ export default function Results() {
       setCourseUnitOptions(
         Array.from(courseIdsSeen).map((id) => ({
           id,
-          label: coursesMap.get(id)?.code + " - " + (coursesMap.get(id)?.title || coursesMap.get(id)?.name || id),
+          label:
+            coursesMap.get(id)?.code +
+            " - " +
+            (coursesMap.get(id)?.title || coursesMap.get(id)?.name || id),
         })),
       );
       setClassOptions(Array.from(classSet).sort());
-      toast.success(`Loaded results for ${resultsArray.length} students (lecturer-submitted)`);
+      toast.success(
+        `Loaded results for ${resultsArray.length} students (lecturer-submitted)`,
+      );
     } catch (error) {
       console.error("Fetch results error:", error);
       toast.error("Failed to load results");
@@ -336,13 +370,25 @@ export default function Results() {
     }
 
     setFilteredResults(filtered);
-  }, [results, searchQuery, statusFilter, academicYearFilter, semesterFilter, courseUnitFilter, classFilter]);
+  }, [
+    results,
+    searchQuery,
+    statusFilter,
+    academicYearFilter,
+    semesterFilter,
+    courseUnitFilter,
+    classFilter,
+  ]);
 
   const getPrintData = (): StudentResults[] => {
     if (printScope === "filtered") return filteredResults;
     if (printScope === "student" && printStudentId)
       return results.filter((r) => r.studentId === printStudentId);
-    if (printScope === "semester" && printYearSem.year && printYearSem.semester) {
+    if (
+      printScope === "semester" &&
+      printYearSem.year &&
+      printYearSem.semester
+    ) {
       return results.filter((r) =>
         r.terms.some(
           (t) =>
@@ -482,7 +528,8 @@ export default function Results() {
               Student Results
             </h1>
             <p className="text-muted-foreground">
-              View lecturer-submitted results; filter and print by student, year, semester, or course unit
+              View lecturer-submitted results; filter and print by student,
+              year, semester, or course unit
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -539,17 +586,24 @@ export default function Results() {
                 <SelectItem value="excellent">Excellent (4.5+)</SelectItem>
                 <SelectItem value="very-good">Very Good (4.0-4.4)</SelectItem>
                 <SelectItem value="good">Good (3.5-3.9)</SelectItem>
-                <SelectItem value="satisfactory">Satisfactory (3.0-3.4)</SelectItem>
+                <SelectItem value="satisfactory">
+                  Satisfactory (3.0-3.4)
+                </SelectItem>
               </SelectContent>
             </Select>
-            <Select value={academicYearFilter} onValueChange={setAcademicYearFilter}>
+            <Select
+              value={academicYearFilter}
+              onValueChange={setAcademicYearFilter}
+            >
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Academic year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All years</SelectItem>
                 {ACADEMIC_YEARS.map((y) => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                  <SelectItem key={y} value={y}>
+                    {y}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -563,14 +617,19 @@ export default function Results() {
                 <SelectItem value="2">Semester 2</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={courseUnitFilter} onValueChange={setCourseUnitFilter}>
+            <Select
+              value={courseUnitFilter}
+              onValueChange={setCourseUnitFilter}
+            >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Course unit" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All units</SelectItem>
                 {courseUnitOptions.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -581,7 +640,9 @@ export default function Results() {
               <SelectContent>
                 <SelectItem value="all">All classes</SelectItem>
                 {classOptions.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -611,11 +672,19 @@ export default function Results() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-3 font-medium">Student Number</th>
-                      <th className="text-left p-3 font-medium">Student Name</th>
-                      <th className="text-left p-3 font-medium">Program / Class</th>
+                      <th className="text-left p-3 font-medium">
+                        Student Number
+                      </th>
+                      <th className="text-left p-3 font-medium">
+                        Student Name
+                      </th>
+                      <th className="text-left p-3 font-medium">
+                        Program / Class
+                      </th>
                       <th className="text-left p-3 font-medium">CGPA</th>
-                      <th className="text-left p-3 font-medium">Total Credits</th>
+                      <th className="text-left p-3 font-medium">
+                        Total Credits
+                      </th>
                       <th className="text-left p-3 font-medium">Performance</th>
                       <th className="text-left p-3 font-medium">Terms</th>
                     </tr>
@@ -626,7 +695,9 @@ export default function Results() {
                         key={result.studentId}
                         className="border-b hover:bg-muted/50"
                       >
-                        <td className="p-3 font-mono">{result.studentNumber}</td>
+                        <td className="p-3 font-mono">
+                          {result.studentNumber}
+                        </td>
                         <td className="p-3">{result.studentName}</td>
                         <td className="p-3 text-muted-foreground">
                           {result.program} · Y{result.yearOfStudy}
@@ -676,28 +747,43 @@ export default function Results() {
             <DialogHeader>
               <DialogTitle>Print Results</DialogTitle>
               <DialogDescription>
-                Choose what to print: current filtered list, a specific student, all results for a semester, or for a course unit.
+                Choose what to print: current filtered list, a specific student,
+                all results for a semester, or for a course unit.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Print scope</label>
-                <Select value={printScope} onValueChange={(v: "filtered" | "student" | "semester" | "course") => setPrintScope(v)}>
+                <Select
+                  value={printScope}
+                  onValueChange={(
+                    v: "filtered" | "student" | "semester" | "course",
+                  ) => setPrintScope(v)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="filtered">Currently filtered results ({filteredResults.length})</SelectItem>
+                    <SelectItem value="filtered">
+                      Currently filtered results ({filteredResults.length})
+                    </SelectItem>
                     <SelectItem value="student">Specific student</SelectItem>
-                    <SelectItem value="semester">All results for semester</SelectItem>
-                    <SelectItem value="course">All results for course unit</SelectItem>
+                    <SelectItem value="semester">
+                      All results for semester
+                    </SelectItem>
+                    <SelectItem value="course">
+                      All results for course unit
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {printScope === "student" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Student</label>
-                  <Select value={printStudentId} onValueChange={setPrintStudentId}>
+                  <Select
+                    value={printStudentId}
+                    onValueChange={setPrintStudentId}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select student" />
                     </SelectTrigger>
@@ -715,20 +801,32 @@ export default function Results() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Academic year</label>
-                    <Select value={printYearSem.year} onValueChange={(v) => setPrintYearSem((p) => ({ ...p, year: v }))}>
+                    <Select
+                      value={printYearSem.year}
+                      onValueChange={(v) =>
+                        setPrintYearSem((p) => ({ ...p, year: v }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Year" />
                       </SelectTrigger>
                       <SelectContent>
                         {ACADEMIC_YEARS.map((y) => (
-                          <SelectItem key={y} value={y}>{y}</SelectItem>
+                          <SelectItem key={y} value={y}>
+                            {y}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Semester</label>
-                    <Select value={printYearSem.semester} onValueChange={(v) => setPrintYearSem((p) => ({ ...p, semester: v }))}>
+                    <Select
+                      value={printYearSem.semester}
+                      onValueChange={(v) =>
+                        setPrintYearSem((p) => ({ ...p, semester: v }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Sem" />
                       </SelectTrigger>
@@ -743,13 +841,18 @@ export default function Results() {
               {printScope === "course" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Course unit</label>
-                  <Select value={printCourseId} onValueChange={setPrintCourseId}>
+                  <Select
+                    value={printCourseId}
+                    onValueChange={setPrintCourseId}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                     <SelectContent>
                       {courseUnitOptions.map((o) => (
-                        <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+                        <SelectItem key={o.id} value={o.id}>
+                          {o.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -757,7 +860,12 @@ export default function Results() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>Cancel</Button>
+              <Button
+                variant="outline"
+                onClick={() => setPrintDialogOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
                 Print
