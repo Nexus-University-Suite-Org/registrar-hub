@@ -40,7 +40,6 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { toast } from "sonner";
-import { Course } from "@/types/course";
 import { FeeAssignment } from "@/types/fee";
 
 const ACADEMIC_YEARS = [
@@ -50,9 +49,39 @@ const ACADEMIC_YEARS = [
   "2022/2023",
 ];
 
+const YEAR_LEVELS = [1, 2, 3, 4, 5];
+const SEMESTERS = [1, 2];
+
+const COMMON_FEE_ITEMS = [
+  "Development Fee",
+  "Registration",
+  "Examination",
+  "Internship",
+  "Technology",
+  "Medical Fee",
+  "University ID",
+  "Library",
+  "Research",
+  "Academic Gown",
+  "Sports Contribution",
+  "Endowment Fee",
+  "Guild",
+  "SCR",
+  "Rules Booklet",
+  "Caution",
+  "Tuition",
+];
+
+const COMMON_CATEGORIES = [
+  "Functional Fees",
+  "Tuition Fees",
+  "Administrative Fees",
+  "Academic Fees",
+  "Other",
+];
+
 export default function Fees() {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<Course[]>([]);
   const [feeAssignments, setFeeAssignments] = useState<FeeAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [registrarCollege, setRegistrarCollege] = useState<string | null>(null);
@@ -62,10 +91,13 @@ export default function Fees() {
   const [selectedFee, setSelectedFee] = useState<FeeAssignment | null>(null);
 
   const [feeForm, setFeeForm] = useState({
-    course_id: "",
+    item_name: "",
+    category: COMMON_CATEGORIES[0],
+    year_level: 1,
     semester: 1,
     academic_year: ACADEMIC_YEARS[0],
     amount: "",
+    currency: "UGX",
   });
 
   useEffect(() => {
@@ -102,16 +134,6 @@ export default function Fees() {
 
   const fetchData = async (college: string) => {
     try {
-      const coursesQuery = query(
-        collection(db, "courses"),
-        where("college", "==", college),
-      );
-      const coursesSnap = await getDocs(coursesQuery);
-      const coursesData = coursesSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }) as Course)
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setCourses(coursesData);
-
       const feesQuery = query(
         collection(db, "fee_assignments"),
         where("college", "==", college),
@@ -120,19 +142,27 @@ export default function Fees() {
       const feesData = feesSnap.docs
         .map((d) => {
           const data = d.data();
-          const course = coursesData.find((c) => c.id === data.course_id);
           return {
             id: d.id,
-            ...data,
-            course_code: course?.code || data.course_code,
-            course_name: course?.name || data.course_name,
+            item_name:
+              data.item_name || data.course_name || data.course_code || "Untitled item",
+            category: data.category || "Uncategorized",
+            year_level: data.year_level || data.yearLevel || 1,
+            semester: data.semester || 1,
+            academic_year: data.academic_year || data.academicYear || ACADEMIC_YEARS[0],
+            amount: Number(data.amount || 0),
+            currency: data.currency || "UGX",
+            college: data.college || college,
+            notes: data.notes || "",
           } as FeeAssignment;
         })
         .sort((a, b) => {
+          if (a.year_level !== b.year_level) return a.year_level - b.year_level;
+          if (a.semester !== b.semester) return a.semester - b.semester;
           if (a.academic_year !== b.academic_year)
             return b.academic_year.localeCompare(a.academic_year);
-          if (a.semester !== b.semester) return a.semester - b.semester;
-          return (a.course_name || "").localeCompare(b.course_name || "");
+          if (a.category !== b.category) return a.category.localeCompare(b.category);
+          return a.item_name.localeCompare(b.item_name);
         });
       setFeeAssignments(feesData);
     } catch (error) {
@@ -145,73 +175,56 @@ export default function Fees() {
     setModalMode("add");
     setSelectedFee(null);
     setFeeForm({
-      course_id: "",
+      item_name: "",
+      category: COMMON_CATEGORIES[0],
+      year_level: 1,
       semester: 1,
       academic_year: ACADEMIC_YEARS[0],
       amount: "",
+      currency: "UGX",
     });
     setIsModalOpen(true);
-    if (registrarCollege) {
-      try {
-        const coursesQuery = query(
-          collection(db, "courses"),
-          where("college", "==", registrarCollege),
-        );
-        const coursesSnap = await getDocs(coursesQuery);
-        const coursesData = coursesSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as Course))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setCourses(coursesData);
-      } catch (err) {
-        console.error("Error fetching courses:", err);
-      }
-    }
   };
 
   const openEditModal = async (fee: FeeAssignment) => {
     setModalMode("edit");
     setSelectedFee(fee);
     setFeeForm({
-      course_id: fee.course_id,
+      item_name: fee.item_name,
+      category: fee.category,
+      year_level: fee.year_level,
       semester: fee.semester,
       academic_year: fee.academic_year,
       amount: String(fee.amount),
+      currency: fee.currency || "UGX",
     });
     setIsModalOpen(true);
-    if (registrarCollege) {
-      try {
-        const coursesQuery = query(
-          collection(db, "courses"),
-          where("college", "==", registrarCollege),
-        );
-        const coursesSnap = await getDocs(coursesQuery);
-        const coursesData = coursesSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as Course))
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setCourses(coursesData);
-      } catch (err) {
-        console.error("Error fetching courses:", err);
-      }
-    }
   };
 
   const handleSaveFee = async () => {
     const amountNum = parseFloat(feeForm.amount);
-    if (!feeForm.course_id || !feeForm.academic_year || isNaN(amountNum) || amountNum < 0) {
+    if (
+      !feeForm.item_name ||
+      !feeForm.category ||
+      !feeForm.academic_year ||
+      isNaN(amountNum) ||
+      amountNum < 0
+    ) {
       toast.error("Please fill all fields with valid values.");
       return;
     }
 
     try {
       const payload = {
-        course_id: feeForm.course_id,
+        item_name: feeForm.item_name.trim(),
+        category: feeForm.category.trim(),
+        year_level: feeForm.year_level,
         semester: feeForm.semester,
         academic_year: feeForm.academic_year,
         amount: amountNum,
-        currency: "UGX",
+        currency: feeForm.currency || "UGX",
         college: registrarCollege,
-        course_code: courses.find((c) => c.id === feeForm.course_id)?.code,
-        course_name: courses.find((c) => c.id === feeForm.course_id)?.name,
+        notes: "",
       };
 
       if (modalMode === "add") {
@@ -244,10 +257,48 @@ export default function Fees() {
 
   const filteredFees = feeAssignments.filter(
     (f) =>
-      (f.course_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (f.course_code?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      f.academic_year.toLowerCase().includes(searchTerm.toLowerCase()),
+      f.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.academic_year.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(f.year_level).includes(searchTerm.toLowerCase()) ||
+      String(f.semester).includes(searchTerm.toLowerCase()),
   );
+
+  const grandTotal = filteredFees.reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
+
+  const structureGroups = Object.values(
+    filteredFees.reduce(
+      (groups, fee) => {
+        const key = `${fee.academic_year}|${fee.year_level}|${fee.semester}`;
+        if (!groups[key]) {
+          groups[key] = {
+            academic_year: fee.academic_year,
+            year_level: fee.year_level,
+            semester: fee.semester,
+            items: [] as FeeAssignment[],
+            total: 0,
+          };
+        }
+        groups[key].items.push(fee);
+        groups[key].total += Number(fee.amount || 0);
+        return groups;
+      },
+      {} as Record<
+        string,
+        {
+          academic_year: string;
+          year_level: number;
+          semester: number;
+          items: FeeAssignment[];
+          total: number;
+        }
+      >,
+    ),
+  ).sort((a, b) => {
+    if (a.year_level !== b.year_level) return a.year_level - b.year_level;
+    if (a.semester !== b.semester) return a.semester - b.semester;
+    return b.academic_year.localeCompare(a.academic_year);
+  });
 
   return (
     <DashboardLayout>
@@ -255,23 +306,74 @@ export default function Fees() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground">
-              Fee Assignment
+              Fee Structure
             </h1>
             <p className="mt-1 text-muted-foreground">
-              Assign fees for each course and semester
+              Add manual fee items by year and semester, then review the total
+              for each structure
             </p>
           </div>
           <Button onClick={openAddModal}>
             <Plus className="h-5 w-5 mr-2" />
-            Assign Fee
+            Add Fee Item
           </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Fee Items</p>
+            <div className="mt-2 text-2xl font-bold">{filteredFees.length}</div>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Grand Total</p>
+            <div className="mt-2 text-2xl font-bold">
+              UGX {grandTotal.toLocaleString()}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="text-sm text-muted-foreground">Year/Semester Groups</p>
+            <div className="mt-2 text-2xl font-bold">{structureGroups.length}</div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {structureGroups.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              No grouped totals yet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Academic Year</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Semester</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead className="text-right">Subtotal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {structureGroups.map((group) => (
+                  <TableRow key={`${group.academic_year}-${group.year_level}-${group.semester}`}>
+                    <TableCell>{group.academic_year}</TableCell>
+                    <TableCell>Year {group.year_level}</TableCell>
+                    <TableCell>Semester {group.semester}</TableCell>
+                    <TableCell>{group.items.length}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      UGX {group.total.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
-              placeholder="Search by course, code, or academic year..."
+              placeholder="Search by item, category, year, semester, or academic year..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -290,22 +392,24 @@ export default function Fees() {
                 <DollarSign className="h-10 w-10 text-primary" />
               </div>
               <h3 className="font-display text-xl font-semibold text-foreground">
-                No fee assignments yet
+                No fee items yet
               </h3>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Assign fees for each course and semester to enable students to
-                pay per course and per term.
+                Add the fee items for each year and semester, then the system
+                will calculate the subtotal and overall total automatically.
               </p>
               <Button className="mt-6" onClick={openAddModal}>
                 <Plus className="h-5 w-5 mr-2" />
-                Assign Fee
+                Add Fee Item
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Course</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Year</TableHead>
                   <TableHead>Semester</TableHead>
                   <TableHead>Academic Year</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
@@ -318,10 +422,12 @@ export default function Fees() {
                     <TableCell>
                       <div>
                         <span className="font-medium">
-                          {fee.course_code} - {fee.course_name}
+                          {fee.item_name}
                         </span>
                       </div>
                     </TableCell>
+                    <TableCell>{fee.category}</TableCell>
+                    <TableCell>Year {fee.year_level}</TableCell>
                     <TableCell>Semester {fee.semester}</TableCell>
                     <TableCell>{fee.academic_year}</TableCell>
                     <TableCell className="text-right font-medium">
@@ -354,41 +460,71 @@ export default function Fees() {
         </div>
 
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {modalMode === "add" ? "Assign Fee" : "Edit Fee"}
+                {modalMode === "add" ? "Add Fee Item" : "Edit Fee Item"}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Course</Label>
-                <Select
-                  value={feeForm.course_id}
-                  onValueChange={(v) =>
-                    setFeeForm({ ...feeForm, course_id: v })
+                <Label htmlFor="item_name">Fee Item</Label>
+                <Input
+                  id="item_name"
+                  list="fee-item-options"
+                  placeholder="Type or select a fee item"
+                  value={feeForm.item_name}
+                  onChange={(e) =>
+                    setFeeForm({ ...feeForm, item_name: e.target.value })
                   }
                   required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.length === 0 ? (
-                      <div className="py-6 px-4 text-center text-sm text-muted-foreground">
-                        No courses found. Add courses in the Courses page first.
-                      </div>
-                    ) : (
-                      courses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.code} - {c.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                />
+                <datalist id="fee-item-options">
+                  {COMMON_FEE_ITEMS.map((item) => (
+                    <option key={item} value={item} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  list="fee-category-options"
+                  placeholder="Type or select a category"
+                  value={feeForm.category}
+                  onChange={(e) =>
+                    setFeeForm({ ...feeForm, category: e.target.value })
+                  }
+                  required
+                />
+                <datalist id="fee-category-options">
+                  {COMMON_CATEGORIES.map((category) => (
+                    <option key={category} value={category} />
+                  ))}
+                </datalist>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Year</Label>
+                  <Select
+                    value={String(feeForm.year_level)}
+                    onValueChange={(v) =>
+                      setFeeForm({ ...feeForm, year_level: parseInt(v, 10) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {YEAR_LEVELS.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          Year {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                 <Label>Semester</Label>
                 <Select
                   value={String(feeForm.semester)}
@@ -397,13 +533,17 @@ export default function Fees() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                      <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Semester 1</SelectItem>
-                    <SelectItem value="2">Semester 2</SelectItem>
+                      {SEMESTERS.map((semester) => (
+                        <SelectItem key={semester} value={String(semester)}>
+                          Semester {semester}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Academic Year</Label>
@@ -426,6 +566,16 @@ export default function Fees() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Currency</Label>
+                <Input
+                  value={feeForm.currency}
+                  onChange={(e) =>
+                    setFeeForm({ ...feeForm, currency: e.target.value })
+                  }
+                  placeholder="UGX"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Amount (UGX)</Label>
                 <Input
                   type="number"
@@ -444,7 +594,7 @@ export default function Fees() {
                 Cancel
               </Button>
               <Button onClick={handleSaveFee}>
-                {modalMode === "add" ? "Assign" : "Save changes"}
+                {modalMode === "add" ? "Add Item" : "Save changes"}
               </Button>
             </DialogFooter>
           </DialogContent>
