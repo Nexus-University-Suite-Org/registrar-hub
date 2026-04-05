@@ -466,9 +466,12 @@ export default function Index() {
                     <Users className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Complete CRUD Operations</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Complete CRUD Operations
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Create, read, update, and delete student records with full audit trails
+                      Create, read, update, and delete student records with full
+                      audit trails
                     </p>
                   </div>
                 </div>
@@ -477,9 +480,12 @@ export default function Index() {
                     <Search className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Advanced Search & Filtering</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Advanced Search & Filtering
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Search by name, student number, email, or filter by program, year, status
+                      Search by name, student number, email, or filter by
+                      program, year, status
                     </p>
                   </div>
                 </div>
@@ -488,9 +494,12 @@ export default function Index() {
                     <Edit className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Bulk Operations</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Bulk Operations
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Import/export student data, bulk status updates, and batch processing
+                      Import/export student data, bulk status updates, and batch
+                      processing
                     </p>
                   </div>
                 </div>
@@ -501,9 +510,12 @@ export default function Index() {
                     <Database className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Data Integrity</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Data Integrity
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Validation rules, duplicate prevention, and data consistency checks
+                      Validation rules, duplicate prevention, and data
+                      consistency checks
                     </p>
                   </div>
                 </div>
@@ -512,9 +524,12 @@ export default function Index() {
                     <Activity className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Activity Logging</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Activity Logging
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Complete audit trail of all student record changes and access
+                      Complete audit trail of all student record changes and
+                      access
                     </p>
                   </div>
                 </div>
@@ -523,9 +538,12 @@ export default function Index() {
                     <Download className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Export Capabilities</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Export Capabilities
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      CSV export with customizable fields and filtered data export
+                      CSV export with customizable fields and filtered data
+                      export
                     </p>
                   </div>
                 </div>
@@ -536,7 +554,9 @@ export default function Index() {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Student profile management with avatar upload</li>
                 <li>• Academic program and year tracking</li>
-                <li>• Status management (Active, Inactive, Graduated, Suspended)</li>
+                <li>
+                  • Status management (Active, Inactive, Graduated, Suspended)
+                </li>
                 <li>• Faculty assignment with manual input capability</li>
                 <li>• Real-time search across all student fields</li>
                 <li>• Responsive design for mobile and desktop</li>
@@ -555,9 +575,12 @@ export default function Index() {
                     <FileText className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Instant Generation</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Instant Generation
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Generate transcripts on-demand with real-time GPA calculations
+                      Generate transcripts on-demand with real-time GPA
+                      calculations
                     </p>
                   </div>
                 </div>
@@ -566,9 +589,12 @@ export default function Index() {
                     <TrendingUp className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Academic Performance</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Academic Performance
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Detailed GPA breakdown by semester with performance classification
+                      Detailed GPA breakdown by semester with performance
+                      classification
                     </p>
                   </div>
                 </div>
@@ -577,9 +603,12 @@ export default function Index() {
                     <Download className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Multiple Formats</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Multiple Formats
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Print-ready transcripts with professional formatting and branding
+                      Print-ready transcripts with professional formatting and
+                      branding
                     </p>
                   </div>
                 </div>
@@ -590,9 +619,12 @@ export default function Index() {
                     <Filter className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Flexible Filtering</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Flexible Filtering
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Filter by academic year, semester, or generate complete academic history
+                      Filter by academic year, semester, or generate complete
+                      academic history
                     </p>
                   </div>
                 </div>
@@ -601,9 +633,12 @@ export default function Index() {
                     <Shield className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Secure Access</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Secure Access
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Role-based access control ensures only authorized personnel can generate transcripts
+                      Role-based access control ensures only authorized
+                      personnel can generate transcripts
                     </p>
                   </div>
                 </div>
@@ -612,9 +647,12 @@ export default function Index() {
                     <Database className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Data Integration</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Data Integration
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Pulls data from student_grades, courses, and course_units collections
+                      Pulls data from student_grades, courses, and course_units
+                      collections
                     </p>
                   </div>
                 </div>
@@ -624,11 +662,17 @@ export default function Index() {
               <h4 className="font-semibold mb-2">Transcript Features:</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Semester-wise GPA calculation with credit weighting</li>
-                <li>• Course code, title, credits, marks, and grades display</li>
+                <li>
+                  • Course code, title, credits, marks, and grades display
+                </li>
                 <li>• Academic year and semester organization</li>
-                <li>• Performance classification (First Class, Second Class, etc.)</li>
+                <li>
+                  • Performance classification (First Class, Second Class, etc.)
+                </li>
                 <li>• Print-optimized layout with institution branding</li>
-                <li>• Historical transcript generation for any academic period</li>
+                <li>
+                  • Historical transcript generation for any academic period
+                </li>
               </ul>
             </div>
           </div>
@@ -644,9 +688,12 @@ export default function Index() {
                     <BarChart3 className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Enrollment Analytics</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Enrollment Analytics
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Track enrollment trends by department, program, year, and status
+                      Track enrollment trends by department, program, year, and
+                      status
                     </p>
                   </div>
                 </div>
@@ -655,9 +702,12 @@ export default function Index() {
                     <TrendingUp className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Performance Insights</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Performance Insights
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      GPA distribution, grade analysis, and academic performance trends
+                      GPA distribution, grade analysis, and academic performance
+                      trends
                     </p>
                   </div>
                 </div>
@@ -666,9 +716,12 @@ export default function Index() {
                     <Users className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Student Risk Analysis</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Student Risk Analysis
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Identify at-risk students and top performers for targeted support
+                      Identify at-risk students and top performers for targeted
+                      support
                     </p>
                   </div>
                 </div>
@@ -679,7 +732,9 @@ export default function Index() {
                     <FileText className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Department Reports</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Department Reports
+                    </h4>
                     <p className="text-sm text-muted-foreground">
                       Performance breakdowns by faculty, department, and program
                     </p>
@@ -690,9 +745,12 @@ export default function Index() {
                     <Download className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Export Capabilities</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Export Capabilities
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Generate detailed reports in various formats for stakeholders
+                      Generate detailed reports in various formats for
+                      stakeholders
                     </p>
                   </div>
                 </div>
@@ -701,9 +759,12 @@ export default function Index() {
                     <Activity className="h-4 w-4 text-orange-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Real-time Updates</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Real-time Updates
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Live data aggregation from student records and grade submissions
+                      Live data aggregation from student records and grade
+                      submissions
                     </p>
                   </div>
                 </div>
@@ -713,7 +774,9 @@ export default function Index() {
               <h4 className="font-semibold mb-2">Analytics Capabilities:</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Student enrollment statistics by multiple dimensions</li>
-                <li>• GPA distribution analysis and performance classification</li>
+                <li>
+                  • GPA distribution analysis and performance classification
+                </li>
                 <li>• Department and program performance comparisons</li>
                 <li>• Top performers and at-risk student identification</li>
                 <li>• Academic year-over-year trend analysis</li>
@@ -733,9 +796,12 @@ export default function Index() {
                     <Lock className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Firebase Authentication</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Firebase Authentication
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Enterprise-grade authentication with email verification and password policies
+                      Enterprise-grade authentication with email verification
+                      and password policies
                     </p>
                   </div>
                 </div>
@@ -744,9 +810,12 @@ export default function Index() {
                     <UserCheck className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Role-Based Access</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Role-Based Access
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Granular permissions for registrars, lecturers, and administrators
+                      Granular permissions for registrars, lecturers, and
+                      administrators
                     </p>
                   </div>
                 </div>
@@ -755,9 +824,12 @@ export default function Index() {
                     <Shield className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Data Protection</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Data Protection
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Secure data transmission and storage with Firebase security rules
+                      Secure data transmission and storage with Firebase
+                      security rules
                     </p>
                   </div>
                 </div>
@@ -768,9 +840,12 @@ export default function Index() {
                     <Activity className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Audit Logging</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Audit Logging
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Complete activity tracking for compliance and security monitoring
+                      Complete activity tracking for compliance and security
+                      monitoring
                     </p>
                   </div>
                 </div>
@@ -779,9 +854,12 @@ export default function Index() {
                     <Database className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Session Management</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Session Management
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Automatic session handling with secure logout and timeout policies
+                      Automatic session handling with secure logout and timeout
+                      policies
                     </p>
                   </div>
                 </div>
@@ -790,9 +868,12 @@ export default function Index() {
                     <Eye className="h-4 w-4 text-red-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-foreground">Privacy Controls</h4>
+                    <h4 className="font-semibold text-foreground">
+                      Privacy Controls
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Student data privacy with controlled access and data minimization
+                      Student data privacy with controlled access and data
+                      minimization
                     </p>
                   </div>
                 </div>
@@ -1114,9 +1195,7 @@ export default function Index() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-6">
-            {renderFeatureDetails()}
-          </div>
+          <div className="mt-6">{renderFeatureDetails()}</div>
         </DialogContent>
       </Dialog>
     </div>
