@@ -591,7 +591,9 @@ export default function Results() {
 
     setSaving(true);
     try {
-      const modifiedEntries = editingResults.filter((entry) => entry.isModified);
+      const modifiedEntries = editingResults.filter(
+        (entry) => entry.isModified,
+      );
 
       for (const entry of modifiedEntries) {
         const gradeDocRef = doc(db, "student_grades", entry.id);
@@ -615,7 +617,9 @@ export default function Results() {
         userName: "Registrar",
       });
 
-      toast.success(`Successfully updated ${modifiedEntries.length} result entries`);
+      toast.success(
+        `Successfully updated ${modifiedEntries.length} result entries`,
+      );
       setEditDialogOpen(false);
       setEditingStudent(null);
       setEditingResults([]);
@@ -630,7 +634,9 @@ export default function Results() {
     }
   };
 
-  const calculateGradeFromMarks = (marks: number): { grade: string; gp: number } => {
+  const calculateGradeFromMarks = (
+    marks: number,
+  ): { grade: string; gp: number } => {
     if (marks >= 80) return { grade: "A", gp: 4.0 };
     if (marks >= 75) return { grade: "A-", gp: 3.7 };
     if (marks >= 70) return { grade: "B+", gp: 3.3 };
@@ -1026,10 +1032,12 @@ export default function Results() {
           <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Edit Results - {editingStudent?.studentName} ({editingStudent?.studentNumber})
+                Edit Results - {editingStudent?.studentName} (
+                {editingStudent?.studentNumber})
               </DialogTitle>
               <DialogDescription>
-                Modify marks, grades, and grade points. Changes will be saved to the database.
+                Modify marks, grades, and grade points. Changes will be saved to
+                the database.
               </DialogDescription>
             </DialogHeader>
 
@@ -1054,7 +1062,10 @@ export default function Results() {
                   </TableHeader>
                   <TableBody>
                     {editingResults.map((entry, index) => (
-                      <TableRow key={entry.id} className={entry.isModified ? "bg-blue-50" : ""}>
+                      <TableRow
+                        key={entry.id}
+                        className={entry.isModified ? "bg-blue-50" : ""}
+                      >
                         <TableCell className="font-medium">
                           {entry.courseCode} - {entry.courseTitle}
                         </TableCell>
@@ -1067,7 +1078,11 @@ export default function Results() {
                             max="100"
                             value={entry.marks}
                             onChange={(e) =>
-                              handleUpdateResult(index, "marks", parseInt(e.target.value) || 0)
+                              handleUpdateResult(
+                                index,
+                                "marks",
+                                parseInt(e.target.value) || 0,
+                              )
                             }
                             className="w-20"
                           />
@@ -1075,7 +1090,9 @@ export default function Results() {
                         <TableCell>
                           <Select
                             value={entry.grade || ""}
-                            onValueChange={(value) => handleUpdateResult(index, "grade", value)}
+                            onValueChange={(value) =>
+                              handleUpdateResult(index, "grade", value)
+                            }
                           >
                             <SelectTrigger className="w-20">
                               <SelectValue />
@@ -1103,7 +1120,11 @@ export default function Results() {
                             max="4.0"
                             value={entry.grade_point}
                             onChange={(e) =>
-                              handleUpdateResult(index, "grade_point", parseFloat(e.target.value) || 0)
+                              handleUpdateResult(
+                                index,
+                                "grade_point",
+                                parseFloat(e.target.value) || 0,
+                              )
                             }
                             className="w-20"
                           />
