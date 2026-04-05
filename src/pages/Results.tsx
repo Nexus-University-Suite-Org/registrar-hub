@@ -19,16 +19,38 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
+import {
   Search,
   Filter,
   Download,
   FileText,
   RefreshCw,
   Printer,
+  Edit,
+  Save,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  addDoc,
+} from "firebase/firestore";
 
 interface ResultCourse {
   title: string;
@@ -119,6 +141,21 @@ export default function Results() {
     { id: string; label: string }[]
   >([]);
   const [classOptions, setClassOptions] = useState<string[]>([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentResults | null>(
+    null,
+  );
+  const [editingResults, setEditingResults] = useState<
+    Array<
+      ExamResultRow & {
+        courseTitle: string;
+        courseCode: string;
+        credits: number;
+        isModified?: boolean;
+      }
+    >
+  >([]);
+  const [saving, setSaving] = useState(false);
 
   const fetchResults = async () => {
     try {
@@ -518,6 +555,104 @@ export default function Results() {
     toast.success("Results exported as CSV for the current filters.");
   };
 
+  const handleEditResults = (student: StudentResults) => {
+    setEditingStudent(student);
+    // Flatten all entries from all terms for editing
+    const allEntries = student.terms.flatMap((term) =>
+      term.entries.map((entry) => ({
+        ...entry,
+        isModified: false,
+      })),
+    );
+    setEditingResults(allEntries);
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateResult = (
+    index: number,
+    field: "marks" | "grade" | "grade_point",
+    value: string | number,
+  ) => {
+    setEditingResults((prev) =>
+      prev.map((entry, i) =>
+        i === index
+          ? {
+              ...entry,
+              [field]: value,
+              isModified: true,
+            }
+          : entry,
+      ),
+    );
+  };
+
+  const handleSaveResults = async () => {
+    if (!editingStudent) return;
+
+    setSaving(true);
+    try {
+      const modifiedEntries = editingResults.filter((entry) => entry.isModified);
+
+      for (const entry of modifiedEntries) {
+        const gradeDocRef = doc(db, "student_grades", entry.id);
+        await updateDoc(gradeDocRef, {
+          total: entry.marks,
+          grade: entry.grade,
+          gp: entry.grade_point,
+          updated_at: serverTimestamp(),
+        });
+      }
+
+      // Log activity
+      await addDoc(collection(db, "activities"), {
+        action: "results_updated",
+        entity: "student_results",
+        entityId: editingStudent.studentId,
+        entityName: editingStudent.studentName,
+        details: `Updated ${modifiedEntries.length} result entries`,
+        timestamp: serverTimestamp(),
+        userId: auth.currentUser?.uid || "",
+        userName: "Registrar",
+      });
+
+      toast.success(`Successfully updated ${modifiedEntries.length} result entries`);
+      setEditDialogOpen(false);
+      setEditingStudent(null);
+      setEditingResults([]);
+
+      // Refresh the results
+      await fetchResults();
+    } catch (error: any) {
+      console.error("Error saving results:", error);
+      toast.error(`Failed to save results: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const calculateGradeFromMarks = (marks: number): { grade: string; gp: number } => {
+    if (marks >= 80) return { grade: "A", gp: 4.0 };
+    if (marks >= 75) return { grade: "A-", gp: 3.7 };
+    if (marks >= 70) return { grade: "B+", gp: 3.3 };
+    if (marks >= 65) return { grade: "B", gp: 3.0 };
+    if (marks >= 60) return { grade: "B-", gp: 2.7 };
+    if (marks >= 55) return { grade: "C+", gp: 2.3 };
+    if (marks >= 50) return { grade: "C", gp: 2.0 };
+    if (marks >= 45) return { grade: "C-", gp: 1.7 };
+    if (marks >= 40) return { grade: "D+", gp: 1.3 };
+    if (marks >= 35) return { grade: "D", gp: 1.0 };
+    return { grade: "F", gp: 0.0 };
+  };
+
+  const handleAutoCalculate = (index: number) => {
+    const entry = editingResults[index];
+    if (entry.marks >= 0 && entry.marks <= 100) {
+      const { grade, gp } = calculateGradeFromMarks(entry.marks);
+      handleUpdateResult(index, "grade", grade);
+      handleUpdateResult(index, "grade_point", gp);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -687,6 +822,7 @@ export default function Results() {
                       </th>
                       <th className="text-left p-3 font-medium">Performance</th>
                       <th className="text-left p-3 font-medium">Terms</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -732,6 +868,17 @@ export default function Results() {
                           </span>
                         </td>
                         <td className="p-3">{result.terms.length}</td>
+                        <td className="p-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditResults(result)}
+                            className="h-8"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -869,6 +1016,136 @@ export default function Results() {
               <Button onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" />
                 Print
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Results Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Edit Results - {editingStudent?.studentName} ({editingStudent?.studentNumber})
+              </DialogTitle>
+              <DialogDescription>
+                Modify marks, grades, and grade points. Changes will be saved to the database.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {editingResults.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No results to edit</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Course</TableHead>
+                      <TableHead>Academic Year</TableHead>
+                      <TableHead>Semester</TableHead>
+                      <TableHead>Marks</TableHead>
+                      <TableHead>Grade</TableHead>
+                      <TableHead>Grade Point</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {editingResults.map((entry, index) => (
+                      <TableRow key={entry.id} className={entry.isModified ? "bg-blue-50" : ""}>
+                        <TableCell className="font-medium">
+                          {entry.courseCode} - {entry.courseTitle}
+                        </TableCell>
+                        <TableCell>{entry.academic_year}</TableCell>
+                        <TableCell>Semester {entry.semester}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={entry.marks}
+                            onChange={(e) =>
+                              handleUpdateResult(index, "marks", parseInt(e.target.value) || 0)
+                            }
+                            className="w-20"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={entry.grade || ""}
+                            onValueChange={(value) => handleUpdateResult(index, "grade", value)}
+                          >
+                            <SelectTrigger className="w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="A">A</SelectItem>
+                              <SelectItem value="A-">A-</SelectItem>
+                              <SelectItem value="B+">B+</SelectItem>
+                              <SelectItem value="B">B</SelectItem>
+                              <SelectItem value="B-">B-</SelectItem>
+                              <SelectItem value="C+">C+</SelectItem>
+                              <SelectItem value="C">C</SelectItem>
+                              <SelectItem value="C-">C-</SelectItem>
+                              <SelectItem value="D+">D+</SelectItem>
+                              <SelectItem value="D">D</SelectItem>
+                              <SelectItem value="F">F</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="4.0"
+                            value={entry.grade_point}
+                            onChange={(e) =>
+                              handleUpdateResult(index, "grade_point", parseFloat(e.target.value) || 0)
+                            }
+                            className="w-20"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAutoCalculate(index)}
+                            className="h-8"
+                          >
+                            Auto Calc
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={saving}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button onClick={handleSaveResults} disabled={saving}>
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
