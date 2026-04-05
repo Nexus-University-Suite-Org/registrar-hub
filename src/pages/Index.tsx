@@ -49,11 +49,14 @@ const DemoWalkthrough = () => {
       content: (
         <div className="space-y-4">
           <p className="text-lg text-muted-foreground">
-            This open-source academic management system is fully customizable for any institution.
-            Let's walk through the key features and customization options.
+            This open-source academic management system is fully customizable
+            for any institution. Let's walk through the key features and
+            customization options.
           </p>
           <div className="bg-gradient-to-r from-primary/10 to-orange-500/10 p-4 rounded-lg">
-            <h4 className="font-semibold mb-2">What makes this portal special?</h4>
+            <h4 className="font-semibold mb-2">
+              What makes this portal special?
+            </h4>
             <ul className="space-y-1 text-sm">
               <li>• Fully customizable branding without code changes</li>
               <li>• Real-time customization via web interface</li>
@@ -71,30 +74,36 @@ const DemoWalkthrough = () => {
             <p className="text-muted-foreground">Customizable & Open Source</p>
           </div>
         </div>
-      )
+      ),
     },
     {
       title: "Branding Customization - Site Name",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            Change the portal name to match your institution. This updates everywhere in the app.
+            Change the portal name to match your institution. This updates
+            everywhere in the app.
           </p>
           <div className="bg-card p-4 rounded-lg border">
             <h4 className="font-semibold mb-2">Current Settings:</h4>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Site Name:</span>
-                <span className="font-mono text-primary">{branding.siteName}</span>
+                <span className="font-mono text-primary">
+                  {branding.siteName}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span>Meta Description:</span>
-                <span className="font-mono text-sm">{branding.metaDescription}</span>
+                <span className="font-mono text-sm">
+                  {branding.metaDescription}
+                </span>
               </div>
             </div>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>How to change:</strong> Settings → Branding → Site Name field
+            <strong>How to change:</strong> Settings → Branding → Site Name
+            field
           </div>
         </div>
       ),
@@ -105,12 +114,16 @@ const DemoWalkthrough = () => {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-primary shadow-primary">
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
               </div>
-              <span className="font-display font-bold text-xl">{branding.siteName}</span>
+              <span className="font-display font-bold text-xl">
+                {branding.siteName}
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground">This appears in the sidebar, title bar, and throughout the app</p>
+            <p className="text-sm text-muted-foreground">
+              This appears in the sidebar, title bar, and throughout the app
+            </p>
           </div>
         </div>
-      )
+      ),
     },
     {
       title: "Logo Customization",
@@ -130,7 +143,8 @@ const DemoWalkthrough = () => {
             </ol>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>Storage:</strong> Logos are securely stored in Firebase Storage
+            <strong>Storage:</strong> Logos are securely stored in Firebase
+            Storage
           </div>
         </div>
       ),
@@ -140,26 +154,33 @@ const DemoWalkthrough = () => {
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/20">
                 {branding.logoUrl ? (
-                  <img src={branding.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />
+                  <img
+                    src={branding.logoUrl}
+                    alt="Logo"
+                    className="h-8 w-8 object-contain"
+                  />
                 ) : (
                   <GraduationCap className="h-8 w-8 text-primary" />
                 )}
               </div>
               <div>
                 <h3 className="font-bold">{branding.siteName}</h3>
-                <p className="text-sm text-muted-foreground">Logo appears here and in navigation</p>
+                <p className="text-sm text-muted-foreground">
+                  Logo appears here and in navigation
+                </p>
               </div>
             </div>
           </div>
         </div>
-      )
+      ),
     },
     {
       title: "Color Theme Customization",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            Customize the primary color to match your institution's brand colors.
+            Customize the primary color to match your institution's brand
+            colors.
           </p>
           <div className="bg-card p-4 rounded-lg border">
             <h4 className="font-semibold mb-2">Current Theme:</h4>
@@ -172,7 +193,8 @@ const DemoWalkthrough = () => {
             </div>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>How to change:</strong> Settings → Branding → Primary Color picker
+            <strong>How to change:</strong> Settings → Branding → Primary Color
+            picker
           </div>
         </div>
       ),
@@ -180,7 +202,10 @@ const DemoWalkthrough = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-card p-4 rounded-lg border">
-              <Button className="w-full" style={{ backgroundColor: branding.primaryColor }}>
+              <Button
+                className="w-full"
+                style={{ backgroundColor: branding.primaryColor }}
+              >
                 Primary Button
               </Button>
             </div>
@@ -194,29 +219,31 @@ const DemoWalkthrough = () => {
             Colors update instantly across the entire application
           </p>
         </div>
-      )
+      ),
     },
     {
       title: "Firebase-Powered Backend",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            All customization settings are stored in Firebase Firestore and Storage.
+            All customization settings are stored in Firebase Firestore and
+            Storage.
           </p>
           <div className="bg-card p-4 rounded-lg border">
             <h4 className="font-semibold mb-2">Data Structure:</h4>
             <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-{`settings/branding:
+              {`settings/branding:
 {
   "siteName": "${branding.siteName}",
-  "logoUrl": "${branding.logoUrl || 'null'}",
+  "logoUrl": "${branding.logoUrl || "null"}",
   "primaryColor": "${branding.primaryColor}",
   "metaDescription": "${branding.metaDescription}"
 }`}
             </pre>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>Benefits:</strong> Real-time sync, secure storage, scalable architecture
+            <strong>Benefits:</strong> Real-time sync, secure storage, scalable
+            architecture
           </div>
         </div>
       ),
@@ -229,7 +256,9 @@ const DemoWalkthrough = () => {
                   <Settings className="h-6 w-6 text-white" />
                 </div>
                 <p className="text-sm font-semibold">Firestore</p>
-                <p className="text-xs text-muted-foreground">Settings Storage</p>
+                <p className="text-xs text-muted-foreground">
+                  Settings Storage
+                </p>
               </div>
               <ArrowRight className="h-6 w-6 text-muted-foreground" />
               <div className="text-center">
@@ -245,19 +274,22 @@ const DemoWalkthrough = () => {
                   <Eye className="h-6 w-6 text-white" />
                 </div>
                 <p className="text-sm font-semibold">Live App</p>
-                <p className="text-xs text-muted-foreground">Real-time Updates</p>
+                <p className="text-xs text-muted-foreground">
+                  Real-time Updates
+                </p>
               </div>
             </div>
           </div>
         </div>
-      )
+      ),
     },
     {
       title: "Open Source & Deployment Ready",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            This portal is fully open source and ready for institutional deployment.
+            This portal is fully open source and ready for institutional
+            deployment.
           </p>
           <div className="bg-card p-4 rounded-lg border">
             <h4 className="font-semibold mb-2">Deployment Steps:</h4>
@@ -270,7 +302,8 @@ const DemoWalkthrough = () => {
             </ol>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>Tech Stack:</strong> React, TypeScript, Tailwind CSS, Firebase, Vite
+            <strong>Tech Stack:</strong> React, TypeScript, Tailwind CSS,
+            Firebase, Vite
           </div>
         </div>
       ),
@@ -281,13 +314,14 @@ const DemoWalkthrough = () => {
               <Sparkles className="h-12 w-12 mx-auto text-primary mb-4" />
               <h3 className="font-bold text-lg mb-2">Ready to Deploy</h3>
               <p className="text-sm text-muted-foreground">
-                Clone, configure, customize, and deploy your own branded academic portal
+                Clone, configure, customize, and deploy your own branded
+                academic portal
               </p>
             </div>
           </div>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const nextStep = () => {
@@ -339,7 +373,11 @@ const DemoWalkthrough = () => {
         </div>
 
         <Button
-          onClick={currentStep === demoSteps.length - 1 ? () => window.open('/auth', '_blank') : nextStep}
+          onClick={
+            currentStep === demoSteps.length - 1
+              ? () => window.open("/auth", "_blank")
+              : nextStep
+          }
         >
           {currentStep === demoSteps.length - 1 ? (
             <>
@@ -398,6 +436,10 @@ const stats = [
 export default function Index() {
   const navigate = useNavigate();
   const [demoOpen, setDemoOpen] = useState(false);
+  const [featureModalOpen, setFeatureModalOpen] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState<
+    (typeof features)[0] | null
+  >(null);
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("registrar_authenticated");
@@ -406,6 +448,374 @@ export default function Index() {
     }
   }, [navigate]);
 
+  const handleLearnMore = (feature: (typeof features)[0]) => {
+    setSelectedFeature(feature);
+    setFeatureModalOpen(true);
+  };
+  const renderFeatureDetails = () => {
+    if (!selectedFeature) return null;
+
+    switch (selectedFeature.title) {
+      case "Student Management":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Users className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Complete CRUD Operations</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Create, read, update, and delete student records with full audit trails
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Search className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Advanced Search & Filtering</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Search by name, student number, email, or filter by program, year, status
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Edit className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Bulk Operations</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Import/export student data, bulk status updates, and batch processing
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Database className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Data Integrity</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Validation rules, duplicate prevention, and data consistency checks
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Activity className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Activity Logging</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Complete audit trail of all student record changes and access
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Download className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Export Capabilities</h4>
+                    <p className="text-sm text-muted-foreground">
+                      CSV export with customizable fields and filtered data export
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Key Features:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Student profile management with avatar upload</li>
+                <li>• Academic program and year tracking</li>
+                <li>• Status management (Active, Inactive, Graduated, Suspended)</li>
+                <li>• Faculty assignment with manual input capability</li>
+                <li>• Real-time search across all student fields</li>
+                <li>• Responsive design for mobile and desktop</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case "Transcript Access":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <FileText className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Instant Generation</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Generate transcripts on-demand with real-time GPA calculations
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <TrendingUp className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Academic Performance</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Detailed GPA breakdown by semester with performance classification
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Download className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Multiple Formats</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Print-ready transcripts with professional formatting and branding
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Filter className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Flexible Filtering</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Filter by academic year, semester, or generate complete academic history
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Shield className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Secure Access</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Role-based access control ensures only authorized personnel can generate transcripts
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                    <Database className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Data Integration</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Pulls data from student_grades, courses, and course_units collections
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Transcript Features:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Semester-wise GPA calculation with credit weighting</li>
+                <li>• Course code, title, credits, marks, and grades display</li>
+                <li>• Academic year and semester organization</li>
+                <li>• Performance classification (First Class, Second Class, etc.)</li>
+                <li>• Print-optimized layout with institution branding</li>
+                <li>• Historical transcript generation for any academic period</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case "Analytics & Reports":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <BarChart3 className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Enrollment Analytics</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Track enrollment trends by department, program, year, and status
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <TrendingUp className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Performance Insights</h4>
+                    <p className="text-sm text-muted-foreground">
+                      GPA distribution, grade analysis, and academic performance trends
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <Users className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Student Risk Analysis</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Identify at-risk students and top performers for targeted support
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <FileText className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Department Reports</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Performance breakdowns by faculty, department, and program
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <Download className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Export Capabilities</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Generate detailed reports in various formats for stakeholders
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
+                    <Activity className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Real-time Updates</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Live data aggregation from student records and grade submissions
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Analytics Capabilities:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Student enrollment statistics by multiple dimensions</li>
+                <li>• GPA distribution analysis and performance classification</li>
+                <li>• Department and program performance comparisons</li>
+                <li>• Top performers and at-risk student identification</li>
+                <li>• Academic year-over-year trend analysis</li>
+                <li>• Interactive dashboards with filtering capabilities</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case "Secure Access":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <Lock className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Firebase Authentication</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Enterprise-grade authentication with email verification and password policies
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <UserCheck className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Role-Based Access</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Granular permissions for registrars, lecturers, and administrators
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <Shield className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Data Protection</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Secure data transmission and storage with Firebase security rules
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <Activity className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Audit Logging</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Complete activity tracking for compliance and security monitoring
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <Database className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Session Management</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Automatic session handling with secure logout and timeout policies
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                    <Eye className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">Privacy Controls</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Student data privacy with controlled access and data minimization
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-semibold mb-2">Security Features:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Multi-factor authentication support</li>
+                <li>• Encrypted data transmission (HTTPS)</li>
+                <li>• Firebase security rules for data access control</li>
+                <li>• Session timeout and automatic logout</li>
+                <li>• Password reset and account recovery</li>
+                <li>• Activity logging for all user actions</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Navigation */}
@@ -603,7 +1013,10 @@ export default function Index() {
                 </p>
 
                 {/* Arrow indicator */}
-                <div className="mt-6 flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0">
+                <div
+                  className="mt-6 flex items-center text-primary font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-[-10px] group-hover:translate-x-0 cursor-pointer hover:text-primary/80"
+                  onClick={() => handleLearnMore(feature)}
+                >
                   <span>Learn more</span>
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </div>
@@ -679,6 +1092,33 @@ export default function Index() {
           </p>
         </div>
       </footer>
+
+      {/* Feature Details Modal */}
+      <Dialog open={featureModalOpen} onOpenChange={setFeatureModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              {selectedFeature && (
+                <>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${selectedFeature.color} shadow-lg`}
+                  >
+                    <selectedFeature.icon className="h-5 w-5 text-white" />
+                  </div>
+                  {selectedFeature.title}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedFeature?.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6">
+            {renderFeatureDetails()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
