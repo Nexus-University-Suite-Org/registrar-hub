@@ -29,127 +29,27 @@ interface StudentFormModalProps {
   mode: "add" | "edit";
 }
 
-const departments = [
-  // Faculty of Computing and Information Technology
-  "Computer Science",
-  "Information Technology",
-  "Software Engineering",
-  "Information Systems",
-  "Cybersecurity",
-  "Data Science",
-  "Artificial Intelligence",
-  "Computer Engineering",
-
-  // Faculty of Business and Management
-  "Business Administration",
-  "Accounting and Finance",
-  "Marketing",
-  "Human Resource Management",
-  "International Business",
-  "Entrepreneurship",
-  "Economics",
-  "Banking and Finance",
-
-  // Faculty of Engineering
-  "Civil Engineering",
-  "Electrical Engineering",
-  "Mechanical Engineering",
-  "Chemical Engineering",
-  "Biomedical Engineering",
-  "Environmental Engineering",
-  "Telecommunications Engineering",
-  "Petroleum Engineering",
-
-  // Faculty of Medicine and Health Sciences
-  "Medicine",
-  "Nursing",
-  "Pharmacy",
-  "Public Health",
-  "Medical Laboratory Science",
-  "Radiography",
-  "Physiotherapy",
-  "Biomedical Science",
-
-  // Faculty of Law
-  "Law",
-  "International Law",
-  "Commercial Law",
-  "Criminal Justice",
-
-  // Faculty of Arts and Humanities
-  "English Literature",
-  "History",
-  "Philosophy",
-  "Religious Studies",
-  "Linguistics",
-  "Fine Arts",
-  "Music",
-  "Theatre Arts",
-
-  // Faculty of Natural Sciences
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Geology",
-  "Environmental Science",
-  "Statistics",
-  "Biochemistry",
-
-  // Faculty of Social Sciences
-  "Sociology",
-  "Psychology",
-  "Political Science",
-  "International Relations",
-  "Geography",
-  "Anthropology",
-  "Social Work",
-  "Development Studies",
-
-  // Faculty of Education
-  "Education",
-  "Educational Administration",
-  "Curriculum Studies",
-  "Educational Psychology",
-  "Special Education",
-
-  // Faculty of Agriculture and Environmental Sciences
-  "Agriculture",
-  "Agricultural Economics",
-  "Animal Science",
-  "Crop Science",
-  "Soil Science",
-  "Forestry",
-  "Fisheries",
-
-  // Faculty of Architecture and Design
-  "Architecture",
-  "Urban Planning",
-  "Interior Design",
-  "Landscape Architecture",
-  "Graphic Design",
-
-  // Faculty of Journalism and Communication
-  "Journalism",
-  "Mass Communication",
-  "Public Relations",
-  "Advertising",
-  "Digital Media",
-
-  // Faculty of Tourism and Hospitality
-  "Tourism Management",
-  "Hotel Management",
-  "Event Management",
-  "Hospitality Management",
-
-  // Other Specialized Departments
-  "Veterinary Medicine",
-  "Dentistry",
-  "Optometry",
-  "Sports Science",
-  "Military Science",
-  "Aviation",
-  "Maritime Studies",
+const faculties = [
+  "Faculty of Computing and Information Technology",
+  "Faculty of Business and Management",
+  "Faculty of Engineering",
+  "Faculty of Medicine and Health Sciences",
+  "Faculty of Law",
+  "Faculty of Arts and Humanities",
+  "Faculty of Natural Sciences",
+  "Faculty of Social Sciences",
+  "Faculty of Education",
+  "Faculty of Agriculture and Environmental Sciences",
+  "Faculty of Architecture and Design",
+  "Faculty of Journalism and Communication",
+  "Faculty of Tourism and Hospitality",
+  "Faculty of Veterinary Medicine",
+  "Faculty of Dentistry",
+  "Faculty of Optometry",
+  "Faculty of Sports Science",
+  "Faculty of Military Science",
+  "Faculty of Aviation",
+  "Faculty of Maritime Studies",
 ];
 
 const programs = [
@@ -455,7 +355,7 @@ export function StudentFormModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">Faculty</Label>
               <Select
                 value={formData.department}
                 onValueChange={(value) =>
@@ -463,12 +363,12 @@ export function StudentFormModal({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder="Select faculty" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
+                  {faculties.map((faculty) => (
+                    <SelectItem key={faculty} value={faculty}>
+                      {faculty}
                     </SelectItem>
                   ))}
                 </SelectContent>

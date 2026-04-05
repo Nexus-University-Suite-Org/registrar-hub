@@ -75,8 +75,6 @@ const COMMON_CATEGORIES = [
   "Other",
 ];
 
-const DEFAULT_SEMESTER_TARGET = 2000000;
-
 const FEE_TEMPLATES = [
   {
     label: "Tuition",
@@ -113,7 +111,6 @@ export default function Fees() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [selectedFee, setSelectedFee] = useState<FeeAssignment | null>(null);
-  const [semesterTargetTotal] = useState(DEFAULT_SEMESTER_TARGET);
 
   const [feeForm, setFeeForm] = useState({
     item_name: "",
@@ -254,6 +251,10 @@ export default function Fees() {
 
   const handleSaveFee = async (keepOpen = false) => {
     const amountNum = parseFloat(feeForm.amount);
+    const normalizedCategory = (feeForm.custom_category || feeForm.category)
+      .trim()
+      .toLowerCase();
+
     if (
       !feeForm.item_name ||
       !(feeForm.category || feeForm.custom_category) ||
@@ -262,6 +263,22 @@ export default function Fees() {
       amountNum < 0
     ) {
       toast.error("Please fill all fields with valid values.");
+      return;
+    }
+
+    const duplicateCategoryExists = feeAssignments.some(
+      (fee) =>
+        fee.academic_year === feeForm.academic_year &&
+        fee.year_level === feeForm.year_level &&
+        fee.semester === feeForm.semester &&
+        fee.category.trim().toLowerCase() === normalizedCategory &&
+        fee.id !== selectedFee?.id,
+    );
+
+    if (duplicateCategoryExists) {
+      toast.error(
+        "This category already exists for the selected year/semester. Edit that row instead of adding another one.",
+      );
       return;
     }
 
@@ -284,18 +301,6 @@ export default function Fees() {
       } else if (selectedFee) {
         await updateDoc(doc(db, "fee_assignments", selectedFee.id), payload);
         toast.success("Fee updated successfully");
-      }
-
-      const nextStructureTotal =
-        getStructureTotalForForm() + (modalMode === "add" ? amountNum : amountNum - Number(selectedFee?.amount || 0));
-
-      if (nextStructureTotal !== semesterTargetTotal) {
-        const difference = semesterTargetTotal - nextStructureTotal;
-        toast.message(
-          difference > 0
-            ? `Semester total is UGX ${difference.toLocaleString()} below the target of UGX ${semesterTargetTotal.toLocaleString()}`
-            : `Semester total is UGX ${Math.abs(difference).toLocaleString()} above the target of UGX ${semesterTargetTotal.toLocaleString()}`,
-        );
       }
 
       if (keepOpen && modalMode === "add") {
@@ -415,7 +420,10 @@ export default function Fees() {
   });
 
   const activeFormStructureTotal = getStructureTotalForForm();
-  const activeFormTargetDelta = semesterTargetTotal - activeFormStructureTotal;
+  const activeFormAmount = Number.parseFloat(feeForm.amount || "0");
+  const projectedStructureTotal =
+    activeFormStructureTotal +
+    (Number.isNaN(activeFormAmount) ? 0 : activeFormAmount);
 
   return (
     <DashboardLayout>
@@ -453,21 +461,6 @@ export default function Fees() {
             </p>
             <div className="mt-2 text-2xl font-bold">
               {structureGroups.length}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Target total per semester</p>
-              <div className="mt-1 text-2xl font-bold">
-                UGX {semesterTargetTotal.toLocaleString()}
-              </div>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Current saved semester structure shown in the modal will warn if it
-              does not match this target.
             </div>
           </div>
         </div>
@@ -653,20 +646,10 @@ export default function Fees() {
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-sm text-muted-foreground">
-                    Target gap
+                    Projected total after this item
                   </span>
-                  <span
-                    className={
-                      activeFormTargetDelta === 0
-                        ? "font-semibold text-green-600"
-                        : "font-semibold text-amber-600"
-                    }
-                  >
-                    {activeFormTargetDelta === 0
-                      ? "Matched"
-                      : activeFormTargetDelta > 0
-                        ? `UGX ${activeFormTargetDelta.toLocaleString()} remaining`
-                        : `Over by UGX ${Math.abs(activeFormTargetDelta).toLocaleString()}`}
+                  <span className="font-semibold text-primary">
+                    UGX {projectedStructureTotal.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -855,7 +838,7 @@ export default function Fees() {
                   Save & Add Another
                 </Button>
               )}
-              <Button onClick={handleSaveFee}>
+              <Button onClick={() => handleSaveFee()}>
                 {modalMode === "add" ? "Add Item" : "Save changes"}
               </Button>
             </DialogFooter>

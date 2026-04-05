@@ -39,7 +39,7 @@ export function StudentTable({
                 Student No.
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Department
+                Faculty
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Program
@@ -189,7 +189,7 @@ export function StudentTable({
                     {student.student_number}
                   </p>
                   <p>
-                    <span className="font-medium">Department:</span>{" "}
+                    <span className="font-medium">Faculty:</span>{" "}
                     {student.department}
                   </p>
                   <p>

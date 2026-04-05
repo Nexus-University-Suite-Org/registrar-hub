@@ -152,7 +152,7 @@ export function StudentViewModal({
                     <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        Department
+                        Faculty
                       </p>
                       <p className="font-semibold text-foreground">
                         {student.department}
