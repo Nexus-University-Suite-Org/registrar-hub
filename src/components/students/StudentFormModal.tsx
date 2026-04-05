@@ -29,29 +29,6 @@ interface StudentFormModalProps {
   mode: "add" | "edit";
 }
 
-const faculties = [
-  "Faculty of Computing and Information Technology",
-  "Faculty of Business and Management",
-  "Faculty of Engineering",
-  "Faculty of Medicine and Health Sciences",
-  "Faculty of Law",
-  "Faculty of Arts and Humanities",
-  "Faculty of Natural Sciences",
-  "Faculty of Social Sciences",
-  "Faculty of Education",
-  "Faculty of Agriculture and Environmental Sciences",
-  "Faculty of Architecture and Design",
-  "Faculty of Journalism and Communication",
-  "Faculty of Tourism and Hospitality",
-  "Faculty of Veterinary Medicine",
-  "Faculty of Dentistry",
-  "Faculty of Optometry",
-  "Faculty of Sports Science",
-  "Faculty of Military Science",
-  "Faculty of Aviation",
-  "Faculty of Maritime Studies",
-];
-
 const programs = [
   // Undergraduate Degrees
   "Bachelor of Science (BSc)",
@@ -356,23 +333,15 @@ export function StudentFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="department">Faculty</Label>
-              <Select
+              <Input
+                id="department"
                 value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
+                onChange={(e) =>
+                  setFormData({ ...formData, department: e.target.value })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select faculty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {faculties.map((faculty) => (
-                    <SelectItem key={faculty} value={faculty}>
-                      {faculty}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Enter faculty name"
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="program">Program</Label>
