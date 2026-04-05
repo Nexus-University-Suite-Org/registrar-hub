@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   GraduationCap,
@@ -26,6 +27,15 @@ import {
   Settings,
   Upload,
   Eye,
+  Search,
+  Filter,
+  Download,
+  Edit,
+  TrendingUp,
+  Lock,
+  UserCheck,
+  Database,
+  Activity,
 } from "lucide-react";
 import { useBranding } from "@/hooks/useBranding";
 
