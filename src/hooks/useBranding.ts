@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface BrandingSettings {
+  name: string;
   siteName: string;
   logoUrl?: string;
   faviconUrl?: string;
