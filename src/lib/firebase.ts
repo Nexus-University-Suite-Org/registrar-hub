@@ -91,6 +91,10 @@ export async function getDoc(docRef: any) {
   return { exists: () => false, data: () => null };
 }
 
+export async function setDoc(_: any, __: any) {
+  return Promise.resolve();
+}
+
 export async function updateDoc(_: any, __: any) {
   return Promise.resolve();
 }
@@ -166,32 +170,3 @@ export async function getDownloadURL(reference: any) {
   return `https://local.storage/${encodeURIComponent(reference._path)}`;
 }
 
-// Exported auth/firestore/storage helpers used by the app
-export {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  onAuthStateChanged as onAuthStateChanged,
-  collection as collection,
-  doc as doc,
-  addDoc as addDoc,
-  getDocs as getDocs,
-  getDoc as getDoc,
-  updateDoc as updateDoc,
-  deleteDoc as deleteDoc,
-  query as query,
-  where as where,
-  orderBy as orderBy,
-  limit as limit,
-  getCountFromServer as getCountFromServer,
-  onSnapshot as onSnapshot,
-  writeBatch as writeBatch,
-  Timestamp as Timestamp,
-  serverTimestamp as serverTimestamp,
-  getStorage as getStorage,
-  ref as ref,
-  uploadBytes as uploadBytes,
-  getDownloadURL as getDownloadURL,
-};
