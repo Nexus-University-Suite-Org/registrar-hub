@@ -81,7 +81,7 @@ npm run build
 
 - **Frontend**: React 18, TypeScript, Vite
 - **UI**: Tailwind CSS, Shadcn/ui
--- **Backend**: Configurable (this repo includes a local shim; replace with Supabase, an API, or your own backend)
+  -- **Backend**: Configurable (this repo includes a local shim; replace with Supabase, an API, or your own backend)
 - **State Management**: React Query
 - **Icons**: Lucide React
 
