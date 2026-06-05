@@ -284,7 +284,9 @@ export default function Dashboard() {
                   <Bell className="h-5 w-5" />
                   {unreadNotificationCount > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                      {unreadNotificationCount > 99
+                        ? "99+"
+                        : unreadNotificationCount}
                     </span>
                   )}
                 </Button>

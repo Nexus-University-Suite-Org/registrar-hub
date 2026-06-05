@@ -27,7 +27,7 @@ import {
   updateDoc,
   addDoc,
   deleteDoc,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 import { toast } from "sonner";
 import { Course, CourseUnit } from "@/types/course";
 import { Lecturer } from "@/types/lecturer";

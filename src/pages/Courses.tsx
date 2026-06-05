@@ -51,12 +51,7 @@ import {
 import { toast } from "sonner";
 import { Course, CourseUnit, CourseFeeEntry } from "@/types/course";
 
-const ACADEMIC_YEARS = [
-  "2025/2026",
-  "2024/2025",
-  "2023/2024",
-  "2022/2023",
-];
+const ACADEMIC_YEARS = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
 
 const emptyFeeEntry = (): CourseFeeEntry => ({
   academic_year: ACADEMIC_YEARS[0],
@@ -170,7 +165,11 @@ export default function Courses() {
     }
   };
 
-  const updateFeeEntry = (index: number, field: keyof CourseFeeEntry, value: string | number) => {
+  const updateFeeEntry = (
+    index: number,
+    field: keyof CourseFeeEntry,
+    value: string | number,
+  ) => {
     const next = feeEntries.map((entry, i) =>
       i === index ? { ...entry, [field]: value } : entry,
     );
@@ -179,8 +178,12 @@ export default function Courses() {
 
   const addFeeEntry = () => {
     const usedYears = feeEntries.map((e) => e.academic_year);
-    const nextYear = ACADEMIC_YEARS.find((y) => !usedYears.includes(y)) || ACADEMIC_YEARS[0];
-    setFeeEntries([...feeEntries, { ...emptyFeeEntry(), academic_year: nextYear }]);
+    const nextYear =
+      ACADEMIC_YEARS.find((y) => !usedYears.includes(y)) || ACADEMIC_YEARS[0];
+    setFeeEntries([
+      ...feeEntries,
+      { ...emptyFeeEntry(), academic_year: nextYear },
+    ]);
   };
 
   const removeFeeEntry = (index: number) => {
@@ -560,7 +563,8 @@ export default function Courses() {
                 <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2 text-base font-semibold">
                     <DollarSign className="h-4 w-4 text-primary" />
-                    Fee Structure (Tuition, Recess, Functional Fees per Semester)
+                    Fee Structure (Tuition, Recess, Functional Fees per
+                    Semester)
                   </Label>
                   <Button
                     type="button"
@@ -604,7 +608,8 @@ export default function Courses() {
                                   key={y}
                                   value={y}
                                   disabled={feeEntries.some(
-                                    (e, i) => i !== idx && e.academic_year === y,
+                                    (e, i) =>
+                                      i !== idx && e.academic_year === y,
                                   )}
                                 >
                                   {y}

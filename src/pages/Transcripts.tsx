@@ -121,7 +121,10 @@ export default function Transcripts() {
         );
       }
       const gradesSnap = await getDocs(gradesQuery);
-      const grades = gradesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+      const grades = gradesSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as any[];
 
       if (!grades.length) {
         toast.error(
@@ -133,7 +136,10 @@ export default function Transcripts() {
       // 3. Load course and course unit metadata
       const coursesSnap = await getDocs(collection(db, "courses"));
       const unitsSnap = await getDocs(collection(db, "course_units"));
-      const courseMap = new Map<string, { code: string; title: string; credits: number }>();
+      const courseMap = new Map<
+        string,
+        { code: string; title: string; credits: number }
+      >();
       coursesSnap.docs.forEach((d) => {
         const data = d.data() as any;
         courseMap.set(d.id, {
@@ -204,10 +210,7 @@ export default function Transcripts() {
 
       // 5. Compute overall CGPA
       const allEntries = terms.flatMap((t) => t.entries);
-      const overallCredits = allEntries.reduce(
-        (sum, e) => sum + e.credits,
-        0,
-      );
+      const overallCredits = allEntries.reduce((sum, e) => sum + e.credits, 0);
       const overallGradePoints = allEntries.reduce(
         (sum, e) => sum + (e.gradePoint || 0) * e.credits,
         0,
@@ -426,4 +429,3 @@ export default function Transcripts() {
     </DashboardLayout>
   );
 }
-

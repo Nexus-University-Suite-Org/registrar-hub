@@ -506,7 +506,9 @@ export default function Reports() {
         const student = studentMap.get(studentId);
         if (!student) return;
 
-        const course = grade.course_id ? courseMap.get(grade.course_id) : undefined;
+        const course = grade.course_id
+          ? courseMap.get(grade.course_id)
+          : undefined;
         const credits = course?.credits || 3;
         const gradePoint = grade.gp || grade.grade_point || 0;
 

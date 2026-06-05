@@ -17,14 +17,26 @@ import {
 } from "@/lib/firebase";
 
 const CALENDAR_COLLECTION = "AcademicCalendar";
-import type { Notification, NotificationType, NotificationMetadata } from "@/types/notification";
+import type {
+  Notification,
+  NotificationType,
+  NotificationMetadata,
+} from "@/types/notification";
 
 const COLLECTION = "notifications";
 
-function toNotification(docSnap: { id: string; data: () => Record<string, unknown> }): Notification {
+function toNotification(docSnap: {
+  id: string;
+  data: () => Record<string, unknown>;
+}): Notification {
   const d = docSnap.data();
   const raw = d.createdAt as { toDate?: () => Date } | string | undefined;
-  const createdAt = typeof raw === "object" && raw?.toDate ? raw.toDate() : raw ? new Date(raw as string) : new Date();
+  const createdAt =
+    typeof raw === "object" && raw?.toDate
+      ? raw.toDate()
+      : raw
+        ? new Date(raw as string)
+        : new Date();
   return {
     id: docSnap.id,
     recipientId: d.recipientId as string | null,
@@ -54,19 +66,21 @@ export function useNotifications() {
     const q = query(
       collection(db, COLLECTION),
       where("recipientId", "==", uid),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
     const unsub = onSnapshot(
       q,
       (snapshot) => {
-        const list = snapshot.docs.map((d) => toNotification({ id: d.id, data: () => d.data() }));
+        const list = snapshot.docs.map((d) =>
+          toNotification({ id: d.id, data: () => d.data() }),
+        );
         setNotifications(list);
         setLoading(false);
       },
       (err) => {
         console.error("Notifications listener error:", err);
         setLoading(false);
-      }
+      },
     );
     return () => unsub();
   }, [uid]);
@@ -79,24 +93,28 @@ export function useNotifications() {
       try {
         const calendarSnap = await getDocs(collection(db, CALENDAR_COLLECTION));
         const now = new Date();
-        const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        const threeDaysFromNow = new Date(
+          now.getTime() + 3 * 24 * 60 * 60 * 1000,
+        );
         const existingSnap = await getDocs(
           query(
             collection(db, COLLECTION),
             where("recipientId", "==", uid),
-            where("type", "==", "deadline")
-          )
+            where("type", "==", "deadline"),
+          ),
         );
         const existingEntityIds = new Set(
           existingSnap.docs
             .map((d) => (d.data().metadata as { entityId?: string })?.entityId)
-            .filter(Boolean)
+            .filter(Boolean),
         );
         for (const d of calendarSnap.docs) {
           if (cancelled) return;
           const data = d.data();
           if (data.type !== "deadline" || !data.isActive) continue;
-          const dueDate = data.dueDate?.toDate?.() ?? (data.dueDate ? new Date(data.dueDate as string) : null);
+          const dueDate =
+            data.dueDate?.toDate?.() ??
+            (data.dueDate ? new Date(data.dueDate as string) : null);
           if (!dueDate || dueDate < now || dueDate > threeDaysFromNow) continue;
           if (existingEntityIds.has(d.id)) continue;
           await createDeadlineNotification({
@@ -131,7 +149,7 @@ export function useNotifications() {
     const q = query(
       collection(db, COLLECTION),
       where("recipientId", "==", uid),
-      where("read", "==", false)
+      where("read", "==", false),
     );
     const snap = await getDocs(q);
     const batch = writeBatch(db);
