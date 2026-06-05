@@ -35,9 +35,9 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   onAuthStateChanged,
-} from "firebase/auth";
-
-import { doc, setDoc } from "firebase/firestore";
+  doc,
+  setDoc,
+} from "@/lib/firebase";
 
 type AuthStep = "email" | "verification" | "password" | "profile" | "login";
 
