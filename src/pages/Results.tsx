@@ -50,7 +50,7 @@ import {
   updateDoc,
   serverTimestamp,
   addDoc,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 
 interface ResultCourse {
   title: string;

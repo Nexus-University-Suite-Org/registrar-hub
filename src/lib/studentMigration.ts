@@ -5,8 +5,8 @@ import {
   getDocs,
   updateDoc,
   doc,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+  db,
+} from "@/lib/firebase";
 
 export const updateExistingStudents = async () => {
   try {

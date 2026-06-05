@@ -30,7 +30,7 @@ import {
   orderBy,
   serverTimestamp,
   getDoc,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 
 export default function Students() {
   const navigate = useNavigate();

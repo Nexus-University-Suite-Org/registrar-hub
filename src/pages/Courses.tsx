@@ -47,7 +47,7 @@ import {
   query,
   where,
   getDoc,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 import { toast } from "sonner";
 import { Course, CourseUnit, CourseFeeEntry } from "@/types/course";
 

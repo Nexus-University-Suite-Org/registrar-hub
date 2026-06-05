@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { doc, getDoc, setDoc, db } from "@/lib/firebase";
 
 export interface BrandingSettings {
   name: string;

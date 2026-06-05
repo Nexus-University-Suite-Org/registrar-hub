@@ -3,8 +3,7 @@ import { Sidebar } from "./Sidebar";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
-import { signOut } from "firebase/auth";
+import { auth, signOut } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks/useNotifications";
 

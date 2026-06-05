@@ -46,8 +46,8 @@ import {
   query,
   where,
   onSnapshot,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+  db,
+} from "@/lib/firebase";
 
 interface Event {
   id: string;

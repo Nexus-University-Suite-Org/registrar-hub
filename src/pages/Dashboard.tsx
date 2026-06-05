@@ -34,7 +34,7 @@ import {
   orderBy,
   limit,
   getDocs,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 import { useNotifications } from "@/hooks/useNotifications";
 
 const quickActions = [

@@ -20,8 +20,8 @@ import {
   Award,
   RefreshCw,
 } from "lucide-react";
-import { db } from "@/lib/firebase";
 import {
+  db,
   collection,
   query,
   where,
@@ -32,7 +32,8 @@ import {
   doc,
   orderBy,
   serverTimestamp,
-} from "firebase/firestore";
+  auth,
+} from "@/lib/firebase";
 import { toast } from "sonner";
 
 export default function Lecturers() {

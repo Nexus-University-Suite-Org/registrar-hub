@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { auth, db } from "@/lib/firebase";
 import {
+  auth,
+  db,
   collection,
   query,
   where,
@@ -13,7 +14,7 @@ import {
   getDocs,
   Timestamp,
   writeBatch,
-} from "firebase/firestore";
+} from "@/lib/firebase";
 
 const CALENDAR_COLLECTION = "AcademicCalendar";
 import type { Notification, NotificationType, NotificationMetadata } from "@/types/notification";
