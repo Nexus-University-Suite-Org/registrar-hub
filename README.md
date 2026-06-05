@@ -1,6 +1,6 @@
 # Academic Portal
 
-A modern, customizable academic management system built with React, TypeScript, and Firebase. This open-source application allows institutions to manage students, lecturers, courses, results, and more.
+A modern, customizable academic management system built with React and TypeScript. This open-source application allows institutions to manage students, lecturers, courses, results, and more.
 
 ## Features
 
@@ -26,13 +26,7 @@ This application is designed to be easily customizable for different institution
    - Log in to the application
    - Navigate to Settings > Branding
    - Update the site name, upload a logo, and adjust colors
-   - Changes are saved to Firebase and applied immediately
-
-2. **Via Firebase**:
-   - Access your Firebase console
-   - Go to Firestore Database
-   - Navigate to `settings/branding` document
-   - Modify the fields directly
+   - Changes are applied immediately (stored in the configured backend)
 
 ### Branding Configuration
 
@@ -49,13 +43,12 @@ The branding settings are stored in Firestore under `settings/branding` with the
 }
 ```
 
-## Getting Started
+### Getting Started
 
 ### Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
-- Firebase project
 
 ### Installation
 
@@ -72,18 +65,13 @@ cd academic-portal
 npm install
 ```
 
-3. Configure Firebase:
-   - Create a Firebase project
-   - Enable Authentication, Firestore, and Storage
-   - Copy your Firebase config to `src/lib/firebase.ts`
-
-4. Start the development server:
+3. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-5. Build for production:
+4. Build for production:
 
 ```bash
 npm run build
@@ -93,7 +81,7 @@ npm run build
 
 - **Frontend**: React 18, TypeScript, Vite
 - **UI**: Tailwind CSS, Shadcn/ui
-- **Backend**: Firebase (Auth, Firestore, Storage)
+-- **Backend**: Configurable (this repo includes a local shim; replace with Supabase, an API, or your own backend)
 - **State Management**: React Query
 - **Icons**: Lucide React
 

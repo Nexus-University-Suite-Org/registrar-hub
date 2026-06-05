@@ -76,7 +76,7 @@ export async function addDoc(collRef: any, data: any) {
   const path = collRef._path;
   if (!path) throw new Error("Invalid collection reference");
   const col = _store.get(path) || new Map<string, any>();
-  const id = `local-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   col.set(id, { ...data, id });
   _store.set(path, col);
   return { id, ref: { id, path } };
