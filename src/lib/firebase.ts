@@ -33,13 +33,13 @@ function _notifyAuth(user: any | null) {
   for (const l of [..._authState._listeners]) l(user);
 }
 
-export async function createUserWithEmailAndPassword(_: any, email: string) {
+export async function createUserWithEmailAndPassword(_: any, email: string, password: string) {
   const user = { uid: `local-${Date.now()}`, email };
   _notifyAuth(user);
   return { user };
 }
 
-export async function signInWithEmailAndPassword(_: any, email: string) {
+export async function signInWithEmailAndPassword(_: any, email: string, password: string) {
   const user = { uid: `local-${Date.now()}`, email };
   _notifyAuth(user);
   return { user };
@@ -53,7 +53,7 @@ export async function sendEmailVerification(_: any) {
   return Promise.resolve();
 }
 
-export async function sendPasswordResetEmail(_: any) {
+export async function sendPasswordResetEmail(_: any, email: string) {
   return Promise.resolve();
 }
 
@@ -169,4 +169,3 @@ export async function uploadBytes(reference: any, file: Blob) {
 export async function getDownloadURL(reference: any) {
   return `https://local.storage/${encodeURIComponent(reference._path)}`;
 }
-
