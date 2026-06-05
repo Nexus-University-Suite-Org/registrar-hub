@@ -18,7 +18,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X, Upload, UserCheck } from "lucide-react";
-import { auth, db, getStorage, ref, uploadBytes, getDownloadURL } from "@/lib/firebase";
+import {
+  auth,
+  db,
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "@/lib/firebase";
 import { toast } from "sonner";
 
 interface LecturerFormModalProps {
