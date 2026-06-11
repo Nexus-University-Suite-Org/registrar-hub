@@ -1,10 +1,10 @@
 export interface CourseFeeEntry {
   academic_year: string;
-  semester_1_tuition: number;
-  semester_2_tuition: number;
-  recess: number;
-  semester_1_functional: number;
-  semester_2_functional: number;
+  semester_1_tuition: number | null;
+  semester_2_tuition: number | null;
+  recess: number | null;
+  semester_1_functional: number | null;
+  semester_2_functional: number | null;
 }
 
 export interface Course {

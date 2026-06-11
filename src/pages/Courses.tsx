@@ -55,11 +55,11 @@ const ACADEMIC_YEARS = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
 
 const emptyFeeEntry = (): CourseFeeEntry => ({
   academic_year: ACADEMIC_YEARS[0],
-  semester_1_tuition: 0,
-  semester_2_tuition: 0,
-  recess: 0,
-  semester_1_functional: 0,
-  semester_2_functional: 0,
+  semester_1_tuition: null,
+  semester_2_tuition: null,
+  recess: null,
+  semester_1_functional: null,
+  semester_2_functional: null,
 });
 
 export default function Courses() {
@@ -639,7 +639,7 @@ export default function Courses() {
                                 updateFeeEntry(
                                   idx,
                                   "semester_1_tuition",
-                                  parseInt(e.target.value, 10) || 0,
+                                  parseInt(e.target.value, 10) || null,
                                 )
                               }
                             />
@@ -655,7 +655,7 @@ export default function Courses() {
                                 updateFeeEntry(
                                   idx,
                                   "semester_2_tuition",
-                                  parseInt(e.target.value, 10) || 0,
+                                  parseInt(e.target.value, 10) || null,
                                 )
                               }
                             />
@@ -671,7 +671,7 @@ export default function Courses() {
                                 updateFeeEntry(
                                   idx,
                                   "recess",
-                                  parseInt(e.target.value, 10) || 0,
+                                  parseInt(e.target.value, 10) || null,
                                 )
                               }
                             />
@@ -687,7 +687,7 @@ export default function Courses() {
                                 updateFeeEntry(
                                   idx,
                                   "semester_1_functional",
-                                  parseInt(e.target.value, 10) || 0,
+                                  parseInt(e.target.value, 10) || null,
                                 )
                               }
                             />
@@ -703,7 +703,7 @@ export default function Courses() {
                                 updateFeeEntry(
                                   idx,
                                   "semester_2_functional",
-                                  parseInt(e.target.value, 10) || 0,
+                                  parseInt(e.target.value, 10) || null,
                                 )
                               }
                             />

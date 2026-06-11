@@ -12,8 +12,12 @@ import {
   Mail,
   Palette,
   ArrowLeft,
+  Building,
+  CreditCard,
+  Loader2,
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
+import { doc, getDoc, updateDoc } from "@/lib/firebase";
 import { useBranding } from "@/hooks/useBranding";
 import { updateExistingStudents } from "@/lib/studentMigration";
 import { toast } from "sonner";
@@ -23,6 +27,67 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState("profile");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [department, setDepartment] = useState("");
+  const [college, setCollege] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const docSnap = await getDoc(doc(db, "registrars", user.uid));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setFirstName(data.firstName || "");
+          setLastName(data.lastName || "");
+          setEmployeeId(data.employeeId || "");
+          setDepartment(data.department || "");
+          setCollege(data.college || "");
+          setEmail(data.email || user.email || "");
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSaveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) {
+      toast.error("You must be signed in");
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "registrars", user.uid), {
+        firstName,
+        lastName,
+        employeeId,
+        department,
+        college,
+      });
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      toast.error("Failed to update profile");
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const sectionRefs = {
     branding: useRef<HTMLDivElement>(null),
@@ -90,9 +155,97 @@ export default function SettingsPage() {
         {/* Profile */}
         <div ref={sectionRefs.profile}>
           <h2 className="text-xl font-bold mb-4">Profile</h2>
-          <Input placeholder="First Name" />
-          <Input placeholder="Last Name" className="mt-2" />
-          <Button className="mt-3">Save</Button>
+
+          {loading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading profile...
+            </div>
+          ) : (
+            <form onSubmit={handleSaveProfile} className="max-w-md space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="settings-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="settings-email"
+                    value={email}
+                    disabled
+                    className="pl-10 bg-muted/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="settings-firstName">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="settings-firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-lastName">Last Name</Label>
+                  <Input
+                    id="settings-lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-employeeId">Employee ID</Label>
+                <div className="relative">
+                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="settings-employeeId"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-department">Department</Label>
+                <Input
+                  id="settings-department"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="settings-college">College / Institution</Label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="settings-college"
+                    value={college}
+                    onChange={(e) => setCollege(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save Profile"
+                )}
+              </Button>
+            </form>
+          )}
         </div>
 
         {/* Notifications */}

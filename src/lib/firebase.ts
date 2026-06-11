@@ -88,15 +88,41 @@ export async function getDocs(_: any) {
 }
 
 export async function getDoc(docRef: any) {
-  return { exists: () => false, data: () => null };
+  const path = docRef._path;
+  if (!path) return { exists: () => false, data: () => null, id: "" };
+  const segments = path.split("/");
+  const collectionPath = segments.slice(0, -1).join("/");
+  const docId = segments[segments.length - 1];
+  const col = _store.get(collectionPath);
+  if (col && col.has(docId)) {
+    return { exists: () => true, data: () => ({ ...col.get(docId) }), id: docId };
+  }
+  return { exists: () => false, data: () => null, id: docId };
 }
 
-export async function setDoc(_: any, __: any) {
-  return Promise.resolve();
+export async function setDoc(docRef: any, data: any) {
+  const path = docRef._path;
+  if (!path) throw new Error("Invalid document reference");
+  const segments = path.split("/");
+  const collectionPath = segments.slice(0, -1).join("/");
+  const docId = segments[segments.length - 1];
+  const col = _store.get(collectionPath) || new Map<string, any>();
+  col.set(docId, { ...data, id: docId });
+  _store.set(collectionPath, col);
 }
 
-export async function updateDoc(_: any, __: any) {
-  return Promise.resolve();
+export async function updateDoc(docRef: any, data: any) {
+  const path = docRef._path;
+  if (!path) throw new Error("Invalid document reference");
+  const segments = path.split("/");
+  const collectionPath = segments.slice(0, -1).join("/");
+  const docId = segments[segments.length - 1];
+  const col = _store.get(collectionPath);
+  if (col && col.has(docId)) {
+    const existing = col.get(docId);
+    col.set(docId, { ...existing, ...data });
+    _store.set(collectionPath, col);
+  }
 }
 
 export async function deleteDoc(_: any) {
