@@ -151,6 +151,12 @@ export default function Auth() {
       if (data.token) {
         localStorage.setItem("access_token", data.token);
       }
+      if (data.user?.uid) {
+        localStorage.setItem("user_id", data.user.uid);
+      }
+      if (data.user?.email) {
+        localStorage.setItem("user_email", data.user.email);
+      }
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err: any) {
