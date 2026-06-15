@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { post } from "@/lib/api";
 import { useBranding } from "@/hooks/useBranding";
 
-type AuthStep = "email" | "verification" | "password" | "profile" | "login" | "forgot-password";
+type AuthStep = "email" | "verification" | "password" | "profile" | "login" | "forgot-password" | "reset-otp" | "reset-password";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -68,7 +68,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (
-      step === "verification" &&
+      (step === "verification" || step === "reset-otp") &&
       otpDigits.every((v) => v !== "") &&
       !isLoading &&
       !otpVerified
@@ -163,15 +163,24 @@ export default function Auth() {
   const verifyOtpAuto = async (code: string) => {
     setIsLoading(true);
     try {
-      const res = await post<{ valid: boolean }>("/auth/verify-signup-otp/", {
+      const endpoint =
+        step === "reset-otp"
+          ? "/auth/verify-reset-otp/"
+          : "/auth/verify-signup-otp/";
+      const res = await post<{ valid: boolean }>(endpoint, {
         email,
         otp: code,
       });
       if (res.valid) {
         setOtpVerified(true);
         setTimeout(() => {
-          toast.success("Email verified successfully!");
-          navigate("/dashboard");
+          if (step === "reset-otp") {
+            setStep("reset-password");
+            setOtpVerified(false);
+          } else {
+            toast.success("Email verified successfully!");
+            navigate("/dashboard");
+          }
         }, 2000);
       } else {
         setOtpDigits((prev) => {
@@ -196,11 +205,21 @@ export default function Auth() {
   const handleForgotPassword = async () => {
     if (!validateEmail(email)) return setError("Enter valid email first");
 
+    setIsLoading(true);
     try {
-      await post("/auth/password-reset/", { email });
-      toast.success("Reset email sent");
+      const res = await post<{ otp?: string }>("/auth/send-reset-otp/", { email });
+      setOtpDigits(["", "", "", ""]);
+      setOtpVerified(false);
+      if (import.meta.env.DEV && res.otp) {
+        toast.success("Your reset code is " + res.otp);
+      } else {
+        toast.success("Reset code sent to your email.");
+      }
+      setStep("reset-otp");
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
