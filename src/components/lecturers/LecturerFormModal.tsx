@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { X, Upload, UserCheck } from "lucide-react";
 import { toast } from "sonner";
+import { uploadFile } from "@/lib/api";
 
 interface LecturerFormModalProps {
   isOpen: boolean;
@@ -441,10 +442,17 @@ export function LecturerFormModal({
 
   const uploadImage = async (): Promise<string | null> => {
     if (!selectedFile) return null;
-    // TODO: Replace with Django API upload endpoint
-    console.log("Image upload not yet implemented via Django API", selectedFile.name);
-    toast.info("Image upload will be available after backend integration");
-    return null;
+    setUploading(true);
+    try {
+      const { url } = await uploadFile("/upload/", selectedFile);
+      return url;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Failed to upload image");
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

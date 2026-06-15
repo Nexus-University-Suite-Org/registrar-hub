@@ -51,3 +51,13 @@ export async function del<T>(path: string): Promise<T> {
   });
   return handleResponse<T>(response);
 }
+
+export async function uploadFile(path: string, file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`${API_BASE_URL}/api${path}`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse<{ url: string }>(response);
+}

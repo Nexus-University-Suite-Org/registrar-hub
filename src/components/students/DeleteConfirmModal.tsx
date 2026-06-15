@@ -1,4 +1,3 @@
-import { Student } from "@/types/student";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,16 +12,27 @@ interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  student: Student | null;
+  person: {
+    first_name?: string;
+    last_name?: string;
+    student_number?: string;
+    lecturer_number?: string;
+    email?: string;
+  } | null;
+  type?: "Student" | "Lecturer";
 }
 
 export function DeleteConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  student,
+  person,
+  type = "Student",
 }: DeleteConfirmModalProps) {
-  if (!student) return null;
+  if (!person) return null;
+
+  const identifier = person.student_number || person.lecturer_number || "";
+  const fullName = [person.first_name, person.last_name].filter(Boolean).join(" ");
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -34,7 +44,7 @@ export function DeleteConfirmModal({
             </div>
             <div>
               <DialogTitle className="font-display text-lg sm:text-xl">
-                Delete Student
+                Delete {type}
               </DialogTitle>
               <DialogDescription className="mt-1">
                 This action cannot be undone.
@@ -45,13 +55,13 @@ export function DeleteConfirmModal({
 
         <div className="mt-4 p-4 rounded-lg bg-muted">
           <p className="text-sm text-muted-foreground">
-            You are about to delete the student record for:
+            You are about to delete the {type.toLowerCase()} record for:
           </p>
           <p className="mt-2 font-medium text-foreground">
-            {student.first_name} {student.last_name}
+            {fullName}
           </p>
           <p className="text-sm text-muted-foreground">
-            {student.student_number} • {student.email}
+            {identifier && `${identifier} • `}{person.email}
           </p>
         </div>
 
@@ -68,7 +78,7 @@ export function DeleteConfirmModal({
             onClick={onConfirm}
             className="w-full sm:w-auto"
           >
-            Delete Student
+            Delete {type}
           </Button>
         </div>
       </DialogContent>

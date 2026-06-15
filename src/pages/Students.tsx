@@ -472,7 +472,7 @@ export default function Students() {
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleConfirmDelete}
-        student={selectedStudent}
+        person={selectedStudent}
       />
     </DashboardLayout>
   );

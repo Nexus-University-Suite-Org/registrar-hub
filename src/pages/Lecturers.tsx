@@ -402,7 +402,8 @@ export default function Lecturers() {
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           onConfirm={handleDeleteConfirm}
-          student={undefined}
+          person={selectedLecturer}
+          type="Lecturer"
         />
 
         {selectedLecturer && (
