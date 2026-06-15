@@ -359,7 +359,6 @@ const specializations = [
   "Food Service Management",
   "Veterinary Surgery",
   "Animal Health",
-  "Veterinary Pathology",
   "Dental Surgery",
   "Oral Pathology",
   "Orthodontics",

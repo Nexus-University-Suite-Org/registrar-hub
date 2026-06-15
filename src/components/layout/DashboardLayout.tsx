@@ -17,11 +17,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     try {
+      localStorage.removeItem("access_token");
       localStorage.removeItem("user_id");
       localStorage.removeItem("user_email");
       localStorage.removeItem("registrar_college");
       toast.success("Signed out successfully");
-      navigate("/");
+      navigate("/auth");
     } catch (err: any) {
       console.error("Error signing out:", err);
       toast.error("Failed to sign out");

@@ -157,6 +157,9 @@ export default function Auth() {
       if (data.user?.email) {
         localStorage.setItem("user_email", data.user.email);
       }
+      if (data.profile?.college) {
+        localStorage.setItem("registrar_college", data.profile.college);
+      }
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err: any) {

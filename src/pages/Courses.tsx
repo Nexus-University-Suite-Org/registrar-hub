@@ -55,7 +55,9 @@ export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseUnits, setCourseUnits] = useState<CourseUnit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [registrarCollege, setRegistrarCollege] = useState<string | null>(null);
+  const [registrarCollege, setRegistrarCollege] = useState<string | null>(
+    () => localStorage.getItem("registrar_college"),
+  );
 
   // Modals state
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);

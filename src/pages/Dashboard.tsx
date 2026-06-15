@@ -189,9 +189,10 @@ export default function Dashboard() {
     }
   };
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (date: Date | string) => {
     const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
+    const d = typeof date === "string" ? new Date(date) : date;
+    const diffInMs = now.getTime() - d.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInHours / 24);
 
