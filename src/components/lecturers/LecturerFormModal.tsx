@@ -687,18 +687,30 @@ export function LecturerFormModal({
               </div>
 
               {/* Upload Section */}
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-3 w-full min-w-0">
                 <div className="space-y-2">
-                  <Label htmlFor="avatar" className="text-sm font-medium">
+                  <Label className="text-sm font-medium">
                     Upload New Photo
                   </Label>
-                  <Input
-                    id="avatar"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer file:transition-colors cursor-pointer"
-                  />
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label
+                      htmlFor="avatar"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-colors shrink-0"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Choose File
+                    </label>
+                    <input
+                      id="avatar"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <span className="text-sm text-muted-foreground truncate min-w-0">
+                      {selectedFile ? selectedFile.name : "No file chosen"}
+                    </span>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Supported formats: JPG, PNG, GIF. Max size: 5MB
                   </p>
@@ -711,11 +723,11 @@ export function LecturerFormModal({
                         <img
                           src={imagePreview}
                           alt="File preview"
-                          className="w-10 h-10 rounded-lg object-cover border border-blue-300 dark:border-blue-700"
+                          className="w-10 h-10 rounded-lg object-cover border border-blue-300 dark:border-blue-700 shrink-0"
                         />
                       )}
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">
                           {selectedFile.name}
                         </p>
                         <p className="text-xs text-blue-600 dark:text-blue-400">
@@ -731,7 +743,7 @@ export function LecturerFormModal({
                           setSelectedFile(null);
                           setImagePreview(null);
                         }}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-blue-600 hover:text-blue-800 shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </Button>
@@ -742,7 +754,7 @@ export function LecturerFormModal({
                 {uploading && (
                   <div className="p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="animate-spin w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                      <div className="animate-spin w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full shrink-0"></div>
                       <div>
                         <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
                           Uploading photo...
