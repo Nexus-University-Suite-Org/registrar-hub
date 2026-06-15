@@ -147,9 +147,9 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const data: any = await post("/auth/login/", { email, password });
-      if (data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
+      const data: any = await post("/auth/login/", { identifier: email, password });
+      if (data.token) {
+        localStorage.setItem("access_token", data.token);
       }
       toast.success("Welcome back!");
       navigate("/dashboard");
@@ -346,6 +346,17 @@ export default function Auth() {
                     </span>
                   )}
                 </Button>
+
+                {isLogin && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => { setStep("forgot-password"); setError(""); }}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Forgot your password?
+                  </Button>
+                )}
               </div>
             )}
 
@@ -645,13 +656,13 @@ export default function Auth() {
                   type="button"
                   onClick={handleForgotPassword}
                   className="w-full h-12 rounded-xl shadow-primary hover:shadow-glow transition-all duration-300"
-                  disabled={!email.trim()}
+                  disabled={isLoading || !email.trim()}
                 >
-                  Send Reset Link
+                  {isLoading ? "Sending..." : "Send Code"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  We'll send you a link to reset your password.
+                  We'll send a 4-digit code to your email.
                 </p>
               </div>
             )}
@@ -772,6 +783,207 @@ export default function Auth() {
                     </Button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* RESET OTP STEP */}
+            {step === "reset-otp" && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="text-center space-y-2">
+                  {!otpVerified ? (
+                    <>
+                      <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <KeyRound className="h-8 w-8 text-primary" />
+                      </div>
+                      <h2 className="font-display text-xl font-bold text-foreground">
+                        Enter Reset Code
+                      </h2>
+                      <p className="text-muted-foreground leading-relaxed">
+                        We've sent a 4-digit code to{" "}
+                        <strong className="text-foreground">{email}</strong>
+                      </p>
+                    </>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                    >
+                      <div className="h-20 w-20 rounded-2xl bg-green-500 flex items-center justify-center mx-auto mb-4">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                          <CheckCircle2 className="h-10 w-10 text-white" />
+                        </motion.div>
+                      </div>
+                      <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-lg font-semibold text-green-600"
+                      >
+                        Verified!
+                      </motion.h3>
+                    </motion.div>
+                  )}
+                </div>
+
+                {!otpVerified && (
+                  <div className="flex justify-center gap-3">
+                    {otpDigits.map((value, index) => (
+                      <Input
+                        key={index}
+                        ref={(el) => (otpRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={value}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const newDigits = [...otpDigits];
+                          newDigits[index] = val;
+                          setOtpDigits(newDigits);
+                          if (val && index < 3) {
+                            otpRefs.current[index + 1]?.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+                            otpRefs.current[index - 1]?.focus();
+                          }
+                        }}
+                        className="h-16 w-16 text-center text-2xl font-bold rounded-xl bg-muted/50 border-border/50 focus:border-primary transition-all duration-200"
+                        disabled={isLoading}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {!otpVerified && (
+                  <div className="space-y-3">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Didn't receive the code?{" "}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsLoading(true);
+                          try {
+                            const res = await post<{ otp?: string }>("/auth/send-reset-otp/", {
+                              email,
+                            });
+                            setOtpDigits(["", "", "", ""]);
+                            if (import.meta.env.DEV && res.otp) {
+                              toast.success("New code: " + res.otp);
+                            } else {
+                              toast.success("New code sent.");
+                            }
+                          } catch (err: any) {
+                            setError(err.message);
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        className="text-primary font-medium hover:text-primary/80"
+                        disabled={isLoading}
+                      >
+                        Resend
+                      </button>
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => { setStep("forgot-password"); setOtpVerified(false); }}
+                      className="w-full h-12 rounded-xl"
+                    >
+                      Back
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* RESET PASSWORD STEP */}
+            {step === "reset-password" && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <ArrowLeft
+                    className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                    onClick={() => { setStep("login"); setOtpVerified(false); }}
+                  />
+                  <h2 className="font-display text-lg font-semibold">
+                    Set New Password
+                  </h2>
+                </div>
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (password.length < 8) return setError("Password too short");
+                    if (password !== confirmPassword) return setError("Passwords do not match");
+                    setIsLoading(true);
+                    try {
+                      await post("/auth/reset-password/", {
+                        identifier: email,
+                        newPassword: password,
+                      });
+                      toast.success("Password reset successfully!");
+                      setPassword("");
+                      setConfirmPassword("");
+                      setStep("login");
+                    } catch (err: any) {
+                      setError(err.message);
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword" className="text-sm font-medium">
+                      New Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="newPassword"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="At least 8 characters"
+                        className="pl-10 pr-10 h-12 rounded-xl bg-background/50 border-border/50"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                      Confirm Password
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat your password"
+                      className="h-12 rounded-xl bg-background/50 border-border/50"
+                      required
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full h-12 rounded-xl" disabled={isLoading}>
+                    {isLoading ? "Resetting..." : "Reset Password"}
+                  </Button>
+                </form>
               </div>
             )}
 
