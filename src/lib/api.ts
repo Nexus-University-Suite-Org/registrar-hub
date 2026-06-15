@@ -5,7 +5,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
   const text = await response.text();
   if (!text) return undefined as T;
-  const data = JSON.parse(text);
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Expected JSON but got HTML (status ${response.status})`);
+  }
   if (!response.ok) {
     const message = data?.error || data?.detail || "Request failed";
     throw new Error(message);

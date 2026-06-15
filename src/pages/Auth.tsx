@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
   Building,
   User,
   CreditCard,
+  KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { post } from "@/lib/api";
@@ -44,6 +46,9 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [otp, setOtp] = useState("");
+  const [otpDigits, setOtpDigits] = useState(["", "", "", ""]);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -60,6 +65,18 @@ export default function Auth() {
     if (token) navigate("/dashboard");
     else setIsCheckingAuth(false);
   }, [navigate]);
+
+  useEffect(() => {
+    if (
+      step === "verification" &&
+      otpDigits.every((v) => v !== "") &&
+      !isLoading &&
+      !otpVerified
+    ) {
+      const code = otpDigits.join("");
+      verifyOtpAuto(code);
+    }
+  }, [otpDigits, step, isLoading, otpVerified]);
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -104,7 +121,19 @@ export default function Auth() {
 
       localStorage.setItem("registrar_college", college);
 
-      toast.success("Account created.");
+      const otpRes = await post<{
+        success: boolean;
+        otp?: string;
+        verificationId: string;
+      }>("/auth/send-signup-otp/", { email, studentRecordId: null });
+
+      if (import.meta.env.DEV && otpRes.otp) {
+        toast.success("Your verification code is " + otpRes.otp);
+      } else {
+        toast.success("Verification code sent to your email.");
+      }
+
+      setOtpDigits(["", "", "", ""]);
       setStep("verification");
     } catch (err: any) {
       setError(err.message);
@@ -126,6 +155,39 @@ export default function Auth() {
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOtpAuto = async (code: string) => {
+    setIsLoading(true);
+    try {
+      const res = await post<{ valid: boolean }>("/auth/verify-signup-otp/", {
+        email,
+        otp: code,
+      });
+      if (res.valid) {
+        setOtpVerified(true);
+        setTimeout(() => {
+          toast.success("Email verified successfully!");
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        setOtpDigits((prev) => {
+          const next = [...prev];
+          for (let i = 0; i < next.length; i++) next[i] = "";
+          return next;
+        });
+        otpRefs.current[0]?.focus();
+      }
+    } catch {
+      setOtpDigits((prev) => {
+        const next = [...prev];
+        for (let i = 0; i < next.length; i++) next[i] = "";
+        return next;
+      });
+      otpRefs.current[0]?.focus();
     } finally {
       setIsLoading(false);
     }
@@ -577,29 +639,120 @@ export default function Auth() {
 
             {/* VERIFICATION STEP */}
             {step === "verification" && (
-              <div className="space-y-6 text-center py-4 animate-fade-in">
-                <div className="flex items-center justify-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-success/20 rounded-full blur-xl" />
-                    <CheckCircle2 className="h-16 w-16 text-success relative" />
+              <div className="space-y-6 animate-fade-in">
+                <div className="text-center space-y-2">
+                  {!otpVerified ? (
+                    <>
+                      <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <KeyRound className="h-8 w-8 text-primary" />
+                      </div>
+                      <h2 className="font-display text-xl font-bold text-foreground">
+                        Enter Verification Code
+                      </h2>
+                      <p className="text-muted-foreground leading-relaxed">
+                        We've sent a 4-digit code to{" "}
+                        <strong className="text-foreground">{email}</strong>
+                      </p>
+                    </>
+                  ) : (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                    >
+                      <div className="h-20 w-20 rounded-2xl bg-green-500 flex items-center justify-center mx-auto mb-4">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                          <CheckCircle2 className="h-10 w-10 text-white" />
+                        </motion.div>
+                      </div>
+                      <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-lg font-semibold text-green-600"
+                      >
+                        Verified!
+                      </motion.h3>
+                    </motion.div>
+                  )}
+                </div>
+
+                {!otpVerified && (
+                  <div className="flex justify-center gap-3">
+                    {otpDigits.map((value, index) => (
+                      <Input
+                        key={index}
+                        ref={(el) => (otpRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={value}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const newDigits = [...otpDigits];
+                          newDigits[index] = val;
+                          setOtpDigits(newDigits);
+                          if (val && index < 3) {
+                            otpRefs.current[index + 1]?.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+                            otpRefs.current[index - 1]?.focus();
+                          }
+                        }}
+                        className="h-16 w-16 text-center text-2xl font-bold rounded-xl bg-muted/50 border-border/50 focus:border-primary transition-all duration-200"
+                        disabled={isLoading}
+                      />
+                    ))}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <h2 className="font-display text-xl font-bold text-foreground">
-                    Check Your Email
-                  </h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    We've sent a verification link to <strong className="text-foreground">{email}</strong>.
-                    Please check your inbox and click the link to activate your account.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => { setStep("email"); setIsLogin(true); }}
-                  className="w-full h-12 rounded-xl"
-                >
-                  Back to Sign In
-                </Button>
+                )}
+
+                {!otpVerified && (
+                  <div className="space-y-3">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Didn't receive the code?{" "}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsLoading(true);
+                          try {
+                            const res = await post<{ otp?: string }>("/auth/send-signup-otp/", {
+                              email,
+                              studentRecordId: null,
+                            });
+                            setOtpDigits(["", "", "", ""]);
+                            if (import.meta.env.DEV && res.otp) {
+                              toast.success("New code: " + res.otp);
+                            } else {
+                              toast.success("New code sent.");
+                            }
+                          } catch (err: any) {
+                            setError(err.message);
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                        className="text-primary font-medium hover:text-primary/80"
+                        disabled={isLoading}
+                      >
+                        Resend
+                      </button>
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => { setStep("email"); setIsLogin(true); }}
+                      className="w-full h-12 rounded-xl"
+                    >
+                      Back to Sign In
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
