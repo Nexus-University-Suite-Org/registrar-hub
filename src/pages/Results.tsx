@@ -39,18 +39,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  doc,
-  updateDoc,
-  serverTimestamp,
-  addDoc,
-} from "@/lib/firebase";
+import { get, put, post } from "@/lib/api";
 
 interface ResultCourse {
   title: string;
@@ -162,15 +151,12 @@ export default function Results() {
       setLoading(true);
       let students: any[] = [];
       try {
-        const profilesSnap = await getDocs(
-          query(collection(db, "profiles"), where("role", "==", "student")),
-        );
-        students = profilesSnap.docs.map((d) => {
-          const p = d.data();
+        students = await get<any[]>("/profiles/?role=student");
+        students = students.map((p: any) => {
           const full = p.full_name || "";
           const parts = full.split(" ");
           return {
-            id: d.id,
+            id: p.id,
             first_name: parts[0] || p.firstName || "",
             last_name: parts.slice(1).join(" ") || p.lastName || "",
             student_number: p.student_number || p.studentNumber || "",
@@ -179,12 +165,7 @@ export default function Results() {
           };
         });
       } catch {
-        const studentsSnap = await getDocs(
-          query(collection(db, "students"), orderBy("last_name", "asc")),
-        );
-        students = studentsSnap.docs.map(
-          (d) => ({ id: d.id, ...d.data() }) as any,
-        );
+        students = await get<any[]>("/students/");
       }
 
       if (!students.length) {
@@ -196,30 +177,24 @@ export default function Results() {
         return;
       }
 
-      const gradesSnapshot = await getDocs(collection(db, "student_grades"));
-      const studentGrades = gradesSnapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as any[];
+      const studentGrades = await get<any[]>("/student-grades/");
 
-      const coursesSnap = await getDocs(collection(db, "courses"));
-      const courseUnitsSnap = await getDocs(collection(db, "course_units"));
+      const courses = await get<any[]>("/courses/");
+      const courseUnits = await get<any[]>("/course-units/");
       const coursesMap = new Map<
         string,
         { title?: string; name?: string; code: string; credits?: number }
       >();
-      coursesSnap.docs.forEach((d) => {
-        const o = d.data();
-        coursesMap.set(d.id, {
+      courses.forEach((o: any) => {
+        coursesMap.set(o.id, {
           title: o.title || o.name,
           name: o.name || o.title,
           code: o.code || "N/A",
           credits: o.credits ?? 3,
         });
       });
-      courseUnitsSnap.docs.forEach((d) => {
-        const o = d.data();
-        coursesMap.set(d.id, {
+      courseUnits.forEach((o: any) => {
+        coursesMap.set(o.id, {
           title: o.name || o.title,
           name: o.name || o.title,
           code: o.code || "N/A",
@@ -345,22 +320,12 @@ export default function Results() {
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      console.log("🔐 CHECKING AUTH - Starting authentication check...");
-
-      const user = auth.currentUser;
-
-      if (!user) {
-        console.log("❌ NO USER - Redirecting to login");
-        navigate("/");
-        return;
-      }
-
-      console.log("✅ USER FOUND - Calling fetchResults");
-      fetchResults();
-    };
-
-    checkAuth();
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      navigate("/");
+      return;
+    }
+    fetchResults();
   }, [navigate]);
 
   useEffect(() => {
@@ -596,24 +561,21 @@ export default function Results() {
       );
 
       for (const entry of modifiedEntries) {
-        const gradeDocRef = doc(db, "student_grades", entry.id);
-        await updateDoc(gradeDocRef, {
+        await put(`/student-grades/${entry.id}/`, {
           total: entry.marks,
           grade: entry.grade,
           gp: entry.grade_point,
-          updated_at: serverTimestamp(),
         });
       }
 
       // Log activity
-      await addDoc(collection(db, "activities"), {
+      await post("/activities/", {
         action: "results_updated",
         entity: "student_results",
         entityId: editingStudent.studentId,
         entityName: editingStudent.studentName,
         details: `Updated ${modifiedEntries.length} result entries`,
-        timestamp: serverTimestamp(),
-        userId: auth.currentUser?.uid || "",
+        userId: localStorage.getItem("user_id") || "",
         userName: "Registrar",
       });
 

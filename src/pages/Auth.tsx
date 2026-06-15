@@ -27,18 +27,8 @@ import {
   CreditCard,
 } from "lucide-react";
 import { toast } from "sonner";
-import { auth, db } from "@/lib/firebase";
+import { post } from "@/lib/api";
 import { useBranding } from "@/hooks/useBranding";
-
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  doc,
-  setDoc,
-} from "@/lib/firebase";
 
 type AuthStep = "email" | "verification" | "password" | "profile" | "login" | "forgot-password";
 
@@ -66,11 +56,9 @@ export default function Auth() {
   const [college, setCollege] = useState("");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) navigate("/dashboard");
-      else setIsCheckingAuth(false);
-    });
-    return () => unsubscribe();
+    const token = localStorage.getItem("access_token");
+    if (token) navigate("/dashboard");
+    else setIsCheckingAuth(false);
   }, [navigate]);
 
   const validateEmail = (email: string) =>
@@ -104,24 +92,19 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const userCred = await createUserWithEmailAndPassword(
-        auth,
+      await post("/registrars/", {
         email,
         password,
-      );
-
-      await sendEmailVerification(userCred.user);
-
-      await setDoc(doc(db, "registrars", userCred.user.uid), {
-        email,
-        firstName,
-        lastName,
-        employeeId,
+        first_name: firstName,
+        last_name: lastName,
+        employee_id: employeeId,
         department,
         college,
       });
 
-      toast.success("Account created. Verify your email.");
+      localStorage.setItem("registrar_college", college);
+
+      toast.success("Account created.");
       setStep("verification");
     } catch (err: any) {
       setError(err.message);
@@ -135,7 +118,10 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const data: any = await post("/auth/login/", { email, password });
+      if (data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+      }
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err: any) {
@@ -148,8 +134,12 @@ export default function Auth() {
   const handleForgotPassword = async () => {
     if (!validateEmail(email)) return setError("Enter valid email first");
 
-    await sendPasswordResetEmail(auth, email);
-    toast.success("Reset email sent");
+    try {
+      await post("/auth/password-reset/", { email });
+      toast.success("Reset email sent");
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   if (isCheckingAuth) {

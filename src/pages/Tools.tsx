@@ -21,8 +21,6 @@ import {
   TrendingUp,
   ArrowRight,
 } from "lucide-react";
-import { auth } from "@/lib/firebase";
-
 const allTools = [
   {
     name: "Manage Students",
@@ -113,15 +111,11 @@ export default function Tools() {
   const { branding } = useBranding();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        navigate("/");
-        return;
-      }
-    };
-
-    checkAuth();
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      navigate("/");
+      return;
+    }
   }, [navigate]);
 
   return (

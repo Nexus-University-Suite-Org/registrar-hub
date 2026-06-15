@@ -21,7 +21,6 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { auth } from "@/lib/firebase";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notification as NotificationType } from "@/types/notification";
 
@@ -86,8 +85,8 @@ export default function Notifications() {
   } = useNotifications();
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
       navigate("/");
       return;
     }

@@ -17,20 +17,7 @@ import {
 import { Student, StudentStatus } from "@/types/student";
 import { Plus, Search, Filter, Download, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  orderBy,
-  serverTimestamp,
-  getDoc,
-} from "@/lib/firebase";
+import { get, post, put, del } from "@/lib/api";
 
 export default function Students() {
   const navigate = useNavigate();
@@ -50,56 +37,23 @@ export default function Students() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      console.log("Fetching students from Firestore...");
-
-      const studentsQuery = query(
-        collection(db, "profiles"),
-        where("role", "==", "student"),
-      );
-
-      const querySnapshot = await getDocs(studentsQuery);
-      console.log(`Query returned ${querySnapshot.docs.length} documents`);
-
-      const mappedStudents: Student[] = querySnapshot.docs.map((doc) => {
-        const profile = doc.data();
-        console.log("Firestore Profile Data:", profile); // Debugging
-        return {
-          id: doc.id,
-          student_number: profile.student_number || profile.studentNumber || "",
-          registration_number:
-            profile.registration_number ||
-            profile.registrationNumber ||
-            profile.student_number ||
-            profile.studentNumber ||
-            "",
-          first_name:
-            profile.full_name?.split(" ")[0] || profile.firstName || "",
-          last_name:
-            profile.full_name?.split(" ").slice(1).join(" ") ||
-            profile.lastName ||
-            "",
-          email: profile.email || "",
-          department: profile.department || "Not Assigned",
-          program: profile.program || "Not Assigned",
-          year_of_study: profile.year_of_study || profile.yearOfStudy || 1,
-          status: profile.status || "Active",
-          admission_date:
-            profile.admission_date ||
-            profile.admissionDate ||
-            new Date().toISOString().split("T")[0],
-          avatar_url: profile.avatar_url || profile.avatarUrl,
-          created_at:
-            profile.created_at?.toDate?.()?.toISOString() ||
-            profile.createdAt?.toDate?.()?.toISOString() ||
-            profile.created_at ||
-            profile.createdAt,
-          updated_at:
-            profile.updated_at?.toDate?.()?.toISOString() ||
-            profile.updatedAt?.toDate?.()?.toISOString() ||
-            profile.updated_at ||
-            profile.updatedAt,
-        };
-      });
+      const studentsData = await get<any[]>("/profiles/?role=student");
+      const mappedStudents: Student[] = studentsData.map((data) => ({
+        id: data.id,
+        student_number: data.student_number || "",
+        registration_number: data.registration_number || "",
+        first_name: (data.full_name || "").split(" ")[0] || "",
+        last_name: (data.full_name || "").split(" ").slice(1).join(" ") || "",
+        email: data.email || "",
+        department: data.department || "",
+        program: data.program || "",
+        year_of_study: data.year_of_study || 1,
+        status: data.status || "Active",
+        admission_date: data.admission_date || "",
+        avatar_url: data.avatar_url || "",
+        created_at: data.created_at || "",
+        updated_at: data.updated_at || "",
+      }));
 
       setStudents(mappedStudents);
       toast.success(`Loaded ${mappedStudents.length} students from database`);
@@ -115,15 +69,15 @@ export default function Students() {
   useEffect(() => {
     const checkAuth = async () => {
       console.log("Checking authentication...");
-      const user = auth.currentUser;
+      const userId = localStorage.getItem("user_id");
 
-      if (!user) {
+      if (!userId) {
         console.log("No user found, redirecting to login");
         navigate("/");
         return;
       }
 
-      console.log("User found:", user.email);
+      console.log("User found:", localStorage.getItem("user_email"));
       await fetchStudents();
     };
 
@@ -240,9 +194,9 @@ export default function Students() {
   const handleFormSubmit = async (data: Partial<Student>) => {
     try {
       if (formMode === "add") {
-        const newProfileData = {
-          email: data.email || "",
+        const payload = {
           full_name: `${data.first_name || ""} ${data.last_name || ""}`,
+          email: data.email || "",
           student_number: data.student_number || "",
           registration_number:
             data.registration_number || data.student_number || "",
@@ -252,29 +206,26 @@ export default function Students() {
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
           status: data.status || "Active",
-          is_registered: true, // Added for student_records consistency
+          is_registered: true,
           admission_date:
             data.admission_date || new Date().toISOString().split("T")[0],
-          created_at: serverTimestamp(),
-          updated_at: serverTimestamp(),
         };
-
-        const docRef = await addDoc(collection(db, "profiles"), newProfileData);
+        delete payload.first_name;
+        delete payload.last_name;
+        await post("/profiles/", payload);
 
         // Log activity
-        await addDoc(collection(db, "activities"), {
+        await post("/activities/", {
           action: "student_added",
           entity: "student",
-          entityId: docRef.id,
           entityName: `${data.first_name} ${data.last_name}`,
           details: `${data.department} - Year ${data.year_of_study}`,
-          timestamp: serverTimestamp(),
-          userId: auth.currentUser?.uid || "",
-          userName: "Registrar",
+          user_id: localStorage.getItem("user_id") || "",
+          user_name: "Registrar",
         });
 
         const newStudent: Student = {
-          id: docRef.id,
+          id: "",
           first_name: data.first_name || "",
           last_name: data.last_name || "",
           email: data.email || "",
@@ -295,7 +246,7 @@ export default function Students() {
         setStudents((prev) => [newStudent, ...prev]);
         toast.success("Student added successfully");
       } else {
-        const updateData = {
+        const payload = {
           full_name: `${data.first_name || ""} ${data.last_name || ""}`,
           email: data.email || "",
           student_number: data.student_number || "",
@@ -306,25 +257,22 @@ export default function Students() {
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
           status: data.status || "Active",
-          is_registered: true, // Added for student_records consistency
+          is_registered: true,
           admission_date:
             data.admission_date || new Date().toISOString().split("T")[0],
-          updated_at: serverTimestamp(),
         };
-
-        const docRef = doc(db, "profiles", selectedStudent?.id!);
-        await updateDoc(docRef, updateData);
+        delete payload.first_name;
+        delete payload.last_name;
+        await put(`/profiles/${selectedStudent?.id}/`, payload);
 
         // Log activity
-        await addDoc(collection(db, "activities"), {
+        await post("/activities/", {
           action: "student_updated",
           entity: "student",
-          entityId: selectedStudent?.id || "",
           entityName: `${data.first_name} ${data.last_name}`,
           details: `${data.department} - Year ${data.year_of_study}`,
-          timestamp: serverTimestamp(),
-          userId: auth.currentUser?.uid || "",
-          userName: "Registrar",
+          user_id: localStorage.getItem("user_id") || "",
+          user_name: "Registrar",
         });
 
         const updatedStudent: Student = {
@@ -350,7 +298,7 @@ export default function Students() {
     if (!selectedStudent) return;
 
     try {
-      await deleteDoc(doc(db, "profiles", selectedStudent.id));
+      await del(`/profiles/${selectedStudent.id}/`);
 
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");

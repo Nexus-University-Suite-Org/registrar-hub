@@ -27,18 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, DollarSign, Edit, Trash2 } from "lucide-react";
-import { db, auth } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  where,
-  getDoc,
-} from "@/lib/firebase";
+import { get, post, put, del } from "@/lib/api";
 import { toast } from "sonner";
 import { FeeAssignment } from "@/types/fee";
 
@@ -124,28 +113,23 @@ export default function Fees() {
   });
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        navigate("/");
-        return;
-      }
-    };
-    checkAuth();
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      navigate("/");
+      return;
+    }
     fetchRegistrarData();
   }, [navigate]);
 
   const fetchRegistrarData = async () => {
     try {
-      const user = auth.currentUser;
-      if (!user) return;
+      const userId = localStorage.getItem("user_id");
+      if (!userId) return;
 
-      const registrarDoc = await getDoc(doc(db, "registrars", user.uid));
-      if (registrarDoc.exists()) {
-        const data = registrarDoc.data();
-        const college = data.college;
-        setRegistrarCollege(college);
-        await fetchData(college);
+      const registrar = await get<any>(`/registrars/${userId}/`);
+      if (registrar?.college) {
+        setRegistrarCollege(registrar.college);
+        await fetchData(registrar.college);
       }
     } catch (error) {
       console.error("Error fetching registrar data:", error);
@@ -157,41 +141,18 @@ export default function Fees() {
 
   const fetchData = async (college: string) => {
     try {
-      const feesQuery = query(
-        collection(db, "fee_assignments"),
-        where("college", "==", college),
+      const feesData = await get<FeeAssignment[]>(
+        `/fee-assignments/?college=${encodeURIComponent(college)}`,
       );
-      const feesSnap = await getDocs(feesQuery);
-      const feesData = feesSnap.docs
-        .map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            item_name:
-              data.item_name ||
-              data.course_name ||
-              data.course_code ||
-              "Untitled item",
-            category: data.category || "Uncategorized",
-            year_level: data.year_level || data.yearLevel || 1,
-            semester: data.semester || 1,
-            academic_year:
-              data.academic_year || data.academicYear || ACADEMIC_YEARS[0],
-            amount: Number(data.amount || 0),
-            currency: data.currency || "UGX",
-            college: data.college || college,
-            notes: data.notes || "",
-          } as FeeAssignment;
-        })
-        .sort((a, b) => {
-          if (a.year_level !== b.year_level) return a.year_level - b.year_level;
-          if (a.semester !== b.semester) return a.semester - b.semester;
-          if (a.academic_year !== b.academic_year)
-            return b.academic_year.localeCompare(a.academic_year);
-          if (a.category !== b.category)
-            return a.category.localeCompare(b.category);
-          return a.item_name.localeCompare(b.item_name);
-        });
+      feesData.sort((a, b) => {
+        if (a.year_level !== b.year_level) return a.year_level - b.year_level;
+        if (a.semester !== b.semester) return a.semester - b.semester;
+        if (a.academic_year !== b.academic_year)
+          return b.academic_year.localeCompare(a.academic_year);
+        if (a.category !== b.category)
+          return a.category.localeCompare(b.category);
+        return a.item_name.localeCompare(b.item_name);
+      });
       setFeeAssignments(feesData);
     } catch (error) {
       console.error("Error fetching fees:", error);
@@ -296,10 +257,10 @@ export default function Fees() {
       };
 
       if (modalMode === "add") {
-        await addDoc(collection(db, "fee_assignments"), payload);
+        await post("/fee-assignments/", payload);
         toast.success("Fee assigned successfully");
       } else if (selectedFee) {
-        await updateDoc(doc(db, "fee_assignments", selectedFee.id), payload);
+        await put(`/fee-assignments/${selectedFee.id}/`, payload);
         toast.success("Fee updated successfully");
       }
 
@@ -323,7 +284,7 @@ export default function Fees() {
   const handleDeleteFee = async (id: string) => {
     if (!confirm("Delete this fee assignment?")) return;
     try {
-      await deleteDoc(doc(db, "fee_assignments", id));
+      await del(`/fee-assignments/${id}/`);
       toast.success("Fee assignment deleted");
       if (registrarCollege) await fetchData(registrarCollege);
     } catch (error) {

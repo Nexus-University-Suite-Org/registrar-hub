@@ -37,17 +37,7 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  doc,
-  query,
-  where,
-  onSnapshot,
-  db,
-} from "@/lib/firebase";
+import { get, post, put } from "@/lib/api";
 
 interface Event {
   id: string;
@@ -118,32 +108,29 @@ export default function Calendar() {
   const [newEvent, setNewEvent] = useState<Partial<Event>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const eventsCollection = collection(db, "AcademicCalendar");
-
-    // Set up real-time listener
-    const unsubscribe = onSnapshot(eventsCollection, (snapshot) => {
-      const eventsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        date: doc.data().date.toDate(),
-        dueDate: doc.data().dueDate?.toDate(),
-      })) as Event[];
-      setEvents(eventsData);
+  const fetchEvents = async () => {
+    try {
+      const eventsData = await get<any[]>("/academic-calendar/");
+      setEvents(
+        eventsData.map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          date: new Date(e.date),
+          dueDate: e.due_date ? new Date(e.due_date) : undefined,
+          type: e.type,
+          description: e.description,
+          isActive: e.is_active,
+        })),
+      );
       setLoading(false);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      setLoading(false);
+    }
+  };
 
-      // Check for expired events and deactivate them
-      const now = new Date();
-      eventsData.forEach((event) => {
-        if (event.dueDate && event.dueDate < now && event.isActive) {
-          updateDoc(doc(db, "AcademicCalendar", event.id), {
-            isActive: false,
-          });
-        }
-      });
-    });
-
-    return () => unsubscribe();
+  useEffect(() => {
+    fetchEvents();
   }, []);
 
   const monthStart = startOfMonth(currentDate);
@@ -167,16 +154,17 @@ export default function Calendar() {
   const addEvent = async () => {
     if (newEvent.title && newEvent.date && newEvent.type) {
       try {
-        await addDoc(collection(db, "AcademicCalendar"), {
+        await post("/academic-calendar/", {
           title: newEvent.title,
-          date: newEvent.date,
-          dueDate: newEvent.dueDate || null,
+          date: newEvent.date.toISOString(),
+          due_date: newEvent.dueDate?.toISOString() || null,
           type: newEvent.type,
           description: newEvent.description || "",
-          isActive: true,
+          is_active: true,
         });
         setNewEvent({});
         setIsAddEventOpen(false);
+        await fetchEvents();
       } catch (error) {
         console.error("Error adding event:", error);
       }
@@ -185,9 +173,10 @@ export default function Calendar() {
 
   const toggleEventActive = async (eventId: string, currentStatus: boolean) => {
     try {
-      await updateDoc(doc(db, "AcademicCalendar", eventId), {
-        isActive: !currentStatus,
+      await put(`/academic-calendar/${eventId}/`, {
+        is_active: !currentStatus,
       });
+      await fetchEvents();
     } catch (error) {
       console.error("Error updating event:", error);
     }

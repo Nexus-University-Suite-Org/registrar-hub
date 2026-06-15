@@ -12,7 +12,6 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auth, db } from "@/lib/firebase";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -31,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { collection, getDocs, query, where } from "@/lib/firebase";
+import { get } from "@/lib/api";
 
 interface EnrollmentStats {
   totalStudents: number;
@@ -225,21 +224,13 @@ export default function Reports() {
     try {
       setLoadingDepartmentSummary(true);
 
-      const studentsQuery = query(
-        collection(db, "profiles"),
-        where("role", "==", "student"),
-      );
-      const snapshot = await getDocs(studentsQuery);
-
-      const students = snapshot.docs.map((studentDoc) => {
-        const data = studentDoc.data();
-        return {
-          department: data.department || "Not Assigned",
-          program: data.program || "Not Assigned",
-          year_of_study: Number(data.year_of_study || data.yearOfStudy || 1),
-          status: data.status || "Active",
-        };
-      });
+      const profiles = await get<any[]>("/profiles/?role=student");
+      const students = profiles.map((data: any) => ({
+        department: data.department || "Not Assigned",
+        program: data.program || "Not Assigned",
+        year_of_study: Number(data.year_of_study || data.yearOfStudy || 1),
+        status: data.status || "Active",
+      }));
 
       const departmentMap = new Map<
         string,
@@ -338,29 +329,21 @@ export default function Reports() {
       setLoadingEnrollment(true);
 
       // Fetch all students from profiles collection
-      const studentsQuery = query(
-        collection(db, "profiles"),
-        where("role", "==", "student"),
-      );
-
-      const querySnapshot = await getDocs(studentsQuery);
-      const students = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          student_number: data.student_number || data.studentNumber || "",
-          first_name: data.full_name?.split(" ")[0] || data.firstName || "",
-          last_name:
-            data.full_name?.split(" ").slice(1).join(" ") ||
-            data.lastName ||
-            "",
-          department: data.department || "Not Assigned",
-          program: data.program || "Not Assigned",
-          year_of_study: data.year_of_study || data.yearOfStudy || 1,
-          status: data.status || "Active",
-          admission_date: data.admission_date || data.admissionDate || "",
-        };
-      });
+      const profiles = await get<any[]>("/profiles/?role=student");
+      const students = profiles.map((data: any) => ({
+        id: data.id,
+        student_number: data.student_number || data.studentNumber || "",
+        first_name: data.full_name?.split(" ")[0] || data.firstName || "",
+        last_name:
+          data.full_name?.split(" ").slice(1).join(" ") ||
+          data.lastName ||
+          "",
+        department: data.department || "Not Assigned",
+        program: data.program || "Not Assigned",
+        year_of_study: data.year_of_study || data.yearOfStudy || 1,
+        status: data.status || "Active",
+        admission_date: data.admission_date || data.admissionDate || "",
+      }));
 
       // Calculate statistics
       const stats: EnrollmentStats = {
@@ -450,30 +433,13 @@ export default function Reports() {
       setLoadingAcademic(true);
 
       // Fetch all student grades
-      const gradesQuery = query(collection(db, "student_grades"));
-      const gradesSnap = await getDocs(gradesQuery);
-      const grades: StudentGradeRecord[] = gradesSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<StudentGradeRecord, "id">),
-      }));
+      const grades: StudentGradeRecord[] = await get<StudentGradeRecord[]>("/student-grades/");
 
       // Fetch all students
-      const studentsQuery = query(
-        collection(db, "profiles"),
-        where("role", "==", "student"),
-      );
-      const studentsSnap = await getDocs(studentsQuery);
-      const students: StudentProfileRecord[] = studentsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<StudentProfileRecord, "id">),
-      }));
+      const students: StudentProfileRecord[] = await get<StudentProfileRecord[]>("/profiles/?role=student");
 
       // Fetch courses for course information
-      const coursesSnap = await getDocs(collection(db, "courses"));
-      const courses: CourseRecord[] = coursesSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<CourseRecord, "id">),
-      }));
+      const courses: CourseRecord[] = await get<CourseRecord[]>("/courses/");
 
       // Create maps for quick lookups
       const studentMap = new Map(students.map((s) => [s.id, s]));
@@ -969,14 +935,10 @@ export default function Reports() {
   };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        navigate("/");
-      }
-    };
-
-    checkAuth();
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      navigate("/");
+    }
   }, [navigate]);
 
   return (

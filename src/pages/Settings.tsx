@@ -16,8 +16,7 @@ import {
   CreditCard,
   Loader2,
 } from "lucide-react";
-import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "@/lib/firebase";
+import { get, put } from "@/lib/api";
 import { useBranding } from "@/hooks/useBranding";
 import { updateExistingStudents } from "@/lib/studentMigration";
 import { toast } from "sonner";
@@ -39,22 +38,20 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const user = auth.currentUser;
-      if (!user) {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
         setLoading(false);
         return;
       }
       try {
-        const docSnap = await getDoc(doc(db, "registrars", user.uid));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setFirstName(data.firstName || "");
-          setLastName(data.lastName || "");
-          setEmployeeId(data.employeeId || "");
-          setDepartment(data.department || "");
-          setCollege(data.college || "");
-          setEmail(data.email || user.email || "");
-        }
+        const reg = await get<any>(`/registrars/${userId}/`);
+        setFirstName(reg.first_name || "");
+        setLastName(reg.last_name || "");
+        setEmployeeId(reg.employee_id || "");
+        setDepartment(reg.department || "");
+        setCollege(reg.college || "");
+        setEmail(reg.email || localStorage.getItem("user_email") || "");
+        localStorage.setItem("registrar_college", reg.college || "");
       } catch (err) {
         console.error("Failed to fetch profile", err);
       } finally {
@@ -66,20 +63,21 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
-    const user = auth.currentUser;
-    if (!user) {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
       toast.error("You must be signed in");
       return;
     }
     setSaving(true);
     try {
-      await updateDoc(doc(db, "registrars", user.uid), {
-        firstName,
-        lastName,
-        employeeId,
+      await put(`/registrars/${userId}/`, {
+        first_name: firstName,
+        last_name: lastName,
+        employee_id: employeeId,
         department,
         college,
       });
+      localStorage.setItem("registrar_college", college);
       toast.success("Profile updated successfully");
     } catch (err) {
       toast.error("Failed to update profile");

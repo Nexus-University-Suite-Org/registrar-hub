@@ -3,7 +3,6 @@ import { Sidebar } from "./Sidebar";
 import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auth, signOut } from "@/lib/firebase";
 import { toast } from "sonner";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -18,11 +17,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("user_email");
+      localStorage.removeItem("registrar_college");
       toast.success("Signed out successfully");
       navigate("/");
     } catch (err: any) {
-      console.error("Error signing out from Firebase:", err);
+      console.error("Error signing out:", err);
       toast.error("Failed to sign out");
     }
   };

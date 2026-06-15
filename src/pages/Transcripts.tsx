@@ -5,7 +5,6 @@ import { FileText, Search, Download, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { auth, db } from "@/lib/firebase";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { collection, getDocs, query, where } from "@/lib/firebase";
+import { get } from "@/lib/api";
 
 interface TranscriptEntry {
   courseCode: string;
@@ -55,14 +54,10 @@ export default function Transcripts() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        navigate("/");
-      }
-    };
-
-    checkAuth();
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      navigate("/");
+    }
   }, [navigate]);
 
   const handleGenerateTranscript = async (e: FormEvent) => {
@@ -76,28 +71,15 @@ export default function Transcripts() {
     try {
       setIsGenerating(true);
 
-      // 1. Find student profile (from profiles, fallback to students)
+      // 1. Find student profile
       let studentProfile: any | null = null;
-      const profilesSnap = await getDocs(
-        query(
-          collection(db, "profiles"),
-          where("role", "==", "student"),
-          where("student_number", "==", studentNumber.trim()),
-        ),
-      );
-      if (!profilesSnap.empty) {
-        const d = profilesSnap.docs[0];
-        studentProfile = { id: d.id, ...d.data() };
+      const profiles: any[] = await get(`/profiles/?student_number=${encodeURIComponent(studentNumber.trim())}`);
+      if (profiles.length > 0) {
+        studentProfile = profiles[0];
       } else {
-        const studentsSnap = await getDocs(
-          query(
-            collection(db, "students"),
-            where("student_number", "==", studentNumber.trim()),
-          ),
-        );
-        if (!studentsSnap.empty) {
-          const d = studentsSnap.docs[0];
-          studentProfile = { id: d.id, ...d.data() };
+        const students: any[] = await get(`/students/?student_number=${encodeURIComponent(studentNumber.trim())}`);
+        if (students.length > 0) {
+          studentProfile = students[0];
         }
       }
 
@@ -109,22 +91,11 @@ export default function Transcripts() {
       const studentId = studentProfile.id as string;
 
       // 2. Fetch grades for student (optionally filtered by academic year)
-      let gradesQuery = query(
-        collection(db, "student_grades"),
-        where("student_id", "==", studentId),
-      );
+      let gradesPath = `/student-grades/?student_id=${encodeURIComponent(studentId)}`;
       if (academicYear.trim()) {
-        gradesQuery = query(
-          collection(db, "student_grades"),
-          where("student_id", "==", studentId),
-          where("academic_year", "==", academicYear.trim()),
-        );
+        gradesPath += `&academic_year=${encodeURIComponent(academicYear.trim())}`;
       }
-      const gradesSnap = await getDocs(gradesQuery);
-      const grades = gradesSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as any[];
+      const grades: any[] = await get(gradesPath);
 
       if (!grades.length) {
         toast.error(
@@ -133,24 +104,14 @@ export default function Transcripts() {
         return;
       }
 
-      // 3. Load course and course unit metadata
-      const coursesSnap = await getDocs(collection(db, "courses"));
-      const unitsSnap = await getDocs(collection(db, "course_units"));
+      // 3. Load course metadata
+      const courses: any[] = await get("/courses/");
       const courseMap = new Map<
         string,
         { code: string; title: string; credits: number }
       >();
-      coursesSnap.docs.forEach((d) => {
-        const data = d.data() as any;
-        courseMap.set(d.id, {
-          code: data.code || "N/A",
-          title: data.name || data.title || "Unknown Course",
-          credits: data.credits ?? 3,
-        });
-      });
-      unitsSnap.docs.forEach((d) => {
-        const data = d.data() as any;
-        courseMap.set(d.id, {
+      courses.forEach((data: any) => {
+        courseMap.set(data.id, {
           code: data.code || "N/A",
           title: data.name || data.title || "Unknown Course",
           credits: data.credits ?? 3,

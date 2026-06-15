@@ -20,20 +20,7 @@ import {
   Award,
   RefreshCw,
 } from "lucide-react";
-import {
-  db,
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  orderBy,
-  serverTimestamp,
-  auth,
-} from "@/lib/firebase";
+import { get, post, put, del } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function Lecturers() {
@@ -53,20 +40,10 @@ export default function Lecturers() {
 
   const fetchLecturers = async () => {
     try {
-      const q = query(
-        collection(db, "profiles"),
-        where("role", "==", "lecturer"),
-      );
-
-      const querySnapshot = await getDocs(q);
-      const lecturersData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Lecturer[];
-
+      const lecturersData = await get<Lecturer[]>("/profiles/?role=lecturer");
       setLecturers(lecturersData);
     } catch (error) {
-      console.error("Error fetching lecturers from Firestore:", error);
+      console.error("Error fetching lecturers from API:", error);
       toast.error("Failed to fetch lecturers");
     } finally {
       setLoading(false);
@@ -113,48 +90,33 @@ export default function Lecturers() {
   const handleFormSubmit = async (lecturerData: Partial<Lecturer>) => {
     try {
       if (modalMode === "add") {
-        const docRef = await addDoc(collection(db, "profiles"), {
-          ...lecturerData,
-          role: "lecturer",
-          created_at: serverTimestamp(),
-        });
+        const payload = { ...lecturerData, role: "lecturer" };
+        const created = await post<Lecturer>("/profiles/", payload);
 
         // Log activity
-        await addDoc(collection(db, "activities"), {
+        await post("/activities/", {
           action: "lecturer_added",
           entity: "lecturer",
-          entityId: docRef.id,
+          entityId: created.id,
           entityName: `${lecturerData.first_name} ${lecturerData.last_name}`,
           details: lecturerData.department || "",
-          timestamp: serverTimestamp(),
-          userId: auth.currentUser?.uid || "",
+          userId: localStorage.getItem("user_id") || "",
           userName: "Registrar",
         });
 
-        const newLecturer = {
-          id: docRef.id,
-          ...lecturerData,
-          role: "lecturer",
-        } as Lecturer;
-
-        setLecturers([newLecturer, ...lecturers]);
+        setLecturers([created, ...lecturers]);
         toast.success("Lecturer added successfully");
       } else if (selectedLecturer) {
-        const docRef = doc(db, "profiles", selectedLecturer.id);
-        await updateDoc(docRef, {
-          ...lecturerData,
-          updated_at: serverTimestamp(),
-        });
+        await put(`/profiles/${selectedLecturer.id}/`, lecturerData);
 
         // Log activity
-        await addDoc(collection(db, "activities"), {
+        await post("/activities/", {
           action: "lecturer_updated",
           entity: "lecturer",
           entityId: selectedLecturer.id,
           entityName: `${lecturerData.first_name} ${lecturerData.last_name}`,
           details: lecturerData.department || "",
-          timestamp: serverTimestamp(),
-          userId: auth.currentUser?.uid || "",
+          userId: localStorage.getItem("user_id") || "",
           userName: "Registrar",
         });
 
@@ -170,7 +132,7 @@ export default function Lecturers() {
 
       setIsFormModalOpen(false);
     } catch (error) {
-      console.error("Error saving lecturer to Firestore:", error);
+      console.error("Error saving lecturer to API:", error);
       toast.error("Failed to save lecturer");
     }
   };
@@ -179,7 +141,7 @@ export default function Lecturers() {
     if (!selectedLecturer) return;
 
     try {
-      await deleteDoc(doc(db, "profiles", selectedLecturer.id));
+      await del(`/profiles/${selectedLecturer.id}/`);
 
       setLecturers(
         lecturers.filter((lecturer) => lecturer.id !== selectedLecturer.id),
@@ -188,7 +150,7 @@ export default function Lecturers() {
       setIsDeleteModalOpen(false);
       setSelectedLecturer(null);
     } catch (error) {
-      console.error("Error deleting lecturer from Firestore:", error);
+      console.error("Error deleting lecturer from API:", error);
       toast.error("Failed to delete lecturer");
     }
   };

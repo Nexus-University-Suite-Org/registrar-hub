@@ -26,15 +26,7 @@ import {
 import { StudentStats } from "@/types/student";
 import { LecturerStats } from "@/types/lecturer";
 import { Activity as ActivityType } from "@/types/activity";
-import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  getCountFromServer,
-  query,
-  orderBy,
-  limit,
-  getDocs,
-} from "@/lib/firebase";
+import { get } from "@/lib/api";
 import { useNotifications } from "@/hooks/useNotifications";
 
 const quickActions = [
@@ -119,22 +111,18 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const studentCollection = collection(db, "profiles");
+      const profiles: any[] = await get("/profiles/");
+      const total = profiles.length || 0;
 
-      // Get all students count
-      const snapshot = await getCountFromServer(studentCollection);
-      const total = snapshot.data().count;
-
-      // In the original Supabase code, all students from profiles were considered active
       setStats({
-        total: total || 0,
+        total,
         active: total || 0,
         inactive: 0,
         graduated: 0,
         suspended: 0,
       });
     } catch (error) {
-      console.error("Error fetching stats from Firestore:", error);
+      console.error("Error fetching stats:", error);
     } finally {
       setLoading(false);
     }
@@ -142,17 +130,7 @@ export default function Dashboard() {
 
   const fetchActivities = async () => {
     try {
-      const activitiesQuery = query(
-        collection(db, "activities"),
-        orderBy("timestamp", "desc"),
-        limit(10),
-      );
-      const querySnapshot = await getDocs(activitiesQuery);
-      const activitiesData: ActivityType[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate() || new Date(),
-      })) as ActivityType[];
+      const activitiesData: ActivityType[] = await get("/activities/");
       setActivities(activitiesData);
     } catch (error) {
       console.error("Error fetching activities:", error);
@@ -225,8 +203,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const user = auth.currentUser;
-      if (!user) {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
         navigate("/");
         return;
       }

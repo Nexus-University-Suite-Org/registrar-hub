@@ -10,8 +10,6 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
-
 const faqs = [
   {
     question: "How do I manage student records?",
@@ -44,14 +42,10 @@ export default function HelpSupport() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        navigate("/");
-      }
-    };
-
-    checkAuth();
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      navigate("/");
+    }
   }, [navigate]);
 
   return (

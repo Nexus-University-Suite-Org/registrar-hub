@@ -1,164 +1,76 @@
-import { useState, useEffect } from "react";
-import {
-  auth,
-  db,
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  getDocs,
-  Timestamp,
-  writeBatch,
-} from "@/lib/firebase";
-
-const CALENDAR_COLLECTION = "AcademicCalendar";
+import { useState, useEffect, useCallback } from "react";
+import { get, put, del, post } from "@/lib/api";
 import type {
   Notification,
   NotificationType,
   NotificationMetadata,
 } from "@/types/notification";
 
-const COLLECTION = "notifications";
-
-function toNotification(docSnap: {
-  id: string;
-  data: () => Record<string, unknown>;
-}): Notification {
-  const d = docSnap.data();
-  const raw = d.createdAt as { toDate?: () => Date } | string | undefined;
-  const createdAt =
-    typeof raw === "object" && raw?.toDate
-      ? raw.toDate()
-      : raw
-        ? new Date(raw as string)
-        : new Date();
+function toNotification(item: any): Notification {
+  const createdAt = item.created_at ? new Date(item.created_at) : new Date();
   return {
-    id: docSnap.id,
-    recipientId: d.recipientId as string | null,
-    college: (d.college as string) ?? null,
-    type: (d.type as NotificationType) ?? "system",
-    title: (d.title as string) ?? "",
-    message: (d.message as string) ?? "",
-    read: (d.read as boolean) ?? false,
+    id: item.id,
+    recipientId: item.recipient_id ?? null,
+    college: item.college ?? null,
+    type: (item.type as NotificationType) ?? "system",
+    title: item.title ?? "",
+    message: item.message ?? "",
+    read: item.read ?? false,
     createdAt,
     timestamp: createdAt,
-    metadata: d.metadata as NotificationMetadata | undefined,
-    createdBy: d.createdBy as string | undefined,
+    metadata: item.metadata as NotificationMetadata | undefined,
+    createdBy: item.created_by as string | undefined,
   };
 }
+
+const POLL_INTERVAL = 15000; // 15 seconds
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const uid = auth.currentUser?.uid;
+  const uid = localStorage.getItem("user_id");
 
-  useEffect(() => {
+  const fetchNotifications = useCallback(async () => {
     if (!uid) {
       setNotifications([]);
       setLoading(false);
       return;
     }
-    const q = query(
-      collection(db, COLLECTION),
-      where("recipientId", "==", uid),
-      orderBy("createdAt", "desc"),
-    );
-    const unsub = onSnapshot(
-      q,
-      (snapshot) => {
-        const list = snapshot.docs.map((d) =>
-          toNotification({ id: d.id, data: () => d.data() }),
-        );
-        setNotifications(list);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Notifications listener error:", err);
-        setLoading(false);
-      },
-    );
-    return () => unsub();
+    try {
+      const data = await get<any[]>(`/notifications/?recipient_id=${uid}`);
+      const list = data.map(toNotification);
+      setNotifications(list);
+    } catch (err) {
+      console.error("Notifications fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [uid]);
 
-  // Create notifications for upcoming deadlines from Academic Calendar (once per mount)
   useEffect(() => {
-    if (!uid) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const calendarSnap = await getDocs(collection(db, CALENDAR_COLLECTION));
-        const now = new Date();
-        const threeDaysFromNow = new Date(
-          now.getTime() + 3 * 24 * 60 * 60 * 1000,
-        );
-        const existingSnap = await getDocs(
-          query(
-            collection(db, COLLECTION),
-            where("recipientId", "==", uid),
-            where("type", "==", "deadline"),
-          ),
-        );
-        const existingEntityIds = new Set(
-          existingSnap.docs
-            .map((d) => (d.data().metadata as { entityId?: string })?.entityId)
-            .filter(Boolean),
-        );
-        for (const d of calendarSnap.docs) {
-          if (cancelled) return;
-          const data = d.data();
-          if (data.type !== "deadline" || !data.isActive) continue;
-          const dueDate =
-            data.dueDate?.toDate?.() ??
-            (data.dueDate ? new Date(data.dueDate as string) : null);
-          if (!dueDate || dueDate < now || dueDate > threeDaysFromNow) continue;
-          if (existingEntityIds.has(d.id)) continue;
-          await createDeadlineNotification({
-            recipientId: uid,
-            title: "Deadline approaching",
-            message: data.title
-              ? `${data.title} is due on ${dueDate.toLocaleDateString()}.`
-              : `A deadline is due on ${dueDate.toLocaleDateString()}.`,
-            entityId: d.id,
-            link: "/calendar",
-          });
-          existingEntityIds.add(d.id);
-        }
-      } catch (e) {
-        console.error("Deadline notifications check failed:", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [uid]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAsRead = async (id: string) => {
-    const ref = doc(db, COLLECTION, id);
-    await updateDoc(ref, { read: true });
+    await put(`/notifications/${id}/`, { read: true });
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
   };
 
   const markAllAsRead = async () => {
     if (!uid) return;
-    const q = query(
-      collection(db, COLLECTION),
-      where("recipientId", "==", uid),
-      where("read", "==", false),
-    );
-    const snap = await getDocs(q);
-    const batch = writeBatch(db);
-    snap.docs.forEach((d) => batch.update(d.ref, { read: true }));
-    if (!snap.empty) await batch.commit();
+    await post("/notifications/mark-all-read/", { recipient_id: uid });
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const deleteNotification = async (id: string) => {
-    await deleteDoc(doc(db, COLLECTION, id));
+    await del(`/notifications/${id}/`);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return {
@@ -180,16 +92,15 @@ export async function createNotification(params: {
   metadata?: NotificationMetadata;
   createdBy?: string;
 }) {
-  await addDoc(collection(db, COLLECTION), {
-    recipientId: params.recipientId,
+  await post("/notifications/", {
+    recipient_id: params.recipientId,
     college: params.college ?? null,
     type: params.type,
     title: params.title,
     message: params.message,
     read: false,
-    createdAt: Timestamp.now(),
     metadata: params.metadata ?? null,
-    createdBy: params.createdBy ?? null,
+    created_by: params.createdBy ?? null,
   });
 }
 

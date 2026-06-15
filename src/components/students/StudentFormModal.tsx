@@ -17,14 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X, Upload } from "lucide-react";
-import {
-  auth,
-  db,
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "@/lib/firebase";
 import { toast } from "sonner";
 
 interface StudentFormModalProps {
@@ -187,26 +179,10 @@ export function StudentFormModal({
 
   const uploadImage = async (): Promise<string | null> => {
     if (!selectedFile) return null;
-
-    setUploading(true);
-    try {
-      const storage = getStorage();
-      const fileExt = selectedFile.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `student-avatars/${fileName}`;
-      const storageRef = ref(storage, filePath);
-
-      await uploadBytes(storageRef, selectedFile);
-      const publicUrl = await getDownloadURL(storageRef);
-
-      return publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading image:", error);
-      toast.error(`Failed to upload image: ${error.message || ""}`);
-      return null;
-    } finally {
-      setUploading(false);
-    }
+    // TODO: Replace with Django API upload endpoint
+    console.log("Image upload not yet implemented via Django API", selectedFile.name);
+    toast.info("Image upload will be available after backend integration");
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

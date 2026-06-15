@@ -16,18 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { db, auth } from "@/lib/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  getDoc,
-  doc,
-  updateDoc,
-  addDoc,
-  deleteDoc,
-} from "@/lib/firebase";
+import { get, post, put, del } from "@/lib/api";
 import { toast } from "sonner";
 import { Course, CourseUnit } from "@/types/course";
 import { Lecturer } from "@/types/lecturer";
@@ -64,17 +53,11 @@ export function AssignCourseUnitsModal({
   const fetchRegistrarData = async () => {
     setLoading(true);
     try {
-      const user = auth.currentUser;
-      if (!user) return;
+      const userId = localStorage.getItem("user_id");
+      if (!userId) return;
 
-      const registrarDoc = await getDoc(doc(db, "registrars", user.uid));
-      if (registrarDoc.exists()) {
-        const data = registrarDoc.data();
-        await fetchData(data.college);
-      } else {
-        // Fallback for missing registrar document
-        await fetchData("");
-      }
+      const registrar = await get<any>(`/registrars/${userId}/`);
+      await fetchData(registrar?.college || "");
     } catch (error) {
       console.error("Error fetching registrar data:", error);
       toast.error("Failed to load initial data");
@@ -86,42 +69,26 @@ export function AssignCourseUnitsModal({
   const fetchData = async (college: string) => {
     try {
       // Fetch Courses
-      let coursesQuery = collection(db, "courses") as any;
-      if (college) {
-        coursesQuery = query(
-          collection(db, "courses"),
-          where("college", "==", college),
-        );
-      }
-
-      const coursesSnap = await getDocs(coursesQuery);
-      const coursesData = coursesSnap.docs
-        .map(
-          (doc) =>
-            ({
-              id: doc.id,
-              ...(doc.data() as Record<string, unknown>),
-            }) as Course,
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const coursesData = await get<Course[]>(
+        college
+          ? `/courses/?college=${encodeURIComponent(college)}`
+          : "/courses/",
+      );
+      coursesData.sort((a, b) => a.name.localeCompare(b.name));
       setCourses(coursesData);
 
       // Fetch Course Units
-      const unitsSnap = await getDocs(collection(db, "course_units"));
-      const unitsData = unitsSnap.docs
-        .map((doc) => {
-          const data = doc.data();
-          const course = coursesData.find((c) => c.id === data.course_id);
-          return {
-            id: doc.id,
-            ...data,
-            course_name: course?.name || "Unknown Course",
-          } as CourseUnit;
-        })
-        .filter((unit) => coursesData.some((c) => c.id === unit.course_id)) // Only show units for courses in this college
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const unitsData = await get<CourseUnit[]>("/course-units/");
+      unitsData.forEach((unit) => {
+        const course = coursesData.find((c) => c.id === unit.course_id);
+        unit.course_name = course?.name || "Unknown Course";
+      });
+      const filteredUnits = unitsData.filter((unit) =>
+        coursesData.some((c) => c.id === unit.course_id),
+      );
+      filteredUnits.sort((a, b) => a.name.localeCompare(b.name));
 
-      setCourseUnits(unitsData);
+      setCourseUnits(filteredUnits);
     } catch (error) {
       console.error("Error fetching courses/units:", error);
       toast.error("Failed to load courses");
@@ -142,53 +109,37 @@ export function AssignCourseUnitsModal({
     setSaving(true);
     try {
       // 1. Update the profile with the array of units
-      const docRef = doc(db, "profiles", lecturer.id);
-      await updateDoc(docRef, {
+      await put(`/profiles/${lecturer.id}/`, {
         assigned_course_units: selectedUnitIds,
       });
 
-      // 2. Save individual records to the "Sign Up" collection
+      // 2. Save individual records to the "sign-ups" collection
+      const existingSignUps = await get<any[]>(
+        `/sign-ups/?lecturer_id=${lecturer.id}`,
+      );
+      const existingUnitIds = existingSignUps.map((s: any) => s.course_unit_id);
+
       for (const unitId of selectedUnitIds) {
-        // Find the unit details
+        if (existingUnitIds.includes(unitId)) continue;
         const unit = courseUnits.find((u) => u.id === unitId);
-
-        // Find existing assigned records to prevent duplicates
-        const signUpQuery = query(
-          collection(db, "Sign Up"),
-          where("lecturer_id", "==", lecturer.id),
-          where("course_unit_id", "==", unitId),
-        );
-        const existingDocs = await getDocs(signUpQuery);
-
-        if (existingDocs.empty) {
-          // Add new record to 'Sign Up'
-          await addDoc(collection(db, "Sign Up"), {
-            lecturer_id: lecturer.id,
-            lecturer_name: `${lecturer.first_name} ${lecturer.last_name}`,
-            lecturer_email: lecturer.email,
-            course_unit_id: unitId,
-            course_unit_code: unit?.code || "",
-            course_unit_name: unit?.name || "",
-            course_id: unit?.course_id || "",
-            assigned_by: auth.currentUser?.uid || "system",
-            assigned_at: new Date().toISOString(),
-            status: "active",
-          });
-        }
+        await post("/sign-ups/", {
+          lecturer_id: lecturer.id,
+          lecturer_name: `${lecturer.first_name} ${lecturer.last_name}`,
+          lecturer_email: lecturer.email,
+          course_unit_id: unitId,
+          course_unit_code: unit?.code || "",
+          course_unit_name: unit?.name || "",
+          course_id: unit?.course_id || "",
+          assigned_by: localStorage.getItem("user_id") || "system",
+          assigned_at: new Date().toISOString(),
+          status: "active",
+        });
       }
 
       // 3. Remove units that were unchecked
-      const allCurrentSignUps = await getDocs(
-        query(
-          collection(db, "Sign Up"),
-          where("lecturer_id", "==", lecturer.id),
-        ),
-      );
-
-      for (const docSnapshot of allCurrentSignUps.docs) {
-        const data = docSnapshot.data();
-        if (!selectedUnitIds.includes(data.course_unit_id)) {
-          await deleteDoc(doc(db, "Sign Up", docSnapshot.id));
+      for (const signUp of existingSignUps) {
+        if (!selectedUnitIds.includes(signUp.course_unit_id)) {
+          await del(`/sign-ups/${signUp.id}/`);
         }
       }
 

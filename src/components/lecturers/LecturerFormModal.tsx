@@ -18,14 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { X, Upload, UserCheck } from "lucide-react";
-import {
-  auth,
-  db,
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "@/lib/firebase";
 import { toast } from "sonner";
 
 interface LecturerFormModalProps {
@@ -449,54 +441,10 @@ export function LecturerFormModal({
 
   const uploadImage = async (): Promise<string | null> => {
     if (!selectedFile) return null;
-
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (selectedFile.size > maxSize) {
-      toast.error("File size too large. Please select an image under 5MB.");
-      return null;
-    }
-
-    // Validate file type
-    const allowedTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      toast.error(
-        "Invalid file type. Please select a valid image file (JPG, PNG, GIF, WebP).",
-      );
-      return null;
-    }
-
-    setUploading(true);
-    try {
-      const fileExt = selectedFile.name.split(".").pop()?.toLowerCase();
-      const fileName = `${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2)}.${fileExt}`;
-      const filePath = `lecturer-avatars/${fileName}`;
-
-      const storage = getStorage();
-      const storageRef = ref(storage, filePath);
-
-      await uploadBytes(storageRef, selectedFile);
-      const publicUrl = await getDownloadURL(storageRef);
-
-      toast.success("Profile photo uploaded successfully!");
-      return publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading image:", error);
-      toast.error(
-        `Failed to upload image: ${error.message || "Please try again."}`,
-      );
-      return null;
-    } finally {
-      setUploading(false);
-    }
+    // TODO: Replace with Django API upload endpoint
+    console.log("Image upload not yet implemented via Django API", selectedFile.name);
+    toast.info("Image upload will be available after backend integration");
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
