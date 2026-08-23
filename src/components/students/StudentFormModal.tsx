@@ -179,8 +179,8 @@ export function StudentFormModal({
 
   const uploadImage = async (): Promise<string | null> => {
     if (!selectedFile) return null;
-    // TODO: Replace with Django API upload endpoint
-    console.log("Image upload not yet implemented via Django API", selectedFile.name);
+    // TODO: Replace with the platform API upload endpoint
+    console.log("Image upload not yet implemented via the platform API", selectedFile.name);
     toast.info("Image upload will be available after backend integration");
     return null;
   };

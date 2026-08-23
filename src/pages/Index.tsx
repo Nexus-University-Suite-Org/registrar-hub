@@ -60,7 +60,7 @@ const DemoWalkthrough = () => {
             <ul className="space-y-1 text-sm">
               <li>• Fully customizable branding without code changes</li>
               <li>• Real-time customization via web interface</li>
-              <li>• Firebase-powered backend for scalability</li>
+              <li>• Platform API backend for scalability</li>
               <li>• Modern React/TypeScript architecture</li>
             </ul>
           </div>
@@ -143,7 +143,7 @@ const DemoWalkthrough = () => {
             </ol>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>Storage:</strong> Logos are securely stored in Firebase
+            <strong>Storage:</strong> Logos are securely stored by the platform
             Storage
           </div>
         </div>
@@ -222,12 +222,11 @@ const DemoWalkthrough = () => {
       ),
     },
     {
-      title: "Firebase-Powered Backend",
+      title: "Platform API Backend",
       content: (
         <div className="space-y-4">
           <p className="text-muted-foreground">
-            All customization settings are stored in Firebase Firestore and
-            Storage.
+            All customization settings are served by the platform API.
           </p>
           <div className="bg-card p-4 rounded-lg border">
             <h4 className="font-semibold mb-2">Data Structure:</h4>
@@ -255,7 +254,7 @@ const DemoWalkthrough = () => {
                 <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
                   <Settings className="h-6 w-6 text-white" />
                 </div>
-                <p className="text-sm font-semibold">Firestore</p>
+                <p className="text-sm font-semibold">Settings</p>
                 <p className="text-xs text-muted-foreground">
                   Settings Storage
                 </p>
@@ -295,15 +294,14 @@ const DemoWalkthrough = () => {
             <h4 className="font-semibold mb-2">Deployment Steps:</h4>
             <ol className="space-y-2 text-sm list-decimal list-inside">
               <li>Clone the repository</li>
-              <li>Set up Firebase project</li>
+              <li>Configure the platform API</li>
               <li>Configure environment variables</li>
               <li>Deploy to your hosting platform</li>
               <li>Customize branding via web interface</li>
             </ol>
           </div>
           <div className="text-sm text-muted-foreground">
-            <strong>Tech Stack:</strong> React, TypeScript, Tailwind CSS,
-            Firebase, Vite
+            <strong>Tech Stack:</strong> React, TypeScript, Tailwind CSS, Vite
           </div>
         </div>
       ),
@@ -797,7 +795,7 @@ export default function Index() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground">
-                      Firebase Authentication
+                      Platform Authentication
                     </h4>
                     <p className="text-sm text-muted-foreground">
                       Enterprise-grade authentication with email verification
@@ -828,8 +826,7 @@ export default function Index() {
                       Data Protection
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      Secure data transmission and storage with Firebase
-                      security rules
+                      Secure data transmission and role-based access control
                     </p>
                   </div>
                 </div>
@@ -884,7 +881,7 @@ export default function Index() {
               <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Multi-factor authentication support</li>
                 <li>• Encrypted data transmission (HTTPS)</li>
-                <li>• Firebase security rules for data access control</li>
+                <li>• Role-based access control on the platform API</li>
                 <li>• Session timeout and automatic logout</li>
                 <li>• Password reset and account recovery</li>
                 <li>• Activity logging for all user actions</li>

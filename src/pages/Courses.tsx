@@ -118,7 +118,7 @@ export default function Courses() {
           return;
         }
       } catch {
-        console.warn("Registrar not found in Django DB");
+        console.warn("Registrar not found in the platform database");
       }
 
       setShowCollegeSetup(true);

@@ -24,7 +24,7 @@ export const useBranding = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch branding from Django API endpoint
+    // TODO: Fetch branding from the platform API tenant endpoint
     setLoading(false);
   }, []);
 
@@ -32,7 +32,7 @@ export const useBranding = () => {
     try {
       const newBranding = { ...branding, ...updates };
       setBranding(newBranding);
-      // TODO: Persist via Django API
+      // TODO: Persist via the platform API
       return true;
     } catch (error) {
       console.error("Error updating branding:", error);

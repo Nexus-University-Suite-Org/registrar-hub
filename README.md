@@ -30,7 +30,7 @@ This application is designed to be easily customizable for different institution
 
 ### Branding Configuration
 
-The branding settings are stored in Firestore under `settings/branding` with the following structure:
+The branding settings are served by the platform API (Spring Boot tenant module) with the following structure:
 
 ```json
 {
