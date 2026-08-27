@@ -12,6 +12,7 @@ import org.nexus.regbackend.configuration.OtpProperties;
 public class RegBackendApplication {
 
 
+
     public static void main(String[] args) {
 
         Dotenv dotenv = Dotenv.configure()
