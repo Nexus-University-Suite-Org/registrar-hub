@@ -1,19 +1,26 @@
 package org.nexus.regbackend.service;
 
+import org.nexus.regbackend.dto.LoginRequest;
+import org.nexus.regbackend.dto.LoginResponse;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SignUpRequest;
 
 /**
- * REG_UCD_003 — Registrar account creation.
+ * REG_UCD_002 / REG_UCD_003 — Registrar authentication and account creation.
  */
 public interface AuthService {
 
     /**
-     * Creates a new registrar account.
-     * Validates password match, uniqueness, and that the email OTP was verified.
-     *
-     * @param request validated sign-up payload
-     * @return slim view of the persisted account
+     * REG_UCD_003 — Creates a new registrar account.
      */
     RegistrarResponse signUp(SignUpRequest request);
+
+    /**
+     * REG_UCD_002 — Authenticates a registrar by email/username + password.
+     * Issues a JWT access token and a persisted refresh token.
+     *
+     * @param request login payload
+     * @return tokens + user + profile
+     */
+    LoginResponse login(LoginRequest request);
 }
