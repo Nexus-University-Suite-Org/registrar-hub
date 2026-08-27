@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * REG_UCD_003 / REG_UCD_004 / REG_UCD_005
+ * REG_UCD_002 / REG_UCD_003 / REG_UCD_004 / REG_UCD_005
  * Base URL: /api/v1/auth
  */
 @RestController
@@ -32,7 +32,6 @@ public class AuthController {
 
         String devOtp = otpService.sendSignupOtp(request);
 
-        // In production devOtp is null; in dev it is included for convenience
         Map<String, Object> data = devOtp != null
                 ? Map.of("sent", true, "otp", devOtp)
                 : Map.of("sent", true);
@@ -62,5 +61,17 @@ public class AuthController {
 
         RegistrarResponse registrar = authService.signUp(request);
         return ApiResponse.created("Registrar account created successfully.", registrar);
+    }
+
+    /**
+     * REG_UCD_002 — Registrar login.
+     * POST /api/v1/auth/login
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request) {
+
+        LoginResponse response = authService.login(request);
+        return ApiResponse.ok("Login successful.", response);
     }
 }
