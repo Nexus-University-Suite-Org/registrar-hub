@@ -16,8 +16,30 @@ spring:
         format_sql: true
     open-in-view: false
 
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: 8082
+
+# ── OTP settings ────────────────────────────────────────────────────────────
+otp:
+  secret: ${OTP_SECRET}
+  expiry-minutes: 10
+  resend-cooldown-seconds: 60
+  max-sends-per-hour: 5
+  max-verify-attempts: 5
+  # Set to true ONLY in local dev to include raw OTP in response
+  show-in-dev: ${OTP_SHOW_IN_DEV:false}
 
 # REG_UCD_001 — Actuator: expose health endpoint for internal deployment checks only.
 # The public health check is served by HealthController at /api/health.

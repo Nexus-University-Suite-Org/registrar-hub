@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REG_UCD_001 — publicly accessible health-check endpoint.
+ * publicly accessible health-check endpoint.
  * No authentication required.
  */
 @RestController
