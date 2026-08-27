@@ -18,3 +18,14 @@ spring:
 
 server:
   port: 8082
+
+# REG_UCD_001 — Actuator: expose health endpoint for internal deployment checks only.
+# The public health check is served by HealthController at /api/health.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
