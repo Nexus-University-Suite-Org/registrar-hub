@@ -4,10 +4,11 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.nexus.regbackend.configuration.JwtProperties;
 import org.nexus.regbackend.configuration.OtpProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties(OtpProperties.class)
+@EnableConfigurationProperties({OtpProperties.class, JwtProperties.class})
 public class RegBackendApplication {
 
 
