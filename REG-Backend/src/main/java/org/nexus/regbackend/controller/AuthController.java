@@ -6,12 +6,14 @@ import org.nexus.regbackend.dto.*;
 import org.nexus.regbackend.service.AuthService;
 import org.nexus.regbackend.service.OtpService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
- * REG_UCD_002 / REG_UCD_003 / REG_UCD_004 / REG_UCD_005
+ * REG_UCD_001 / REG_UCD_002 / REG_UCD_003 / REG_UCD_004 / REG_UCD_005
  * Base URL: /api/v1/auth
  */
 @RestController
@@ -73,5 +75,18 @@ public class AuthController {
 
         LoginResponse response = authService.login(request);
         return ApiResponse.ok("Login successful.", response);
+    }
+
+    /**
+     * REG_UCD_001 — Registrar logout.
+     * POST /api/v1/auth/logout
+     * Requires a valid Bearer access token. Revokes the entire refresh-token family.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal UserDetails principal) {
+
+        authService.logout(principal.getUsername());
+        return ApiResponse.ok("Logged out successfully.", null);
     }
 }

@@ -6,7 +6,7 @@ import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SignUpRequest;
 
 /**
- * REG_UCD_002 / REG_UCD_003 — Registrar authentication and account creation.
+ * REG_UCD_001 / REG_UCD_002 / REG_UCD_003 — Registrar authentication and account creation.
  */
 public interface AuthService {
 
@@ -23,4 +23,12 @@ public interface AuthService {
      * @return tokens + user + profile
      */
     LoginResponse login(LoginRequest request);
+
+    /**
+     * REG_UCD_001 — Revokes the entire refresh-token family for the authenticated registrar.
+     * Access-token expiry remains stateless and is not individually revoked.
+     *
+     * @param email the authenticated registrar's email (JWT subject)
+     */
+    void logout(String email);
 }

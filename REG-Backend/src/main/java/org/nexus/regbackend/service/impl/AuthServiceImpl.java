@@ -41,6 +41,18 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtProperties         jwtProperties;
 
+    // ── REG_UCD_001 — Logout ─────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void logout(String email) {
+        Registrar registrar = registrarRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Registrar not found."));
+
+        refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
+        log.info("Registrar logged out — refresh-token family revoked: id={}, email={}", registrar.getId(), email);
+    }
+
     // ── REG_UCD_003 — Sign Up ─────────────────────────────────────────────────
 
     @Override
