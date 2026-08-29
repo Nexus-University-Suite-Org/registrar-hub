@@ -7,6 +7,8 @@ import org.nexus.regbackend.dto.*;
 import org.nexus.regbackend.exception.DuplicateResourceException;
 import org.nexus.regbackend.exception.OtpException;
 import org.nexus.regbackend.exception.ValidationException;
+import org.nexus.regbackend.model.OtpPurpose;
+import org.nexus.regbackend.model.OtpRecord;
 import org.nexus.regbackend.model.RefreshToken;
 import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.repository.OtpRecordRepository;
@@ -40,6 +42,39 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder       passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtProperties         jwtProperties;
+
+    // ── REG_UCD_006 — Reset Password ─────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().toLowerCase().trim();
+
+        // Step 6: confirm a server-side verified reset challenge exists — never trust the client
+        OtpRecord challenge = otpRecordRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.RESET)
+                .orElseThrow(() -> new OtpException("No verified reset challenge found. Please complete OTP verification first."));
+
+        if (!challenge.isVerified()) {
+            throw new OtpException("Reset OTP has not been verified. Please verify your code first.");
+        }
+
+        if (challenge.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new OtpException("Reset challenge has expired. Please request a new code.");
+        }
+
+        Registrar registrar = registrarRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registrar not found."));
+
+        registrar.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        registrarRepository.save(registrar);
+
+        // Invalidate the reset challenge and revoke all refresh tokens (force re-login)
+        otpRecordRepository.deleteAllByEmailAndPurpose(email, OtpPurpose.RESET);
+        refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
+
+        log.info("Password reset completed: id={}, email={}", registrar.getId(), email);
+    }
 
     // ── REG_UCD_001 — Logout ─────────────────────────────────────────────────
 

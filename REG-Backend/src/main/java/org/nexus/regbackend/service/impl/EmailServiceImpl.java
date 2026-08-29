@@ -28,6 +28,23 @@ public class EmailServiceImpl implements EmailService {
                 """.formatted(otp));
 
         mailSender.send(message);
-        log.info("OTP email dispatched to {}", to);
+        log.info("Sign-up OTP email dispatched to {}", to);
+    }
+
+    @Override
+    public void sendResetOtpEmail(String to, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Your Nexus Registrar Password Reset Code");
+        message.setText("""
+                You requested a password reset. Your one-time code is: %s
+                
+                This code expires in 10 minutes. Do not share it with anyone.
+                
+                If you did not request a password reset, please ignore this email.
+                """.formatted(otp));
+
+        mailSender.send(message);
+        log.info("Password-reset OTP email dispatched to {}", to);
     }
 }

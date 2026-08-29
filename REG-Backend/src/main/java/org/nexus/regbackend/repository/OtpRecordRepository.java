@@ -1,5 +1,6 @@
 package org.nexus.regbackend.repository;
 
+import org.nexus.regbackend.model.OtpPurpose;
 import org.nexus.regbackend.model.OtpRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -12,8 +13,15 @@ public interface OtpRecordRepository extends JpaRepository<OtpRecord, Long> {
 
     Optional<OtpRecord> findTopByEmailOrderByCreatedAtDesc(String email);
 
+    Optional<OtpRecord> findTopByEmailAndPurposeOrderByCreatedAtDesc(String email, OtpPurpose purpose);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM OtpRecord o WHERE o.email = :email")
     void deleteAllByEmail(String email);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM OtpRecord o WHERE o.email = :email AND o.purpose = :purpose")
+    void deleteAllByEmailAndPurpose(String email, OtpPurpose purpose);
 }
