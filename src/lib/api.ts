@@ -12,8 +12,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
     throw new Error(`Expected JSON but got HTML (status ${response.status})`);
   }
   if (!response.ok) {
-    const message = data?.error || data?.detail || "Request failed";
+    const message = data?.error || data?.detail || data?.message || "Request failed";
     throw new Error(message);
+  }
+  if (data && typeof data === "object" && "data" in data && "status" in data) {
+    return data.data as T;
   }
   return data;
 }

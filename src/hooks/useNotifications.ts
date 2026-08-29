@@ -38,7 +38,7 @@ export function useNotifications() {
     }
     try {
       const data = await get<any[]>(`/notifications/?recipient_id=${uid}`);
-      const list = data.map(toNotification);
+      const list = (data || []).map(toNotification);
       setNotifications(list);
     } catch (err) {
       console.error("Notifications fetch error:", err);

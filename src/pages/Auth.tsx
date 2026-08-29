@@ -59,6 +59,10 @@ export default function Auth() {
   const [employeeId, setEmployeeId] = useState("");
   const [department, setDepartment] = useState("");
   const [college, setCollege] = useState("");
+  const [username, setUsername] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [verifiedOtp, setVerifiedOtp] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -85,16 +89,27 @@ export default function Auth() {
     e.preventDefault();
     if (!validateEmail(email)) return setError("Invalid email");
 
+    if (isLogin) {
+      setStep("login");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await post<{ otp?: string }>("/v1/auth/send-signup-otp", { email });
+      toast.success("Verification code sent to your email.");
+      setOtpDigits(["", "", "", ""]);
+      setStep("verification");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setIsLoading(false);
-      setStep(isLogin ? "login" : "profile");
-    }, 800);
+    }
   };
 
   const handleProfileSubmit = (e: any) => {
     e.preventDefault();
-    if (!firstName || !lastName || !employeeId || !college || !department)
+    if (!firstName || !lastName || !username || !employeeId || !college || !department || !phoneNumber || !dateOfBirth)
       return setError("Fill all fields");
 
     setStep("password");
@@ -109,32 +124,24 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      await post("/registrars/", {
+      await post("/v1/auth/signup", {
+        firstName,
+        lastName,
         email,
+        username,
         password,
-        first_name: firstName,
-        last_name: lastName,
-        employee_id: employeeId,
+        confirmPassword,
+        staffId: employeeId,
+        institution: college,
         department,
-        college,
+        phoneNumber,
+        dateOfBirth,
+        otp: verifiedOtp,
       });
 
       localStorage.setItem("registrar_college", college);
-
-      const otpRes = await post<{
-        success: boolean;
-        otp?: string;
-        verificationId: string;
-      }>("/auth/send-signup-otp/", { email, studentRecordId: null });
-
-      if (import.meta.env.DEV && otpRes.otp) {
-        toast.success("Your verification code is " + otpRes.otp);
-      } else {
-        toast.success("Verification code sent to your email.");
-      }
-
-      setOtpDigits(["", "", "", ""]);
-      setStep("verification");
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -147,18 +154,21 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const data: any = await post("/auth/login/", { identifier: email, password });
-      if (data.token) {
-        localStorage.setItem("access_token", data.token);
+      const data: any = await post("/v1/auth/login", { identifier: email, password });
+      if (data.accessToken) {
+        localStorage.setItem("access_token", data.accessToken);
       }
-      if (data.user?.uid) {
-        localStorage.setItem("user_id", data.user.uid);
+      if (data.refreshToken) {
+        localStorage.setItem("refresh_token", data.refreshToken);
+      }
+      if (data.user?.id) {
+        localStorage.setItem("user_id", String(data.user.id));
       }
       if (data.user?.email) {
         localStorage.setItem("user_email", data.user.email);
       }
-      if (data.profile?.college) {
-        localStorage.setItem("registrar_college", data.profile.college);
+      if (data.profile?.institution) {
+        localStorage.setItem("registrar_college", data.profile.institution);
       }
       toast.success("Welcome back!");
       navigate("/dashboard");
@@ -174,13 +184,14 @@ export default function Auth() {
     try {
       const endpoint =
         step === "reset-otp"
-          ? "/auth/verify-reset-otp/"
-          : "/auth/verify-signup-otp/";
+          ? "/v1/auth/verify-reset-otp"
+          : "/v1/auth/verify-signup-otp";
       const res = await post<{ valid: boolean }>(endpoint, {
         email,
         otp: code,
       });
       if (res.valid) {
+        setVerifiedOtp(code);
         setOtpVerified(true);
         setTimeout(() => {
           if (step === "reset-otp") {
@@ -188,7 +199,8 @@ export default function Auth() {
             setOtpVerified(false);
           } else {
             toast.success("Email verified successfully!");
-            navigate("/dashboard");
+            setStep("profile");
+            setOtpVerified(false);
           }
         }, 2000);
       } else {
@@ -216,14 +228,10 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const res = await post<{ otp?: string }>("/auth/send-reset-otp/", { email });
+      const res = await post<{ otp?: string }>("/v1/auth/send-reset-otp", { email });
       setOtpDigits(["", "", "", ""]);
       setOtpVerified(false);
-      if (import.meta.env.DEV && res.otp) {
-        toast.success("Your reset code is " + res.otp);
-      } else {
-        toast.success("Reset code sent to your email.");
-      }
+      toast.success("Reset code sent to your email.");
       setStep("reset-otp");
     } catch (err: any) {
       setError(err.message);
@@ -375,7 +383,7 @@ export default function Auth() {
                 <div className="flex items-center gap-2">
                   <ArrowLeft
                     className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-                    onClick={() => setStep("email")}
+                    onClick={() => setStep("verification")}
                   />
                   <h2 className="font-display text-lg font-semibold">
                     Create Profile
@@ -416,8 +424,22 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="username" className="text-sm font-medium">
+                      Username
+                    </Label>
+                    <Input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="johndoe"
+                      className="h-12 rounded-xl bg-background/50 border-border/50"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="employeeId" className="text-sm font-medium">
-                      Employee ID
+                      Staff ID
                     </Label>
                     <div className="relative">
                       <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -448,7 +470,7 @@ export default function Auth() {
 
                   <div className="space-y-2">
                     <Label htmlFor="college" className="text-sm font-medium">
-                      College / Institution
+                      Institution
                     </Label>
                     <div className="relative">
                       <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -461,6 +483,34 @@ export default function Auth() {
                         required
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber" className="text-sm font-medium">
+                      Phone Number
+                    </Label>
+                    <Input
+                      id="phoneNumber"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+254700000000"
+                      className="h-12 rounded-xl bg-background/50 border-border/50"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth" className="text-sm font-medium">
+                      Date of Birth
+                    </Label>
+                    <Input
+                      id="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className="h-12 rounded-xl bg-background/50 border-border/50"
+                      required
+                    />
                   </div>
 
                   <Button type="submit" className="w-full h-12 rounded-xl shadow-primary hover:shadow-glow transition-all duration-300">
@@ -760,16 +810,11 @@ export default function Auth() {
                         onClick={async () => {
                           setIsLoading(true);
                           try {
-                            const res = await post<{ otp?: string }>("/auth/send-signup-otp/", {
+                            const res = await post<{ otp?: string }>("/v1/auth/send-signup-otp", {
                               email,
-                              studentRecordId: null,
                             });
                             setOtpDigits(["", "", "", ""]);
-                            if (import.meta.env.DEV && res.otp) {
-                              toast.success("New code: " + res.otp);
-                            } else {
-                              toast.success("New code sent.");
-                            }
+                            toast.success("New code sent.");
                           } catch (err: any) {
                             setError(err.message);
                           } finally {
@@ -879,15 +924,11 @@ export default function Auth() {
                         onClick={async () => {
                           setIsLoading(true);
                           try {
-                            const res = await post<{ otp?: string }>("/auth/send-reset-otp/", {
+                            const res = await post<{ otp?: string }>("/v1/auth/send-reset-otp", {
                               email,
                             });
                             setOtpDigits(["", "", "", ""]);
-                            if (import.meta.env.DEV && res.otp) {
-                              toast.success("New code: " + res.otp);
-                            } else {
-                              toast.success("New code sent.");
-                            }
+                            toast.success("New code sent.");
                           } catch (err: any) {
                             setError(err.message);
                           } finally {

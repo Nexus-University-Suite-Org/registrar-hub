@@ -112,7 +112,7 @@ export default function Dashboard() {
   const fetchStats = async () => {
     try {
       const profiles: any[] = await get("/profiles/");
-      const total = profiles.length || 0;
+      const total = (profiles || []).length || 0;
 
       setStats({
         total,
@@ -131,7 +131,7 @@ export default function Dashboard() {
   const fetchActivities = async () => {
     try {
       const activitiesData: ActivityType[] = await get("/activities/");
-      setActivities(activitiesData);
+      setActivities(activitiesData || []);
     } catch (error) {
       console.error("Error fetching activities:", error);
     }
