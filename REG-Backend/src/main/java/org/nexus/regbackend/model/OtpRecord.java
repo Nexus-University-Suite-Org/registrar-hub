@@ -30,6 +30,23 @@ public class OtpRecord {
     @Column(nullable = false, length = 150)
     private String email;
 
+    /**
+     * Separates signup OTPs from password-reset OTPs so they cannot
+     * be cross-used. Defaults to SIGNUP for backwards compatibility.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private OtpPurpose purpose = OtpPurpose.SIGNUP;
+
+    /**
+     * Set to {@code true} server-side when verify-reset-otp succeeds.
+     * reset-password checks this flag — never a client-supplied value.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean verified = false;
+
     /** HMAC-SHA256(secret + nonce, rawOtp) — hex-encoded. */
     @Column(nullable = false)
     private String otpHash;

@@ -5,5 +5,6 @@ package org.nexus.regbackend.model;
  * Stored as a string in the database for readability.
  */
 public enum Role {
-    REGISTRAR
+    REGISTRAR,
+    ADMIN
 }

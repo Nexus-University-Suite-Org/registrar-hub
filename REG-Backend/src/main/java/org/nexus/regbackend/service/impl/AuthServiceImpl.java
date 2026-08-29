@@ -7,6 +7,9 @@ import org.nexus.regbackend.dto.*;
 import org.nexus.regbackend.exception.DuplicateResourceException;
 import org.nexus.regbackend.exception.OtpException;
 import org.nexus.regbackend.exception.ValidationException;
+import org.nexus.regbackend.mapper.RegistrarMapper;
+import org.nexus.regbackend.model.OtpPurpose;
+import org.nexus.regbackend.model.OtpRecord;
 import org.nexus.regbackend.model.RefreshToken;
 import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.repository.OtpRecordRepository;
@@ -32,14 +35,60 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final RegistrarRepository   registrarRepository;
-    private final OtpRecordRepository   otpRecordRepository;
+    private final RegistrarRepository    registrarRepository;
+    private final OtpRecordRepository    otpRecordRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final OtpService            otpService;
-    private final JwtService            jwtService;
-    private final PasswordEncoder       passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtProperties         jwtProperties;
+    private final OtpService             otpService;
+    private final JwtService             jwtService;
+    private final PasswordEncoder        passwordEncoder;
+    private final AuthenticationManager  authenticationManager;
+    private final JwtProperties          jwtProperties;
+    private final RegistrarMapper        registrarMapper;
+
+    // ── REG_UCD_006 — Reset Password ─────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().toLowerCase().trim();
+
+        // Step 6: confirm a server-side verified reset challenge exists — never trust the client
+        OtpRecord challenge = otpRecordRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.RESET)
+                .orElseThrow(() -> new OtpException("No verified reset challenge found. Please complete OTP verification first."));
+
+        if (!challenge.isVerified()) {
+            throw new OtpException("Reset OTP has not been verified. Please verify your code first.");
+        }
+
+        if (challenge.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            throw new OtpException("Reset challenge has expired. Please request a new code.");
+        }
+
+        Registrar registrar = registrarRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registrar not found."));
+
+        registrar.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        registrarRepository.save(registrar);
+
+        // Invalidate the reset challenge and revoke all refresh tokens (force re-login)
+        otpRecordRepository.deleteAllByEmailAndPurpose(email, OtpPurpose.RESET);
+        refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
+
+        log.info("Password reset completed: id={}, email={}", registrar.getId(), email);
+    }
+
+    // ── REG_UCD_001 — Logout ─────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void logout(String email) {
+        Registrar registrar = registrarRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Registrar not found."));
+
+        refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
+        log.info("Registrar logged out — refresh-token family revoked: id={}, email={}", registrar.getId(), email);
+    }
 
     // ── REG_UCD_003 — Sign Up ─────────────────────────────────────────────────
 
@@ -151,17 +200,6 @@ public class AuthServiceImpl implements AuthService {
     // ── Mapper ────────────────────────────────────────────────────────────────
 
     private RegistrarResponse toRegistrarResponse(Registrar registrar) {
-        return RegistrarResponse.builder()
-                .id(registrar.getId())
-                .firstName(registrar.getFirstName())
-                .lastName(registrar.getLastName())
-                .email(registrar.getEmail())
-                .username(registrar.getUsername())
-                .staffId(registrar.getStaffId())
-                .institution(registrar.getInstitution())
-                .department(registrar.getDepartment())
-                .phoneNumber(registrar.getPhoneNumber())
-                .role(registrar.getRole().name())
-                .build();
+        return registrarMapper.toResponse(registrar);
     }
 }
