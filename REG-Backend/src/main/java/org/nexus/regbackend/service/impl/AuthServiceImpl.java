@@ -7,6 +7,7 @@ import org.nexus.regbackend.dto.*;
 import org.nexus.regbackend.exception.DuplicateResourceException;
 import org.nexus.regbackend.exception.OtpException;
 import org.nexus.regbackend.exception.ValidationException;
+import org.nexus.regbackend.mapper.RegistrarMapper;
 import org.nexus.regbackend.model.OtpPurpose;
 import org.nexus.regbackend.model.OtpRecord;
 import org.nexus.regbackend.model.RefreshToken;
@@ -34,14 +35,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final RegistrarRepository   registrarRepository;
-    private final OtpRecordRepository   otpRecordRepository;
+    private final RegistrarRepository    registrarRepository;
+    private final OtpRecordRepository    otpRecordRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final OtpService            otpService;
-    private final JwtService            jwtService;
-    private final PasswordEncoder       passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtProperties         jwtProperties;
+    private final OtpService             otpService;
+    private final JwtService             jwtService;
+    private final PasswordEncoder        passwordEncoder;
+    private final AuthenticationManager  authenticationManager;
+    private final JwtProperties          jwtProperties;
+    private final RegistrarMapper        registrarMapper;
 
     // ── REG_UCD_006 — Reset Password ─────────────────────────────────────────
 
@@ -198,17 +200,6 @@ public class AuthServiceImpl implements AuthService {
     // ── Mapper ────────────────────────────────────────────────────────────────
 
     private RegistrarResponse toRegistrarResponse(Registrar registrar) {
-        return RegistrarResponse.builder()
-                .id(registrar.getId())
-                .firstName(registrar.getFirstName())
-                .lastName(registrar.getLastName())
-                .email(registrar.getEmail())
-                .username(registrar.getUsername())
-                .staffId(registrar.getStaffId())
-                .institution(registrar.getInstitution())
-                .department(registrar.getDepartment())
-                .phoneNumber(registrar.getPhoneNumber())
-                .role(registrar.getRole().name())
-                .build();
+        return registrarMapper.toResponse(registrar);
     }
 }
