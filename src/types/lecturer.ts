@@ -16,7 +16,7 @@ export interface Lecturer {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  assigned_course_units?: string[]; // Array of course unit IDs assigned to teaches
+  assigned_course_units?: number[]; // Array of course unit IDs assigned to teaches
 }
 
 export interface LecturerStats {

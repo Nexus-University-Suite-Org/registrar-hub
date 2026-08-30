@@ -37,7 +37,7 @@ export function AssignCourseUnitsModal({
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseUnits, setCourseUnits] = useState<CourseUnit[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
-  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -62,11 +62,11 @@ export function AssignCourseUnitsModal({
           String(p.email)?.toLowerCase() ===
             String(lecturer.email)?.toLowerCase(),
       );
-      const assigned = profile?.assigned_course_units?.map(String) || [];
+      const assigned = profile?.assigned_course_units?.map(Number) || [];
       setSelectedUnitIds(assigned);
     } catch (e) {
       console.warn("Failed to fetch assigned units from lecturer portal:", e);
-      setSelectedUnitIds(lecturer.assigned_course_units || []);
+      setSelectedUnitIds(lecturer.assigned_course_units?.map(Number) || []);
     }
   };
 
@@ -115,7 +115,7 @@ export function AssignCourseUnitsModal({
     }
   };
 
-  const handleToggleUnit = (unitId: string) => {
+  const handleToggleUnit = (unitId: number) => {
     setSelectedUnitIds((prev) =>
       prev.includes(unitId)
         ? prev.filter((id) => id !== unitId)
