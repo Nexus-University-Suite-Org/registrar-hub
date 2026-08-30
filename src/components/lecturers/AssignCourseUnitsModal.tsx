@@ -103,6 +103,8 @@ export function AssignCourseUnitsModal({
     );
   };
 
+  const LECTURER_BACKEND_URL = "http://localhost:8084";
+
   const handleSave = async () => {
     if (!lecturer.id) return;
 
@@ -141,6 +143,47 @@ export function AssignCourseUnitsModal({
         if (!selectedUnitIds.includes(signUp.course_unit_id)) {
           await del(`/sign-ups/${signUp.id}/`);
         }
+      }
+
+      // 4. Sync course units to lecturer-portal backend
+      const assignedUnits = courseUnits.filter((u) =>
+        selectedUnitIds.includes(u.id),
+      );
+      if (assignedUnits.length > 0) {
+        try {
+          await fetch(`${LECTURER_BACKEND_URL}/api/profiles/course-units/sync`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              assignedUnits.map((u) => ({
+                id: Number(u.id),
+                code: u.code,
+                name: u.name,
+                credits: u.credits,
+                semester: u.semester,
+                year: u.year,
+              })),
+            ),
+          });
+        } catch (e) {
+          console.warn("Failed to sync course units to lecturer portal:", e);
+        }
+      }
+
+      // 5. Update assigned units on lecturer-portal backend
+      try {
+        await fetch(
+          `${LECTURER_BACKEND_URL}/api/profiles/by-email/${encodeURIComponent(lecturer.email)}/assigned-units`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              assigned_course_units: selectedUnitIds.map(Number),
+            }),
+          },
+        );
+      } catch (e) {
+        console.warn("Failed to update assigned units on lecturer portal:", e);
       }
 
       toast.success("Assigned units saved successfully");
