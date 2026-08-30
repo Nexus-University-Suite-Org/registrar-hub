@@ -52,18 +52,38 @@ export function AssignCourseUnitsModal({
 
   const fetchAssignedUnits = async () => {
     try {
-      const resp = await fetch(
-        `${LECTURER_BACKEND_URL}/api/profiles/?role=lecturer`,
-      );
-      const profiles = await resp.json();
-      const profile = profiles?.find(
+      const [lpProfilesResp, lpUnitsResp, regUnitsResp] = await Promise.all([
+        fetch(`${LECTURER_BACKEND_URL}/api/profiles/?role=lecturer`),
+        fetch(`${LECTURER_BACKEND_URL}/api/course-units/`),
+        get<CourseUnit[]>("/course-units/"),
+      ]);
+      const lpProfiles = await lpProfilesResp.json();
+      const lpUnits = await lpUnitsResp.json();
+      const profile = lpProfiles?.find(
         (p: any) =>
           String(p.id) === String(lecturer.id) ||
           String(p.email)?.toLowerCase() ===
             String(lecturer.email)?.toLowerCase(),
       );
-      const assigned = profile?.assigned_course_units?.map(Number) || [];
-      setSelectedUnitIds(assigned);
+      const lpAssignedIds: number[] = profile?.assigned_course_units || [];
+
+      const lpIdToCode: Record<number, string> = {};
+      (lpUnits || []).forEach((u: any) => {
+        lpIdToCode[u.id] = u.code;
+      });
+      const assignedCodes = lpAssignedIds
+        .map((id) => lpIdToCode[id])
+        .filter(Boolean);
+
+      const regIdByCode: Record<string, number> = {};
+      (regUnitsResp || []).forEach((u) => {
+        regIdByCode[u.code] = u.id;
+      });
+      const regIds = assignedCodes
+        .map((code) => regIdByCode[code])
+        .filter((id) => id != null);
+
+      setSelectedUnitIds(regIds);
     } catch (e) {
       console.warn("Failed to fetch assigned units from lecturer portal:", e);
       setSelectedUnitIds(lecturer.assigned_course_units?.map(Number) || []);
@@ -188,15 +208,27 @@ export function AssignCourseUnitsModal({
         }
       }
 
-      // 5. Update assigned units on lecturer-portal backend
+      // 5. Update assigned units on lecturer-portal backend using codes to map IDs
       try {
+        const lpUnitsResp = await fetch(
+          `${LECTURER_BACKEND_URL}/api/course-units/`,
+        );
+        const lpUnits = await lpUnitsResp.json();
+        const codeToLpId: Record<string, number> = {};
+        (lpUnits || []).forEach((u: any) => {
+          codeToLpId[u.code] = u.id;
+        });
+        const lpIds = assignedUnits
+          .map((u) => codeToLpId[u.code])
+          .filter((id) => id != null);
+
         await fetch(
           `${LECTURER_BACKEND_URL}/api/profiles/by-email/${encodeURIComponent(lecturer.email)}/assigned-units`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              assigned_course_units: selectedUnitIds.map(Number),
+              assigned_course_units: lpIds,
             }),
           },
         );
