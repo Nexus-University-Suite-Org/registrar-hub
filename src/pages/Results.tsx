@@ -37,6 +37,7 @@ import {
   Edit,
   Save,
   X,
+  ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
 import { get, put, post } from "@/lib/api";
@@ -84,6 +85,26 @@ interface TermResult {
   entries: Array<
     ExamResultRow & { courseTitle: string; courseCode: string; credits: number }
   >;
+}
+
+interface QuizAttemptResult {
+  id: string;
+  quiz_id: string;
+  quiz_title: string;
+  score: number;
+  total_points: number;
+  percentage: number;
+  completed_at: string;
+  time_taken: number;
+  status: string;
+  semester: string;
+  academic_year: string;
+  year_of_study: number;
+  course_code: string;
+  course_title: string;
+  student_number: string;
+  student_name: string;
+  program: string;
 }
 
 const getGradeColor = (grade: string | null | undefined) => {
@@ -145,6 +166,11 @@ export default function Results() {
     >
   >([]);
   const [saving, setSaving] = useState(false);
+  const [quizResults, setQuizResults] = useState<QuizAttemptResult[]>([]);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizProgramFilter, setQuizProgramFilter] = useState("all");
+  const [quizYearFilter, setQuizYearFilter] = useState("all");
+  const [quizSemesterFilter, setQuizSemesterFilter] = useState("all");
 
   const fetchResults = async () => {
     try {
@@ -319,6 +345,73 @@ export default function Results() {
     }
   };
 
+  const fetchQuizResults = async () => {
+    try {
+      setQuizLoading(true);
+      const lecturerApi = "http://localhost:8084";
+      const quizzesRes = await fetch(`${lecturerApi}/api/quizzes/`);
+      if (!quizzesRes.ok) return;
+      const quizzesData = await quizzesRes.json();
+      const quizzes = Array.isArray(quizzesData) ? quizzesData : (quizzesData.data || []);
+      if (!Array.isArray(quizzes) || quizzes.length === 0) return;
+
+      const studentProfiles = await get<any[]>("/profiles/?role=student");
+      const studentMap = new Map<string, { program: string; yearOfStudy: number; student_number: string; full_name: string }>();
+      studentProfiles.forEach((p: any) => {
+        const fullName = p.full_name || `${p.firstName || ""} ${p.lastName || ""}`.trim();
+        const studentNumber = p.student_number || p.studentNumber || "";
+        studentMap.set(String(p.id), {
+          program: p.program || "",
+          yearOfStudy: p.year_of_study ?? p.yearOfStudy ?? 1,
+          student_number: studentNumber,
+          full_name: fullName,
+        });
+      });
+
+      const allAttempts: QuizAttemptResult[] = [];
+      const quizMap = new Map<number, any>();
+      quizzes.forEach((q: any) => { if (q.id) quizMap.set(q.id, q); });
+
+      const attemptsRes = await fetch(`${lecturerApi}/api/quiz-attempts/`);
+      if (!attemptsRes.ok) return;
+      const attemptsData = await attemptsRes.json();
+      const attempts = Array.isArray(attemptsData) ? attemptsData : (attemptsData.data || []);
+      if (!Array.isArray(attempts)) return;
+
+      attempts.forEach((a: any) => {
+        const quiz = quizMap.get(a.quiz_id) || {};
+        const student = studentMap.get(String(a.student_id));
+        if (student) {
+          allAttempts.push({
+            id: String(a.id),
+            quiz_id: String(a.quiz_id),
+            quiz_title: quiz.title || "Quiz",
+            score: a.score,
+            total_points: a.total_points,
+            percentage: a.percentage,
+            completed_at: a.completed_at,
+            time_taken: a.time_taken,
+            status: a.status,
+            semester: quiz.semester || "",
+            academic_year: quiz.academic_year || "",
+            year_of_study: quiz.year_of_study || student.yearOfStudy,
+            course_code: quiz.course_code || "",
+            course_title: quiz.course_title || "",
+            student_number: student.student_number,
+            student_name: student.full_name,
+            program: student.program,
+          });
+        }
+      });
+
+      setQuizResults(allAttempts);
+    } catch (error) {
+      console.error("Failed to fetch quiz results:", error);
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
   useEffect(() => {
     const userId = localStorage.getItem("user_id");
     if (!userId) {
@@ -326,6 +419,7 @@ export default function Results() {
       return;
     }
     fetchResults();
+    fetchQuizResults();
   }, [navigate]);
 
   useEffect(() => {
@@ -621,6 +715,55 @@ export default function Results() {
     }
   };
 
+  const filteredQuizResults = quizResults.filter((qr) => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (
+        !qr.student_name.toLowerCase().includes(q) &&
+        !qr.student_number.toLowerCase().includes(q)
+      )
+        return false;
+    }
+    if (quizProgramFilter !== "all" && qr.program !== quizProgramFilter)
+      return false;
+    if (quizYearFilter !== "all" && String(qr.year_of_study) !== quizYearFilter)
+      return false;
+    if (quizSemesterFilter !== "all" && qr.semester !== quizSemesterFilter)
+      return false;
+    if (academicYearFilter !== "all" && qr.academic_year !== academicYearFilter)
+      return false;
+    if (semesterFilter !== "all" && qr.semester !== semesterFilter)
+      return false;
+    if (classFilter !== "all") {
+      if (`${qr.program} - Year ${qr.year_of_study}` !== classFilter)
+        return false;
+    }
+    return true;
+  });
+
+  const quizPrograms = [...new Set(quizResults.map((q) => q.program).filter(Boolean))].sort();
+  const quizYears = [...new Set(quizResults.map((q) => String(q.year_of_study)))].sort();
+
+  type QuizGroup = {
+    program: string;
+    yearOfStudy: number;
+    semesters: Record<string, QuizAttemptResult[]>;
+  };
+  const quizGrouped: QuizGroup[] = [];
+  const quizGroupMap = new Map<string, QuizGroup>();
+  filteredQuizResults.forEach((qr) => {
+    const key = `${qr.program}|${qr.year_of_study}`;
+    if (!quizGroupMap.has(key)) {
+      const g: QuizGroup = { program: qr.program, yearOfStudy: qr.year_of_study, semesters: {} };
+      quizGroupMap.set(key, g);
+      quizGrouped.push(g);
+    }
+    const g = quizGroupMap.get(key)!;
+    const semKey = `${qr.academic_year} · Semester ${qr.semester}`;
+    if (!g.semesters[semKey]) g.semesters[semKey] = [];
+    g.semesters[semKey].push(qr);
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -851,6 +994,144 @@ export default function Results() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quiz Results Section */}
+        <div className="bg-card rounded-lg border">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5" />
+                <h2 className="text-lg font-semibold">Quiz Results</h2>
+                {quizLoading && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary ml-2"></div>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchQuizResults}
+                disabled={quizLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${quizLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
+
+            {/* Quiz Filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              <Select value={quizProgramFilter} onValueChange={setQuizProgramFilter}>
+                <SelectTrigger className="w-full sm:w-44">
+                  <SelectValue placeholder="Programme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All programmes</SelectItem>
+                  {quizPrograms.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={quizYearFilter} onValueChange={setQuizYearFilter}>
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All years</SelectItem>
+                  {quizYears.map((y) => (
+                    <SelectItem key={y} value={y}>Year {y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={quizSemesterFilter} onValueChange={setQuizSemesterFilter}>
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All semesters</SelectItem>
+                  <SelectItem value="1">Semester 1</SelectItem>
+                  <SelectItem value="2">Semester 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {quizLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading quiz results...</p>
+              </div>
+            ) : filteredQuizResults.length === 0 ? (
+              <div className="text-center py-8">
+                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No quiz results found</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {quizGrouped.map((group) => (
+                  <div key={`${group.program}-${group.yearOfStudy}`} className="border rounded-lg p-4">
+                    <h3 className="font-semibold text-base mb-3 text-foreground">
+                      {group.program} — Year {group.yearOfStudy}
+                    </h3>
+                    {Object.entries(group.semesters).sort(([a], [b]) => a.localeCompare(b)).map(([semKey, attempts]) => (
+                      <div key={semKey} className="mb-4 last:mb-0">
+                        <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                          {semKey}
+                        </h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b text-left text-muted-foreground">
+                                <th className="p-2 font-medium">Student</th>
+                                <th className="p-2 font-medium">Quiz</th>
+                                <th className="p-2 font-medium">Course</th>
+                                <th className="p-2 font-medium">Score</th>
+                                <th className="p-2 font-medium">%</th>
+                                <th className="p-2 font-medium">Status</th>
+                                <th className="p-2 font-medium">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {attempts.map((a) => (
+                                <tr key={a.id} className="border-b hover:bg-muted/30">
+                                  <td className="p-2">
+                                    <p className="font-medium">{a.student_name}</p>
+                                    <p className="text-xs text-muted-foreground">{a.student_number}</p>
+                                  </td>
+                                  <td className="p-2">{a.quiz_title}</td>
+                                  <td className="p-2 text-muted-foreground">{a.course_code}</td>
+                                  <td className="p-2 font-medium">{a.score}/{a.total_points}</td>
+                                  <td className="p-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      a.percentage >= 70
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : a.percentage >= 50
+                                          ? "bg-amber-100 text-amber-700"
+                                          : "bg-red-100 text-red-700"
+                                    }`}>
+                                      {a.percentage}%
+                                    </span>
+                                  </td>
+                                  <td className="p-2">
+                                    <span className={`text-xs font-medium ${
+                                      a.percentage >= 70 ? "text-emerald-600" : a.percentage >= 50 ? "text-amber-600" : "text-red-600"
+                                    }`}>
+                                      {a.percentage >= 70 ? "Passed" : a.percentage >= 50 ? "Average" : "Failed"}
+                                    </span>
+                                  </td>
+                                  <td className="p-2 text-muted-foreground text-xs">
+                                    {new Date(a.completed_at).toLocaleDateString()}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
           </div>
