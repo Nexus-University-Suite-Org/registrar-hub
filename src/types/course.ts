@@ -8,7 +8,7 @@ export interface CourseFeeEntry {
 }
 
 export interface Course {
-  id: string;
+  id: number;
   code: string;
   name: string;
   college: string;
@@ -18,10 +18,10 @@ export interface Course {
 }
 
 export interface CourseUnit {
-  id: string;
+  id: number;
   code: string;
   name: string;
-  course_id: string;
+  course_id: number;
   course_name?: string;
   semester: number;
   year: number;

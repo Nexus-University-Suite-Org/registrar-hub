@@ -33,6 +33,9 @@ public class Course {
     @Column(nullable = false)
     private Integer durationYears;
 
+    @Column(columnDefinition = "TEXT")
+    private String feeStructure;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -15,6 +15,7 @@ public class CourseDto {
     private String college;
     private String department;
     private Integer duration_years;
+    private String fee_structure;
     private String created_at;
     private String updated_at;
 }

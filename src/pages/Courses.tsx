@@ -78,7 +78,7 @@ export default function Courses() {
   const [cuForm, setCuForm] = useState({
     code: "",
     name: "",
-    course_id: "",
+    course_id: 0,
     semester: 1,
     year: 1,
     credits: 3,
@@ -825,11 +825,11 @@ export default function Courses() {
               <div className="space-y-2">
                 <Label>Belongs to Course</Label>
                 <Select
-                  value={cuForm.course_id}
+                  value={cuForm.course_id ? String(cuForm.course_id) : ""}
                   onValueChange={(val) => {
-                    const course = courses.find((c) => c.id === val);
+                    const course = courses.find((c) => c.id === Number(val));
                     setSelectedCourseForUnits(course || null);
-                    setCuForm({ ...cuForm, course_id: val });
+                    setCuForm({ ...cuForm, course_id: Number(val) });
                   }}
                 >
                   <SelectTrigger>
@@ -837,7 +837,7 @@ export default function Courses() {
                   </SelectTrigger>
                   <SelectContent>
                     {courses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
+                      <SelectItem key={c.id} value={String(c.id)}>
                         {c.name}
                       </SelectItem>
                     ))}
