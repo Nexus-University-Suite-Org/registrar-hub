@@ -193,14 +193,17 @@ export default function Results() {
       if (!students.length) {
         try {
           const raw = await get<any[]>("/students/");
-          students = raw.map((s: any) => ({
-            id: s.id,
-            first_name: s.first_name || s.firstName || "",
-            last_name: s.last_name || s.lastName || "",
-            student_number: s.student_number || s.studentNumber || "",
-            program: s.program || "",
-            year_of_study: s.year_of_study ?? s.yearOfStudy ?? 1,
-          }));
+          students = raw.map((s: any) => {
+            const fullName = s.full_name || `${s.first_name || ""} ${s.last_name || ""}`.trim();
+            return {
+              id: s.id,
+              first_name: fullName.split(" ")[0] || "",
+              last_name: fullName.split(" ").slice(1).join(" ") || "",
+              student_number: s.student_number || s.studentNumber || "",
+              program: s.program || "",
+              year_of_study: s.year_of_study ?? s.yearOfStudy ?? 1,
+            };
+          });
         } catch {}
       }
 
