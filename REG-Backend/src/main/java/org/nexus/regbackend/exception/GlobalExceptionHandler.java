@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Translates all application exceptions into the uniform {@link ApiResponse} envelope.
@@ -41,6 +42,11 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return ApiResponse.error(HttpStatus.BAD_REQUEST, "File too large. Maximum size is 10MB");
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
         HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
@@ -50,6 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
-        return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
+        ex.printStackTrace();
+        return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage());
     }
 }

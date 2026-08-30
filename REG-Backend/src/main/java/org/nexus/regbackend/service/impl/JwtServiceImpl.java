@@ -50,6 +50,30 @@ public class JwtServiceImpl implements JwtService {
         return subject.equals(userDetails.getUsername()) && !isExpired(token);
     }
 
+    @Override
+    public String generateSetPasswordToken(String email) {
+        return Jwts.builder()
+                .subject(email)
+                .claims(Map.of("purpose", "set-password"))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 hours
+                .signWith(signingKey())
+                .compact();
+    }
+
+    @Override
+    public String verifySetPasswordToken(String token) {
+        try {
+            Claims claims = parseAllClaims(token);
+            if ("set-password".equals(claims.get("purpose", String.class)) && !isExpired(token)) {
+                return claims.getSubject();
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private boolean isExpired(String token) {

@@ -16,6 +16,12 @@ spring:
         format_sql: true
     open-in-view: false
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
@@ -46,6 +52,15 @@ otp:
   max-verify-attempts: 5
   # Set to true ONLY in local dev to include raw OTP in response
   show-in-dev: ${OTP_SHOW_IN_DEV:false}
+
+# ── File upload ──────────────────────────────────────────────────────────────
+file:
+  upload:
+    dir: uploads
+
+# ── Set password ────────────────────────────────────────────────────────────
+set-password:
+  url: ${SET_PASSWORD_URL:http://localhost:5176/set-password}
 
 # REG_UCD_001 — Actuator: expose health endpoint for internal deployment checks only.
 # The public health check is served by HealthController at /api/health.

@@ -154,11 +154,12 @@ export default function Courses() {
       const coursesData = await get<Course[]>(
         `/courses/?college=${encodeURIComponent(college)}`,
       );
-      coursesData.sort((a, b) => a.name.localeCompare(b.name));
-      setCourses(coursesData);
+      const sorted = Array.isArray(coursesData) ? coursesData : [];
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      setCourses(sorted);
 
       const allUnits = await get<CourseUnit[]>("/course-units/");
-      const unitsData = allUnits
+      const unitsData = (Array.isArray(allUnits) ? allUnits : [])
         .map((unit) => {
           const course = coursesData.find((c) => c.id === unit.course_id);
           return { ...unit, course_name: course?.name || "Unknown Course" };

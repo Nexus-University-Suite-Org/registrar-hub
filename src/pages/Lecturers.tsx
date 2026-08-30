@@ -41,7 +41,7 @@ export default function Lecturers() {
   const fetchLecturers = async () => {
     try {
       const lecturersData = await get<Lecturer[]>("/profiles/?role=lecturer");
-      setLecturers(lecturersData);
+      setLecturers(Array.isArray(lecturersData) ? lecturersData : []);
     } catch (error) {
       console.error("Error fetching lecturers from API:", error);
       toast.error("Failed to fetch lecturers");

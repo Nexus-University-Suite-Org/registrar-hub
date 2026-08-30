@@ -16,4 +16,10 @@ public interface JwtService {
 
     /** Return true if the token signature is valid and it has not expired. */
     boolean isTokenValid(String token, UserDetails userDetails);
+
+    /** Generate a set-password token for a newly created lecturer. */
+    String generateSetPasswordToken(String email);
+
+    /** Verify a set-password token and return the email if valid, null otherwise. */
+    String verifySetPasswordToken(String token);
 }

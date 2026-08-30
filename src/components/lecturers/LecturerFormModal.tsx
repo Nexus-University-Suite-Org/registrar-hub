@@ -17,9 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { X, Upload, UserCheck } from "lucide-react";
+import { X, Upload, UserCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { uploadFile } from "@/lib/api";
+import { uploadFile, get, post } from "@/lib/api";
 
 interface LecturerFormModalProps {
   isOpen: boolean;
@@ -28,353 +28,6 @@ interface LecturerFormModalProps {
   lecturer?: Lecturer | null;
   mode: "add" | "edit";
 }
-
-const departments = [
-  // Faculty of Computing and Information Technology
-  "Computer Science",
-  "Information Technology",
-  "Software Engineering",
-  "Information Systems",
-  "Cybersecurity",
-  "Data Science",
-  "Artificial Intelligence",
-  "Computer Engineering",
-
-  // Faculty of Business and Management
-  "Business Administration",
-  "Accounting and Finance",
-  "Marketing",
-  "Human Resource Management",
-  "International Business",
-  "Entrepreneurship",
-  "Economics",
-  "Banking and Finance",
-
-  // Faculty of Engineering
-  "Civil Engineering",
-  "Electrical Engineering",
-  "Mechanical Engineering",
-  "Chemical Engineering",
-  "Biomedical Engineering",
-  "Environmental Engineering",
-  "Telecommunications Engineering",
-  "Petroleum Engineering",
-
-  // Faculty of Medicine and Health Sciences
-  "Medicine",
-  "Nursing",
-  "Pharmacy",
-  "Public Health",
-  "Medical Laboratory Science",
-  "Radiography",
-  "Physiotherapy",
-  "Biomedical Science",
-
-  // Faculty of Law
-  "Law",
-  "International Law",
-  "Commercial Law",
-  "Criminal Justice",
-
-  // Faculty of Arts and Humanities
-  "English Literature",
-  "History",
-  "Philosophy",
-  "Religious Studies",
-  "Linguistics",
-  "Fine Arts",
-  "Music",
-  "Theatre Arts",
-
-  // Faculty of Natural Sciences
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Geology",
-  "Environmental Science",
-  "Statistics",
-  "Biochemistry",
-
-  // Faculty of Social Sciences
-  "Sociology",
-  "Psychology",
-  "Political Science",
-  "International Relations",
-  "Geography",
-  "Anthropology",
-  "Social Work",
-  "Development Studies",
-
-  // Faculty of Education
-  "Education",
-  "Educational Administration",
-  "Curriculum Studies",
-  "Educational Psychology",
-  "Special Education",
-
-  // Faculty of Agriculture and Environmental Sciences
-  "Agriculture",
-  "Agricultural Economics",
-  "Animal Science",
-  "Crop Science",
-  "Soil Science",
-  "Forestry",
-  "Fisheries",
-
-  // Faculty of Architecture and Design
-  "Architecture",
-  "Urban Planning",
-  "Interior Design",
-  "Landscape Architecture",
-  "Graphic Design",
-
-  // Faculty of Journalism and Communication
-  "Journalism",
-  "Mass Communication",
-  "Public Relations",
-  "Advertising",
-  "Digital Media",
-
-  // Faculty of Tourism and Hospitality
-  "Tourism Management",
-  "Hotel Management",
-  "Event Management",
-  "Hospitality Management",
-
-  // Other Specialized Departments
-  "Veterinary Medicine",
-  "Dentistry",
-  "Optometry",
-  "Sports Science",
-  "Military Science",
-  "Aviation",
-  "Maritime Studies",
-];
-
-const specializations = [
-  "Computer Networks",
-  "Database Systems",
-  "Artificial Intelligence",
-  "Machine Learning",
-  "Cybersecurity",
-  "Software Development",
-  "Web Development",
-  "Mobile Development",
-  "Data Analytics",
-  "Cloud Computing",
-  "Blockchain Technology",
-  "Internet of Things",
-  "Computer Vision",
-  "Natural Language Processing",
-  "Business Intelligence",
-  "Financial Technology",
-  "Digital Marketing",
-  "Operations Management",
-  "Strategic Management",
-  "Human Resource Development",
-  "Organizational Behavior",
-  "International Trade",
-  "Project Management",
-  "Supply Chain Management",
-  "Corporate Finance",
-  "Investment Banking",
-  "Risk Management",
-  "Auditing",
-  "Taxation",
-  "Marketing Research",
-  "Consumer Behavior",
-  "Brand Management",
-  "Public Relations",
-  "Advertising",
-  "Digital Media",
-  "Journalism",
-  "Mass Communication",
-  "Structural Engineering",
-  "Geotechnical Engineering",
-  "Transportation Engineering",
-  "Water Resources Engineering",
-  "Power Systems",
-  "Control Systems",
-  "Electronics",
-  "Telecommunications",
-  "Renewable Energy",
-  "Thermodynamics",
-  "Fluid Mechanics",
-  "Manufacturing Engineering",
-  "Robotics",
-  "Materials Science",
-  "Process Engineering",
-  "Petroleum Geology",
-  "Reservoir Engineering",
-  "Clinical Medicine",
-  "Surgery",
-  "Pediatrics",
-  "Obstetrics & Gynecology",
-  "Internal Medicine",
-  "Psychiatry",
-  "Radiology",
-  "Anesthesiology",
-  "Pathology",
-  "Pharmacology",
-  "Clinical Pharmacy",
-  "Community Health",
-  "Epidemiology",
-  "Health Policy",
-  "Nursing Education",
-  "Mental Health Nursing",
-  "Critical Care Nursing",
-  "Pediatric Nursing",
-  "Constitutional Law",
-  "Criminal Law",
-  "Contract Law",
-  "Property Law",
-  "Human Rights Law",
-  "Environmental Law",
-  "Intellectual Property Law",
-  "International Humanitarian Law",
-  "American Literature",
-  "British Literature",
-  "African Literature",
-  "Creative Writing",
-  "Literary Criticism",
-  "Ancient History",
-  "Modern History",
-  "African History",
-  "World History",
-  "Political Philosophy",
-  "Ethics",
-  "Logic",
-  "Metaphysics",
-  "Theology",
-  "Comparative Religion",
-  "Sociology of Religion",
-  "Applied Linguistics",
-  "Language Teaching",
-  "Translation Studies",
-  "Painting",
-  "Sculpture",
-  "Photography",
-  "Graphic Design",
-  "Music Theory",
-  "Composition",
-  "Music Education",
-  "Performance",
-  "Theatre Directing",
-  "Playwriting",
-  "Acting",
-  "Stage Design",
-  "Pure Mathematics",
-  "Applied Mathematics",
-  "Statistics",
-  "Mathematical Modeling",
-  "Classical Physics",
-  "Modern Physics",
-  "Quantum Physics",
-  "Astrophysics",
-  "Organic Chemistry",
-  "Inorganic Chemistry",
-  "Physical Chemistry",
-  "Analytical Chemistry",
-  "Biochemistry",
-  "Molecular Biology",
-  "Genetics",
-  "Microbiology",
-  "Ecology",
-  "Conservation Biology",
-  "Petrology",
-  "Mineralogy",
-  "Paleontology",
-  "Hydrology",
-  "Climatology",
-  "Geomorphology",
-  "Cartography",
-  "Remote Sensing",
-  "Criminology",
-  "Social Psychology",
-  "Clinical Psychology",
-  "Counseling Psychology",
-  "Developmental Psychology",
-  "Comparative Politics",
-  "Political Theory",
-  "Public Administration",
-  "International Security",
-  "Diplomacy",
-  "Conflict Resolution",
-  "Urban Geography",
-  "Rural Geography",
-  "Cultural Geography",
-  "Economic Geography",
-  "Social Anthropology",
-  "Cultural Anthropology",
-  "Linguistic Anthropology",
-  "Archaeology",
-  "Social Policy",
-  "Community Development",
-  "Urban Planning",
-  "Rural Development",
-  "Gender Studies",
-  "Curriculum Development",
-  "Educational Technology",
-  "Teacher Education",
-  "Educational Assessment",
-  "Special Education",
-  "Inclusive Education",
-  "Adult Education",
-  "Distance Education",
-  "Agricultural Engineering",
-  "Soil Fertility",
-  "Plant Breeding",
-  "Crop Protection",
-  "Animal Nutrition",
-  "Veterinary Pathology",
-  "Aquaculture",
-  "Forest Management",
-  "Wildlife Management",
-  "Sustainable Agriculture",
-  "Architectural Design",
-  "Building Technology",
-  "Construction Management",
-  "Sustainable Architecture",
-  "Landscape Design",
-  "Urban Design",
-  "Interior Architecture",
-  "Architectural History",
-  "Visual Communication",
-  "Typography",
-  "User Experience Design",
-  "Product Design",
-  "Broadcast Journalism",
-  "Online Journalism",
-  "Investigative Journalism",
-  "Sports Journalism",
-  "Communication Theory",
-  "Media Studies",
-  "Film Studies",
-  "Cultural Studies",
-  "Tourism Planning",
-  "Hospitality Operations",
-  "Event Planning",
-  "Culinary Arts",
-  "Food Service Management",
-  "Veterinary Surgery",
-  "Animal Health",
-  "Dental Surgery",
-  "Oral Pathology",
-  "Orthodontics",
-  "Vision Science",
-  "Sports Medicine",
-  "Exercise Physiology",
-  "Sports Psychology",
-  "Coaching Science",
-  "Military Strategy",
-  "Defense Studies",
-  "Aeronautical Engineering",
-  "Aviation Management",
-  "Maritime Law",
-  "Port Management",
-  "Ship Design",
-];
 
 const statuses: LecturerStatus[] = ["Active", "Inactive", "Retired"];
 
@@ -402,6 +55,33 @@ export function LecturerFormModal({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Department and specialization from API
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [specializations, setSpecializations] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState("");
+  const [newSpecialization, setNewSpecialization] = useState("");
+  const [showNewDeptInput, setShowNewDeptInput] = useState(false);
+  const [showNewSpecInput, setShowNewSpecInput] = useState(false);
+  const [addingDept, setAddingDept] = useState(false);
+  const [addingSpec, setAddingSpec] = useState(false);
+
+  // Fetch departments and specializations from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [depts, specs] = await Promise.all([
+          get<{ id: number; name: string; faculty: string }[]>("/departments"),
+          get<{ id: number; name: string; department: string }[]>("/specializations"),
+        ]);
+        setDepartments(depts.map((d) => d.name));
+        setSpecializations(specs.map((s) => s.name));
+      } catch (error) {
+        console.error("Failed to fetch departments/specializations:", error);
+      }
+    };
+    if (isOpen) fetchData();
+  }, [isOpen]);
+
   useEffect(() => {
     if (lecturer && mode === "edit") {
       setFormData(lecturer);
@@ -423,14 +103,50 @@ export function LecturerFormModal({
     }
     setSelectedFile(null);
     setImagePreview(null);
+    setShowNewDeptInput(false);
+    setShowNewSpecInput(false);
+    setNewDepartment("");
+    setNewSpecialization("");
   }, [lecturer, mode, isOpen]);
+
+  const handleAddDepartment = async () => {
+    if (!newDepartment.trim()) return;
+    setAddingDept(true);
+    try {
+      await post("/departments", { name: newDepartment.trim() });
+      setDepartments((prev) => [...prev, newDepartment.trim()].sort());
+      setFormData({ ...formData, department: newDepartment.trim() });
+      setNewDepartment("");
+      setShowNewDeptInput(false);
+      toast.success("Department added");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add department");
+    } finally {
+      setAddingDept(false);
+    }
+  };
+
+  const handleAddSpecialization = async () => {
+    if (!newSpecialization.trim()) return;
+    setAddingSpec(true);
+    try {
+      await post("/specializations", { name: newSpecialization.trim() });
+      setSpecializations((prev) => [...prev, newSpecialization.trim()].sort());
+      setFormData({ ...formData, specialization: newSpecialization.trim() });
+      setNewSpecialization("");
+      setShowNewSpecInput(false);
+      toast.success("Specialization added");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add specialization");
+    } finally {
+      setAddingSpec(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-
-      // Create image preview
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
@@ -443,7 +159,7 @@ export function LecturerFormModal({
     if (!selectedFile) return null;
     setUploading(true);
     try {
-      const { url } = await uploadFile("/upload/", selectedFile);
+      const { url } = await uploadFile("/upload", selectedFile);
       return url;
     } catch (error) {
       console.error("Upload failed:", error);
@@ -456,27 +172,24 @@ export function LecturerFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     let avatarUrl = formData.avatar_url;
-
     if (selectedFile) {
       avatarUrl = await uploadImage();
-      if (!avatarUrl) return; // Upload failed
+      if (!avatarUrl) return;
     }
-
     onSubmit({ ...formData, avatar_url: avatarUrl });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-lg sm:text-xl">
+          <DialogTitle>
             {mode === "add" ? "Add New Lecturer" : "Edit Lecturer"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="lecturer_number">Lecturer Number</Label>
@@ -581,43 +294,101 @@ export function LecturerFormModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, department: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {showNewDeptInput ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newDepartment}
+                    onChange={(e) => setNewDepartment(e.target.value)}
+                    placeholder="Enter new department"
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddDepartment())}
+                  />
+                  <Button type="button" size="sm" onClick={handleAddDepartment} disabled={addingDept}>
+                    {addingDept ? "..." : "Add"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setShowNewDeptInput(false); setNewDepartment(""); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, department: value })
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowNewDeptInput(true)}
+                    className="shrink-0"
+                    title="Add new department"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="specialization">Specialization</Label>
-              <Select
-                value={formData.specialization}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, specialization: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select specialization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {specializations.map((spec) => (
-                    <SelectItem key={spec} value={spec}>
-                      {spec}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {showNewSpecInput ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newSpecialization}
+                    onChange={(e) => setNewSpecialization(e.target.value)}
+                    placeholder="Enter new specialization"
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSpecialization())}
+                  />
+                  <Button type="button" size="sm" onClick={handleAddSpecialization} disabled={addingSpec}>
+                    {addingSpec ? "..." : "Add"}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { setShowNewSpecInput(false); setNewSpecialization(""); }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.specialization}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, specialization: value })
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select specialization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {specializations.map((spec) => (
+                        <SelectItem key={spec} value={spec}>
+                          {spec}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowNewSpecInput(true)}
+                    className="shrink-0"
+                    title="Add new specialization"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -650,7 +421,6 @@ export function LecturerFormModal({
           <div className="space-y-4">
             <Label className="text-base font-semibold">Profile Photo</Label>
             <div className="flex flex-col sm:flex-row items-start gap-6 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-primary/50 transition-colors">
-              {/* Current Avatar Display */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
                   {imagePreview ? (
@@ -685,7 +455,6 @@ export function LecturerFormModal({
                 </p>
               </div>
 
-              {/* Upload Section */}
               <div className="flex-1 space-y-3 w-full min-w-0">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
@@ -711,7 +480,7 @@ export function LecturerFormModal({
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Supported formats: JPG, PNG, GIF. Max size: 5MB
+                    Supported formats: JPG, PNG, GIF. Max size: 10MB
                   </p>
                 </div>
 

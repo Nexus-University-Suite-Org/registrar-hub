@@ -153,7 +153,7 @@ export default function Fees() {
           return a.category.localeCompare(b.category);
         return a.item_name.localeCompare(b.item_name);
       });
-      setFeeAssignments(feesData);
+      setFeeAssignments(Array.isArray(feesData) ? feesData : []);
     } catch (error) {
       console.error("Error fetching fees:", error);
       toast.error("Failed to load fee assignments");
