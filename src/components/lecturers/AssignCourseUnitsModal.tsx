@@ -37,18 +37,38 @@ export function AssignCourseUnitsModal({
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseUnits, setCourseUnits] = useState<CourseUnit[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>("all");
-  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>(
-    lecturer.assigned_course_units || [],
-  );
+  const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const LECTURER_BACKEND_URL = "http://localhost:8084";
+
   useEffect(() => {
     if (isOpen) {
-      setSelectedUnitIds(lecturer.assigned_course_units || []);
+      fetchAssignedUnits();
       fetchRegistrarData();
     }
   }, [isOpen, lecturer]);
+
+  const fetchAssignedUnits = async () => {
+    try {
+      const resp = await fetch(
+        `${LECTURER_BACKEND_URL}/api/profiles/?role=lecturer`,
+      );
+      const profiles = await resp.json();
+      const profile = profiles?.find(
+        (p: any) =>
+          String(p.id) === String(lecturer.id) ||
+          String(p.email)?.toLowerCase() ===
+            String(lecturer.email)?.toLowerCase(),
+      );
+      const assigned = profile?.assigned_course_units?.map(String) || [];
+      setSelectedUnitIds(assigned);
+    } catch (e) {
+      console.warn("Failed to fetch assigned units from lecturer portal:", e);
+      setSelectedUnitIds(lecturer.assigned_course_units || []);
+    }
+  };
 
   const fetchRegistrarData = async () => {
     setLoading(true);
@@ -102,8 +122,6 @@ export function AssignCourseUnitsModal({
         : [...prev, unitId],
     );
   };
-
-  const LECTURER_BACKEND_URL = "http://localhost:8084";
 
   const handleSave = async () => {
     if (!lecturer.id) return;
