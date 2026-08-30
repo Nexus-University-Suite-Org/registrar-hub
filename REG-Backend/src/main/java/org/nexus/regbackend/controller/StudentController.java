@@ -29,12 +29,6 @@ public class StudentController {
         return doList(search);
     }
 
-    @GetMapping("/")
-    public ResponseEntity<ApiResponse<List<StudentDto>>> listSlash(
-            @RequestParam(required = false) String search) {
-        return doList(search);
-    }
-
     private ResponseEntity<ApiResponse<List<StudentDto>>> doList(String search) {
         List<Student> students;
         if (search != null && !search.isBlank()) {
@@ -61,10 +55,10 @@ public class StudentController {
 
         Student student = Student.builder()
                 .studentNumber(dto.getStudent_number())
-                .registrationNumber(dto.getRegistration_number())
+                .registrationNumber(dto.getRegistration_number() != null ? dto.getRegistration_number() : dto.getStudent_number())
                 .fullName(dto.getFull_name())
                 .email(dto.getEmail())
-                .department(dto.getDepartment())
+                .department(dto.getDepartment() != null ? dto.getDepartment() : "")
                 .program(dto.getProgram())
                 .yearOfStudy(dto.getYear_of_study() != null ? dto.getYear_of_study() : 1)
                 .status(dto.getStatus() != null ? dto.getStatus() : "Active")

@@ -37,7 +37,7 @@ export default function Students() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const studentsData = await get<any[]>("/profiles/?role=student");
+      const studentsData = await get<any[]>("/students/");
       const mappedStudents: Student[] = studentsData.map((data) => ({
         id: data.id,
         student_number: data.student_number || "",
@@ -212,7 +212,7 @@ export default function Students() {
         };
         delete payload.first_name;
         delete payload.last_name;
-        await post("/profiles/", payload);
+        await post("/students/", payload);
 
         // Log activity
         await post("/activities/", {
@@ -263,7 +263,7 @@ export default function Students() {
         };
         delete payload.first_name;
         delete payload.last_name;
-        await put(`/profiles/${selectedStudent?.id}/`, payload);
+        await put(`/students/${selectedStudent?.id}/`, payload);
 
         // Log activity
         await post("/activities/", {
@@ -298,7 +298,7 @@ export default function Students() {
     if (!selectedStudent) return;
 
     try {
-      await del(`/profiles/${selectedStudent.id}/`);
+      await del(`/students/${selectedStudent.id}/`);
 
       setStudents((prev) => prev.filter((s) => s.id !== selectedStudent.id));
       toast.success("Student deleted successfully");
