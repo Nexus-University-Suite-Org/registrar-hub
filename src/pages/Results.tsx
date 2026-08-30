@@ -26,10 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
 import {
   Search,
-  Filter,
   Download,
   FileText,
   RefreshCw,
@@ -117,8 +115,7 @@ const getGradeColor = (grade: string | null | undefined) => {
   return "text-red-700";
 };
 
-const calculateSemesterRemark = (gp: number, grade: string | null): string => {
-  if (!grade) return "—";
+const calculateSemesterRemark = (gp: number, _grade: string | null): string => {
   if (gp >= 3.5) return "Excellent";
   if (gp >= 3.0) return "Very Good";
   if (gp >= 2.5) return "Good";
@@ -178,20 +175,33 @@ export default function Results() {
       let students: any[] = [];
       try {
         students = await get<any[]>("/profiles/?role=student");
-        students = students.map((p: any) => {
-          const full = p.full_name || "";
-          const parts = full.split(" ");
-          return {
-            id: p.id,
-            first_name: parts[0] || p.firstName || "",
-            last_name: parts.slice(1).join(" ") || p.lastName || "",
-            student_number: p.student_number || p.studentNumber || "",
-            program: p.program || "",
-            year_of_study: p.year_of_study ?? p.yearOfStudy ?? 1,
-          };
-        });
-      } catch {
-        students = await get<any[]>("/students/");
+        if (students.length > 0) {
+          students = students.map((p: any) => {
+            const full = p.full_name || "";
+            const parts = full.split(" ");
+            return {
+              id: p.id,
+              first_name: parts[0] || p.firstName || "",
+              last_name: parts.slice(1).join(" ") || p.lastName || "",
+              student_number: p.student_number || p.studentNumber || "",
+              program: p.program || "",
+              year_of_study: p.year_of_study ?? p.yearOfStudy ?? 1,
+            };
+          });
+        }
+      } catch {}
+      if (!students.length) {
+        try {
+          const raw = await get<any[]>("/students/");
+          students = raw.map((s: any) => ({
+            id: s.id,
+            first_name: s.first_name || s.firstName || "",
+            last_name: s.last_name || s.lastName || "",
+            student_number: s.student_number || s.studentNumber || "",
+            program: s.program || "",
+            year_of_study: s.year_of_study ?? s.yearOfStudy ?? 1,
+          }));
+        } catch {}
       }
 
       if (!students.length) {
@@ -323,7 +333,6 @@ export default function Results() {
 
       const resultsArray = Array.from(studentResultsMap.values());
       setResults(resultsArray);
-      setFilteredResults(resultsArray);
       setCourseUnitOptions(
         Array.from(courseIdsSeen).map((id) => ({
           id,
@@ -357,16 +366,31 @@ export default function Results() {
 
       const studentProfiles = await get<any[]>("/profiles/?role=student");
       const studentMap = new Map<string, { program: string; yearOfStudy: number; student_number: string; full_name: string }>();
-      studentProfiles.forEach((p: any) => {
-        const fullName = p.full_name || `${p.firstName || ""} ${p.lastName || ""}`.trim();
-        const studentNumber = p.student_number || p.studentNumber || "";
-        studentMap.set(String(p.id), {
-          program: p.program || "",
-          yearOfStudy: p.year_of_study ?? p.yearOfStudy ?? 1,
-          student_number: studentNumber,
-          full_name: fullName,
+      if (studentProfiles.length > 0) {
+        studentProfiles.forEach((p: any) => {
+          const fullName = p.full_name || `${p.firstName || ""} ${p.lastName || ""}`.trim();
+          const studentNumber = p.student_number || p.studentNumber || "";
+          studentMap.set(String(p.id), {
+            program: p.program || "",
+            yearOfStudy: p.year_of_study ?? p.yearOfStudy ?? 1,
+            student_number: studentNumber,
+            full_name: fullName,
+          });
         });
-      });
+      } else {
+        try {
+          const raw = await get<any[]>("/students/");
+          raw.forEach((s: any) => {
+            const fullName = s.first_name || s.last_name ? `${s.first_name || ""} ${s.last_name || ""}`.trim() : (s.full_name || "");
+            studentMap.set(String(s.id), {
+              program: s.program || "",
+              yearOfStudy: s.year_of_study ?? s.yearOfStudy ?? 1,
+              student_number: s.student_number || s.studentNumber || "",
+              full_name: fullName,
+            });
+          });
+        } catch {}
+      }
 
       const allAttempts: QuizAttemptResult[] = [];
       const quizMap = new Map<number, any>();
@@ -730,14 +754,6 @@ export default function Results() {
       return false;
     if (quizSemesterFilter !== "all" && qr.semester !== quizSemesterFilter)
       return false;
-    if (academicYearFilter !== "all" && qr.academic_year !== academicYearFilter)
-      return false;
-    if (semesterFilter !== "all" && qr.semester !== semesterFilter)
-      return false;
-    if (classFilter !== "all") {
-      if (`${qr.program} - Year ${qr.year_of_study}` !== classFilter)
-        return false;
-    }
     return true;
   });
 
@@ -1121,7 +1137,7 @@ export default function Results() {
                                     </span>
                                   </td>
                                   <td className="p-2 text-muted-foreground text-xs">
-                                    {new Date(a.completed_at).toLocaleDateString()}
+                                    {a.completed_at ? new Date(a.completed_at).toLocaleDateString() : "N/A"}
                                   </td>
                                 </tr>
                               ))}

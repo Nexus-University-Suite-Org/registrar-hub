@@ -26,6 +26,16 @@ public class StudentController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<StudentDto>>> list(
             @RequestParam(required = false) String search) {
+        return doList(search);
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<ApiResponse<List<StudentDto>>> listSlash(
+            @RequestParam(required = false) String search) {
+        return doList(search);
+    }
+
+    private ResponseEntity<ApiResponse<List<StudentDto>>> doList(String search) {
         List<Student> students;
         if (search != null && !search.isBlank()) {
             students = studentRepository.search(search);

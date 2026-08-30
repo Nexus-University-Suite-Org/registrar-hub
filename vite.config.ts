@@ -9,6 +9,18 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 5175,
     proxy: {
+      "/api/student-grades": {
+        target: "http://localhost:8084",
+        changeOrigin: true,
+      },
+      "/api/quiz-attempts": {
+        target: "http://localhost:8084",
+        changeOrigin: true,
+      },
+      "/api/quizzes": {
+        target: "http://localhost:8084",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://localhost:8082",
         changeOrigin: true,
