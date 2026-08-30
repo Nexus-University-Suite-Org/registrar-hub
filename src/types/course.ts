@@ -14,7 +14,7 @@ export interface Course {
   college: string;
   department: string;
   duration_years: number;
-  fee_structure?: CourseFeeEntry[];
+  fee_structure?: string | CourseFeeEntry[];
 }
 
 export interface CourseUnit {

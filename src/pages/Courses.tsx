@@ -219,7 +219,7 @@ export default function Courses() {
       const payload = {
         ...courseForm,
         college: registrarCollege,
-        fee_structure: feeEntries.filter(
+        fee_structure: JSON.stringify(feeEntries.filter(
           (e) =>
             e.academic_year &&
             (e.semester_1_tuition != null && e.semester_1_tuition > 0 ||
@@ -227,7 +227,7 @@ export default function Courses() {
               e.recess != null && e.recess > 0 ||
               e.semester_1_functional != null && e.semester_1_functional > 0 ||
               e.semester_2_functional != null && e.semester_2_functional > 0),
-        ),
+        )),
       };
       if (modalMode === "add") {
         await post("/courses/", payload);
@@ -435,7 +435,7 @@ export default function Courses() {
                                 department: c.department,
                                 duration_years: c.duration_years,
                               });
-                              setFeeEntries(c.fee_structure || []);
+                              setFeeEntries(typeof c.fee_structure === 'string' ? JSON.parse(c.fee_structure || '[]') : (c.fee_structure || []));
                               setModalMode("edit");
                               setIsCourseModalOpen(true);
                             }}

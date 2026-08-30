@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 /**
  * Translates all application exceptions into the uniform {@link ApiResponse} envelope.
@@ -42,6 +43,33 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String msg = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
+        if (msg != null && msg.contains("duplicate key")) {
+            if (msg.contains("email")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A record with this email already exists");
+            }
+            if (msg.contains("lecturer_number")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A lecturer with this number already exists");
+            }
+            if (msg.contains("code")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A record with this code already exists");
+            }
+            return ApiResponse.error(HttpStatus.CONFLICT, "A record with this value already exists");
+        }
+        return ApiResponse.error(HttpStatus.BAD_REQUEST, "Database constraint violation: " + (msg != null ? msg : "unknown error"));
+    }
+
+    @ExceptionHandler(org.springframework.transaction.TransactionSystemException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTransactionSystem(org.springframework.transaction.TransactionSystemException ex) {
+        Throwable cause = ex.getRootCause();
+        if (cause instanceof DataIntegrityViolationException dives) {
+            return handleDataIntegrity(dives);
+        }
+        return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "Transaction error: " + (cause != null ? cause.getMessage() : ex.getMessage()));
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ApiResponse.error(HttpStatus.BAD_REQUEST, "File too large. Maximum size is 10MB");
@@ -57,6 +85,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         ex.printStackTrace();
+        String fullMsg = ex.getMessage();
+        Throwable cause = ex.getCause();
+        while (cause != null) {
+            if (cause.getMessage() != null) fullMsg += " | " + cause.getMessage();
+            cause = cause.getCause();
+        }
+        if (fullMsg.contains("duplicate key")) {
+            if (fullMsg.contains("email")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A record with this email already exists");
+            }
+            if (fullMsg.contains("lecturer_number")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A lecturer with this number already exists");
+            }
+            if (fullMsg.contains("code")) {
+                return ApiResponse.error(HttpStatus.CONFLICT, "A record with this code already exists");
+            }
+            return ApiResponse.error(HttpStatus.CONFLICT, "A record with this value already exists");
+        }
         return ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + ex.getMessage());
     }
 }
