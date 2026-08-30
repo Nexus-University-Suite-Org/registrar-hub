@@ -79,7 +79,13 @@ public class LecturerServiceImpl implements LecturerService {
         // Send welcome email with set-password link
         try {
             String token = jwtService.generateSetPasswordToken(dto.getEmail());
-            String setPasswordUrl = setPasswordBaseUrl + "?token=" + token + "&email=" + java.net.URLEncoder.encode(dto.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
+            String setPasswordUrl = setPasswordBaseUrl
+                    + "?token=" + token
+                    + "&email=" + java.net.URLEncoder.encode(dto.getEmail(), java.nio.charset.StandardCharsets.UTF_8)
+                    + "&firstName=" + java.net.URLEncoder.encode(dto.getFirst_name() != null ? dto.getFirst_name() : "", java.nio.charset.StandardCharsets.UTF_8)
+                    + "&lastName=" + java.net.URLEncoder.encode(dto.getLast_name() != null ? dto.getLast_name() : "", java.nio.charset.StandardCharsets.UTF_8)
+                    + "&department=" + java.net.URLEncoder.encode(dto.getDepartment() != null ? dto.getDepartment() : "", java.nio.charset.StandardCharsets.UTF_8)
+                    + "&specialization=" + java.net.URLEncoder.encode(dto.getSpecialization() != null ? dto.getSpecialization() : "", java.nio.charset.StandardCharsets.UTF_8);
             emailService.sendLecturerWelcomeEmail(dto.getEmail(), dto.getFirst_name(), setPasswordUrl);
         } catch (Exception e) {
             // Email failure should not block lecturer creation
