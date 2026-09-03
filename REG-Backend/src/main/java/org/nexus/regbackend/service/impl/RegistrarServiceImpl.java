@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
+import org.nexus.regbackend.dto.ChangeStaffIdRequest;
 import org.nexus.regbackend.dto.ChangeUsernameRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
@@ -208,6 +209,36 @@ public class RegistrarServiceImpl implements RegistrarService {
         Registrar saved = registrarRepository.save(principal);
 
         log.info("Username changed: id={}, newUsername={}", principal.getId(), newUsername);
+        return registrarMapper.toResponse(saved);
+    }
+
+    // ── REG_UCD_012 — Change staff ID ─────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public RegistrarResponse changeStaffId(Long userId, ChangeStaffIdRequest request, Registrar principal) {
+        // Authorization: owner only
+        if (!principal.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to change this account's staff ID.");
+        }
+
+        String newStaffId = request.getNewStaffId().trim();
+
+        // Reject if the new staff ID is the same as the current one
+        if (principal.getStaffId().equalsIgnoreCase(newStaffId)) {
+            throw new ValidationException("New staff ID must be different from the current staff ID.");
+        }
+
+        // Reject if another account already owns that staff ID
+        if (registrarRepository.existsByStaffId(newStaffId)) {
+            throw new DuplicateResourceException("This staff ID is already registered to another account.");
+        }
+
+        principal.setStaffId(newStaffId);
+        Registrar saved = registrarRepository.save(principal);
+
+        log.info("Staff ID changed: id={}, newStaffId={}", principal.getId(), newStaffId);
         return registrarMapper.toResponse(saved);
     }
 

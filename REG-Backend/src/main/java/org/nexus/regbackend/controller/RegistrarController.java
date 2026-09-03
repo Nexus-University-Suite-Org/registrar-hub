@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.nexus.regbackend.dto.ApiResponse;
 import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
+import org.nexus.regbackend.dto.ChangeStaffIdRequest;
 import org.nexus.regbackend.dto.ChangeUsernameRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
@@ -22,7 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 
 /**
- * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 / REG_UCD_011 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 / REG_UCD_011 / REG_UCD_012 — Registrar account operations.
  * Base URL: /api/v1/registrars
  */
 @RestController
@@ -143,6 +144,24 @@ public class RegistrarController {
         Registrar principal = resolvePrincipal(userDetails);
         RegistrarResponse response = registrarService.changeUsername(userId, request, principal);
         return ApiResponse.ok("Username updated successfully.", response);
+    }
+
+    /**
+     * REG_UCD_012 — Change staff ID (authenticated, owner only).
+     * PUT /api/v1/registrars/{userId}/staff-id
+     *
+     * <p>Checks uniqueness before persisting. No OTP required.
+     * Requires a valid Bearer access token (owner only).
+     */
+    @PutMapping("/{userId}/staff-id")
+    public ResponseEntity<ApiResponse<RegistrarResponse>> changeStaffId(
+            @PathVariable Long userId,
+            @Valid @RequestBody ChangeStaffIdRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Registrar principal = resolvePrincipal(userDetails);
+        RegistrarResponse response = registrarService.changeStaffId(userId, request, principal);
+        return ApiResponse.ok("Staff ID updated successfully.", response);
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────
