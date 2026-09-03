@@ -47,4 +47,21 @@ public class EmailServiceImpl implements EmailService {
         mailSender.send(message);
         log.info("Password-reset OTP email dispatched to {}", to);
     }
+
+    @Override
+    public void sendEmailChangeOtpEmail(String to, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Confirm Your New Nexus Registrar Email Address");
+        message.setText("""
+                You requested an email address change. Your verification code is: %s
+                
+                This code expires in 10 minutes. Do not share it with anyone.
+                
+                If you did not request this change, please ignore this email.
+                """.formatted(otp));
+
+        mailSender.send(message);
+        log.info("Email-change OTP email dispatched to {}", to);
+    }
 }

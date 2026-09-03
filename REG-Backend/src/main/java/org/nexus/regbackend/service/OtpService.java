@@ -40,4 +40,24 @@ public interface OtpService {
      * @return {@code true} when OTP matches, is unexpired, and within attempt limit
      */
     boolean verifyResetOtp(VerifyOtpRequest request);
+
+    /**
+     * Email-change flow Step 1 — sends an OTP to the new email address.
+     * Stored under purpose=EMAIL_CHANGE — separate namespace from signup and reset OTPs.
+     * The new email is used as the lookup key so the OTP is scoped to that address.
+     *
+     * @param newEmail the new email address the registrar wants to switch to
+     * @return the raw OTP only when {@code otp.show-in-dev=true}; otherwise {@code null}
+     */
+    String sendEmailChangeOtp(String newEmail);
+
+    /**
+     * Email-change flow Step 2 — validates the OTP submitted for the new email.
+     * On success, flips the server-side {@code verified} flag on the OTP record.
+     *
+     * @param newEmail the new email address (matches the record keyed on Step 1)
+     * @param otp      the raw OTP supplied by the registrar
+     * @return {@code true} when OTP matches, is unexpired, and within attempt limit
+     */
+    boolean verifyEmailChangeOtp(String newEmail, String otp);
 }

@@ -3,8 +3,10 @@ package org.nexus.regbackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.nexus.regbackend.dto.ApiResponse;
+import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
+import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
 import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.repository.RegistrarRepository;
@@ -16,8 +18,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
 /**
- * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 — Registrar account operations.
  * Base URL: /api/v1/registrars
  */
 @RestController
@@ -79,6 +83,47 @@ public class RegistrarController {
         Registrar principal = resolvePrincipal(userDetails);
         registrarService.changePassword(userId, request, principal);
         return ApiResponse.ok("Password changed successfully. Please log in again.", null);
+    }
+
+    /**
+     * REG_UCD_010 — Step 1: send OTP to the new email address.
+     * POST /api/v1/registrars/{userId}/email/send-otp
+     *
+     * <p>Validates that the new address is not already taken before dispatching.
+     * Requires a valid Bearer access token (owner only).
+     */
+    @PostMapping("/{userId}/email/send-otp")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendEmailChangeOtp(
+            @PathVariable Long userId,
+            @Valid @RequestBody SendEmailChangeOtpRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Registrar principal = resolvePrincipal(userDetails);
+        String devOtp = registrarService.sendEmailChangeOtp(userId, request, principal);
+
+        Map<String, Object> data = devOtp != null
+                ? Map.of("sent", true, "otp", devOtp)
+                : Map.of("sent", true);
+
+        return ApiResponse.ok("Verification code sent to your new email address.", data);
+    }
+
+    /**
+     * REG_UCD_010 — Step 2: verify OTP and commit new email address.
+     * PUT /api/v1/registrars/{userId}/email
+     *
+     * <p>The OTP must match the server-side EMAIL_CHANGE record — no client flag is trusted.
+     * Requires a valid Bearer access token (owner only).
+     */
+    @PutMapping("/{userId}/email")
+    public ResponseEntity<ApiResponse<RegistrarResponse>> changeEmail(
+            @PathVariable Long userId,
+            @Valid @RequestBody ChangeEmailRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Registrar principal = resolvePrincipal(userDetails);
+        RegistrarResponse response = registrarService.changeEmail(userId, request, principal);
+        return ApiResponse.ok("Email address updated successfully.", response);
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────

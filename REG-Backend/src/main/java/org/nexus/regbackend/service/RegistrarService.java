@@ -1,12 +1,14 @@
 package org.nexus.regbackend.service;
 
+import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
+import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
 import org.nexus.regbackend.model.Registrar;
 
 /**
- * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 — Registrar account operations.
  */
 public interface RegistrarService {
 
@@ -50,4 +52,31 @@ public interface RegistrarService {
      * @param principal the authenticated registrar resolved from the JWT
      */
     void changePassword(Long userId, ChangePasswordRequest request, Registrar principal);
+
+    /**
+     * REG_UCD_010 — Step 1: sends an OTP to the requested new email address.
+     *
+     * <p>Authorization: owner only.
+     * Checks that the new email is not already registered before dispatching.
+     *
+     * @param userId    path variable — must match the authenticated principal
+     * @param request   carries the new email address
+     * @param principal the authenticated registrar resolved from the JWT
+     * @return the raw OTP only when {@code otp.show-in-dev=true}; otherwise {@code null}
+     */
+    String sendEmailChangeOtp(Long userId, SendEmailChangeOtpRequest request, Registrar principal);
+
+    /**
+     * REG_UCD_010 — Step 2: verifies the OTP and commits the new email address.
+     *
+     * <p>Authorization: owner only.
+     * The OTP must have been verified server-side against the EMAIL_CHANGE record
+     * keyed on the new address — a client-supplied flag is never trusted.
+     *
+     * @param userId    path variable — must match the authenticated principal
+     * @param request   carries the new email address and submitted OTP
+     * @param principal the authenticated registrar resolved from the JWT
+     * @return the updated registrar profile with the new email committed
+     */
+    RegistrarResponse changeEmail(Long userId, ChangeEmailRequest request, Registrar principal);
 }

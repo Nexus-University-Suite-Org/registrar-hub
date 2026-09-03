@@ -35,7 +35,7 @@ public class OtpRecord {
      * be cross-used. Defaults to SIGNUP for backwards compatibility.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 20)
     @Builder.Default
     private OtpPurpose purpose = OtpPurpose.SIGNUP;
 

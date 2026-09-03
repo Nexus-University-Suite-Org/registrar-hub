@@ -6,5 +6,7 @@ package org.nexus.regbackend.model;
  */
 public enum OtpPurpose {
     SIGNUP,
-    RESET
+    RESET,
+    /** Authenticated email-change flow — OTP is sent to the new address. */
+    EMAIL_CHANGE
 }

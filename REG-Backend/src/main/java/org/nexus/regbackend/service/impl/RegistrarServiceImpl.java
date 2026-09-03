@@ -2,15 +2,22 @@ package org.nexus.regbackend.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
+import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
+import org.nexus.regbackend.exception.DuplicateResourceException;
+import org.nexus.regbackend.exception.OtpException;
 import org.nexus.regbackend.exception.ValidationException;
 import org.nexus.regbackend.mapper.RegistrarMapper;
 import org.nexus.regbackend.model.Registrar;
+import org.nexus.regbackend.model.OtpPurpose;
 import org.nexus.regbackend.model.Role;
+import org.nexus.regbackend.repository.OtpRecordRepository;
 import org.nexus.regbackend.repository.RefreshTokenRepository;
 import org.nexus.regbackend.repository.RegistrarRepository;
+import org.nexus.regbackend.service.OtpService;
 import org.nexus.regbackend.service.RegistrarService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,17 +26,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * REG_UCD_007 / REG_UCD_008 implementation.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 implementation.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegistrarServiceImpl implements RegistrarService {
 
-    private final RegistrarRepository  registrarRepository;
+    private final RegistrarRepository    registrarRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final RegistrarMapper      registrarMapper;
-    private final PasswordEncoder      passwordEncoder;
+    private final OtpRecordRepository    otpRecordRepository;
+    private final OtpService             otpService;
+    private final RegistrarMapper        registrarMapper;
+    private final PasswordEncoder        passwordEncoder;
 
     // ── REG_UCD_007 — View account ────────────────────────────────────────────
 
@@ -107,6 +116,68 @@ public class RegistrarServiceImpl implements RegistrarService {
         refreshTokenRepository.deleteAllByRegistrarId(principal.getId());
 
         log.info("Password changed: id={}", principal.getId());
+    }
+
+    // ── REG_UCD_010 — Send email-change OTP ──────────────────────────────────
+
+    @Override
+    @Transactional
+    public String sendEmailChangeOtp(Long userId, SendEmailChangeOtpRequest request, Registrar principal) {
+        // Authorization: owner only
+        if (!principal.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to change this account's email.");
+        }
+
+        String newEmail = request.getNewEmail().toLowerCase().trim();
+
+        // Reject if the new address is the same as the current one
+        if (principal.getEmail().equalsIgnoreCase(newEmail)) {
+            throw new ValidationException("New email must be different from the current email.");
+        }
+
+        // Reject if another account already owns that address
+        if (registrarRepository.existsByEmail(newEmail)) {
+            throw new DuplicateResourceException("This email address is already in use.");
+        }
+
+        String devOtp = otpService.sendEmailChangeOtp(newEmail);
+        log.info("Email-change OTP requested: principalId={}, newEmail={}", principal.getId(), newEmail);
+        return devOtp;
+    }
+
+    // ── REG_UCD_010 — Commit email change ────────────────────────────────────
+
+    @Override
+    @Transactional
+    public RegistrarResponse changeEmail(Long userId, ChangeEmailRequest request, Registrar principal) {
+        // Authorization: owner only
+        if (!principal.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to change this account's email.");
+        }
+
+        String newEmail = request.getNewEmail().toLowerCase().trim();
+
+        // Verify OTP server-side — never trust a client-supplied flag
+        if (!otpService.verifyEmailChangeOtp(newEmail, request.getOtp())) {
+            throw new OtpException("Invalid or expired OTP. Please request a new code.");
+        }
+
+        // Guard: re-check uniqueness in case another registrar claimed the address
+        // between the send-otp and commit steps
+        if (registrarRepository.existsByEmail(newEmail)) {
+            throw new DuplicateResourceException("This email address is already in use.");
+        }
+
+        principal.setEmail(newEmail);
+        Registrar saved = registrarRepository.save(principal);
+
+        // Clean up OTP records for the new address
+        otpRecordRepository.deleteAllByEmailAndPurpose(newEmail, OtpPurpose.EMAIL_CHANGE);
+
+        log.info("Email changed: principalId={}, newEmail={}", principal.getId(), newEmail);
+        return registrarMapper.toResponse(saved);
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────

@@ -183,6 +183,78 @@ public class OtpServiceImpl implements OtpService {
         return verifyOtp(request, OtpPurpose.RESET, true);
     }
 
+    // ── Email-change OTP — Step 1: send ──────────────────────────────────────
+
+    @Override
+    @Transactional
+    public String sendEmailChangeOtp(String newEmail) {
+        String email = newEmail.toLowerCase().trim();
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<OtpRecord> existing = otpRecordRepository
+                .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, OtpPurpose.EMAIL_CHANGE);
+
+        if (existing.isPresent()) {
+            OtpRecord record = existing.get();
+
+            if (now.isBefore(record.getResendAllowedAt())) {
+                throw new OtpException("Please wait before requesting a new code.");
+            }
+
+            boolean windowExpired = now.isAfter(record.getHourWindowStart().plusHours(1));
+            int sendsThisHour = windowExpired ? 0 : record.getSendsThisHour();
+
+            if (sendsThisHour >= otpProperties.getMaxSendsPerHour()) {
+                throw new OtpException("Maximum OTP requests reached. Please try again later.");
+            }
+
+            otpRecordRepository.deleteAllByEmailAndPurpose(email, OtpPurpose.EMAIL_CHANGE);
+        }
+
+        String rawOtp = generateRawOtp();
+        String nonce  = generateNonce();
+        String hash   = hmac(otpProperties.getSecret() + nonce, rawOtp);
+
+        int previousSends = existing.map(r -> {
+            boolean expired = now.isAfter(r.getHourWindowStart().plusHours(1));
+            return expired ? 0 : r.getSendsThisHour();
+        }).orElse(0);
+
+        LocalDateTime windowStart = existing.map(r ->
+                now.isAfter(r.getHourWindowStart().plusHours(1)) ? now : r.getHourWindowStart()
+        ).orElse(now);
+
+        OtpRecord newRecord = OtpRecord.builder()
+                .email(email)
+                .purpose(OtpPurpose.EMAIL_CHANGE)
+                .otpHash(hash)
+                .nonce(nonce)
+                .expiresAt(now.plusMinutes(otpProperties.getExpiryMinutes()))
+                .verifyAttempts(0)
+                .verified(false)
+                .resendAllowedAt(now.plusSeconds(otpProperties.getResendCooldownSeconds()))
+                .sendsThisHour(previousSends + 1)
+                .hourWindowStart(windowStart)
+                .build();
+
+        otpRecordRepository.save(newRecord);
+        emailService.sendEmailChangeOtpEmail(email, rawOtp);
+
+        log.info("Email-change OTP dispatched to new address: {}", email);
+        return otpProperties.isShowInDev() ? rawOtp : null;
+    }
+
+    // ── Email-change OTP — Step 2: verify ────────────────────────────────────
+
+    @Override
+    @Transactional
+    public boolean verifyEmailChangeOtp(String newEmail, String otp) {
+        VerifyOtpRequest request = new VerifyOtpRequest();
+        request.setEmail(newEmail.toLowerCase().trim());
+        request.setOtp(otp);
+        return verifyOtp(request, OtpPurpose.EMAIL_CHANGE, true);
+    }
+
     // ── Shared verify logic ───────────────────────────────────────────────────
 
     /**
