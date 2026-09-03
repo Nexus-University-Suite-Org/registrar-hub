@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
+import org.nexus.regbackend.dto.ChangeUsernameRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
@@ -177,6 +178,36 @@ public class RegistrarServiceImpl implements RegistrarService {
         otpRecordRepository.deleteAllByEmailAndPurpose(newEmail, OtpPurpose.EMAIL_CHANGE);
 
         log.info("Email changed: principalId={}, newEmail={}", principal.getId(), newEmail);
+        return registrarMapper.toResponse(saved);
+    }
+
+    // ── REG_UCD_011 — Change username ─────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public RegistrarResponse changeUsername(Long userId, ChangeUsernameRequest request, Registrar principal) {
+        // Authorization: owner only
+        if (!principal.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to change this account's username.");
+        }
+
+        String newUsername = request.getNewUsername().trim();
+
+        // Reject if the new username is the same as the current one
+        if (principal.getUsername().equalsIgnoreCase(newUsername)) {
+            throw new ValidationException("New username must be different from the current username.");
+        }
+
+        // Reject if another account already owns that username
+        if (registrarRepository.existsByUsername(newUsername)) {
+            throw new DuplicateResourceException("This username is already taken.");
+        }
+
+        principal.setUsername(newUsername);
+        Registrar saved = registrarRepository.save(principal);
+
+        log.info("Username changed: id={}, newUsername={}", principal.getId(), newUsername);
         return registrarMapper.toResponse(saved);
     }
 

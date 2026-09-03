@@ -2,13 +2,14 @@ package org.nexus.regbackend.service;
 
 import org.nexus.regbackend.dto.ChangeEmailRequest;
 import org.nexus.regbackend.dto.ChangePasswordRequest;
+import org.nexus.regbackend.dto.ChangeUsernameRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.SendEmailChangeOtpRequest;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
 import org.nexus.regbackend.model.Registrar;
 
 /**
- * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 / REG_UCD_010 / REG_UCD_011 — Registrar account operations.
  */
 public interface RegistrarService {
 
@@ -79,4 +80,17 @@ public interface RegistrarService {
      * @return the updated registrar profile with the new email committed
      */
     RegistrarResponse changeEmail(Long userId, ChangeEmailRequest request, Registrar principal);
+
+    /**
+     * REG_UCD_011 — Changes the username for the authenticated registrar.
+     *
+     * <p>Authorization: owner only.
+     * The new username must not already be taken by another account.
+     *
+     * @param userId    path variable — must match the authenticated principal
+     * @param request   carries the new username
+     * @param principal the authenticated registrar resolved from the JWT
+     * @return the updated registrar profile
+     */
+    RegistrarResponse changeUsername(Long userId, ChangeUsernameRequest request, Registrar principal);
 }
