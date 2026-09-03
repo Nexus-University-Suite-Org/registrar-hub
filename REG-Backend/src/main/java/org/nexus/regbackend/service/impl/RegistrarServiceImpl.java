@@ -2,14 +2,18 @@ package org.nexus.regbackend.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
+import org.nexus.regbackend.exception.ValidationException;
 import org.nexus.regbackend.mapper.RegistrarMapper;
 import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.model.Role;
+import org.nexus.regbackend.repository.RefreshTokenRepository;
 import org.nexus.regbackend.repository.RegistrarRepository;
 import org.nexus.regbackend.service.RegistrarService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,8 +26,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class RegistrarServiceImpl implements RegistrarService {
 
-    private final RegistrarRepository registrarRepository;
-    private final RegistrarMapper     registrarMapper;
+    private final RegistrarRepository  registrarRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RegistrarMapper      registrarMapper;
+    private final PasswordEncoder      passwordEncoder;
 
     // ── REG_UCD_007 — View account ────────────────────────────────────────────
 
@@ -68,6 +74,39 @@ public class RegistrarServiceImpl implements RegistrarService {
                 userId, principal.getId(), principal.getRole());
 
         return registrarMapper.toResponse(saved);
+    }
+
+    // ── REG_UCD_009 — Change password ─────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request, Registrar principal) {
+        // Authorization: owner only — admins cannot change another user's password
+        if (!principal.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "You are not authorized to change this account's password.");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new ValidationException("New password and confirmation do not match.");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), principal.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Current password is incorrect.");
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), principal.getPasswordHash())) {
+            throw new ValidationException("New password must be different from the current password.");
+        }
+
+        principal.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        registrarRepository.save(principal);
+
+        // Revoke all refresh tokens — forces re-login on all devices
+        refreshTokenRepository.deleteAllByRegistrarId(principal.getId());
+
+        log.info("Password changed: id={}", principal.getId());
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
 package org.nexus.regbackend.service;
 
+import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
 import org.nexus.regbackend.model.Registrar;
 
 /**
- * REG_UCD_007 / REG_UCD_008 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 — Registrar account operations.
  */
 public interface RegistrarService {
 
@@ -35,4 +36,18 @@ public interface RegistrarService {
      * @return the updated registrar profile
      */
     RegistrarResponse updateRegistrar(Long userId, UpdateRegistrarRequest request, Registrar principal);
+
+    /**
+     * REG_UCD_009 — Changes the password for an authenticated registrar.
+     *
+     * <p>The caller must supply their current password for ownership verification.
+     * On success all refresh tokens are revoked, forcing a re-login.
+     *
+     * <p>Authorization: owner only — a registrar may only change their own password.
+     *
+     * @param userId    path variable — the account whose password is being changed
+     * @param request   contains currentPassword, newPassword, confirmPassword
+     * @param principal the authenticated registrar resolved from the JWT
+     */
+    void changePassword(Long userId, ChangePasswordRequest request, Registrar principal);
 }

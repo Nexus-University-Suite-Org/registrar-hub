@@ -3,6 +3,7 @@ package org.nexus.regbackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.nexus.regbackend.dto.ApiResponse;
+import org.nexus.regbackend.dto.ChangePasswordRequest;
 import org.nexus.regbackend.dto.RegistrarResponse;
 import org.nexus.regbackend.dto.UpdateRegistrarRequest;
 import org.nexus.regbackend.model.Registrar;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * REG_UCD_007 / REG_UCD_008 — Registrar account operations.
+ * REG_UCD_007 / REG_UCD_008 / REG_UCD_009 — Registrar account operations.
  * Base URL: /api/v1/registrars
  */
 @RestController
@@ -60,6 +61,24 @@ public class RegistrarController {
         Registrar principal = resolvePrincipal(userDetails);
         RegistrarResponse response = registrarService.updateRegistrar(userId, request, principal);
         return ApiResponse.ok("Registrar profile updated.", response);
+    }
+
+    /**
+     * REG_UCD_009 — Change password (authenticated, owner only).
+     * PUT /api/v1/registrars/{userId}/password
+     *
+     * <p>Requires the caller to supply their current password.
+     * On success all refresh tokens are revoked — the client must re-login.
+     */
+    @PutMapping("/{userId}/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @PathVariable Long userId,
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        Registrar principal = resolvePrincipal(userDetails);
+        registrarService.changePassword(userId, request, principal);
+        return ApiResponse.ok("Password changed successfully. Please log in again.", null);
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────
