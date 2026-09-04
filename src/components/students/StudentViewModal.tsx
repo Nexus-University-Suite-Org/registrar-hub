@@ -171,7 +171,7 @@ export function StudentViewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0 border-none bg-background shadow-2xl">
+      <DialogContent className="max-w-3xl lg:max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0 border-none bg-background shadow-2xl">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="font-display text-2xl flex items-center gap-3 text-foreground">
             <div className="p-2.5 bg-primary/10 rounded-xl">
