@@ -768,20 +768,31 @@ function SubjectsList({ label, data }: { label: string; data?: string }) {
   return (
     <div className="flex items-start gap-3">
       <Award className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-      <div>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
           {label}
         </p>
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {items.map((s, i) => (
-            <Badge
-              key={i}
-              variant="outline"
-              className="bg-muted/30 text-xs font-medium"
-            >
-              {s.subject || s.name}: {s.grade || s.gradePoints || ""}
-            </Badge>
-          ))}
+        <div className="overflow-hidden rounded-lg border border-slate-200">
+          <table className="w-full text-sm">
+            <tbody>
+              {items.map((s, i) => (
+                <tr
+                  key={i}
+                  className={cn(
+                    "flex items-center justify-between px-3 py-1.5",
+                    i % 2 === 0 ? "bg-white" : "bg-slate-50/60",
+                  )}
+                >
+                  <td className="font-medium text-foreground">
+                    {s.subject || s.name}
+                  </td>
+                  <td className="text-muted-foreground">
+                    {s.grade || s.gradePoints || ""}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -789,7 +800,9 @@ function SubjectsList({ label, data }: { label: string; data?: string }) {
 }
 
 function QualificationPanel({ data }: { data?: string }) {
-  const quals = parseQualificationResults(data);
+  const quals = parseQualificationResults(data).filter(
+    (q) => q.qualified === true,
+  );
   if (quals.length === 0) return null;
   return (
     <SectionCard
@@ -801,12 +814,7 @@ function QualificationPanel({ data }: { data?: string }) {
         {quals.map((q, i) => (
           <div
             key={i}
-            className={cn(
-              "rounded-lg border p-3",
-              q.qualified
-                ? "bg-emerald-50/50 border-emerald-200"
-                : "bg-slate-50/50 border-slate-200",
-            )}
+            className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4"
           >
             <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="font-semibold text-foreground text-sm">
@@ -814,20 +822,38 @@ function QualificationPanel({ data }: { data?: string }) {
               </p>
               <Badge
                 variant="outline"
-                className={cn(
-                  "text-xs",
-                  q.qualified
-                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-200"
-                    : "bg-rose-500/10 text-rose-600 border-rose-200",
-                )}
+                className="bg-emerald-500/10 text-emerald-600 border-emerald-200"
               >
-                {q.qualified ? "Qualified" : "Not qualified"}
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Qualified
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Score {q.totalScore ?? "—"} / cutoff {q.cutoffScore ?? "—"}
-              {q.reason ? ` — ${q.reason}` : ""}
-            </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <p className="text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  {q.totalScore ?? "—"}
+                </span>{" "}
+                / cutoff{" "}
+                <span className="font-semibold text-foreground">
+                  {q.cutoffScore ?? "—"}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                O-Level{" "}
+                <span className="font-semibold text-foreground">
+                  {q.oLevelScore ?? "—"}
+                </span>{" "}
+                · A-Level{" "}
+                <span className="font-semibold text-foreground">
+                  {q.aLevelScore ?? "—"}
+                </span>
+              </p>
+            </div>
+            {q.reason && (
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                {q.reason}
+              </p>
+            )}
           </div>
         ))}
       </div>
