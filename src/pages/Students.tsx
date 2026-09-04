@@ -14,19 +14,161 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Student, StudentStatus } from "@/types/student";
+import { Student } from "@/types/student";
 import { Plus, Search, Filter, Download, Users, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { get, post, put, del } from "@/lib/api";
+import { post, put, del } from "@/lib/api";
+
+const NAP_APPLICATIONS_URL =
+  import.meta.env.VITE_NAP_APPLICATIONS_URL ||
+  "http://localhost:8080/api/v1/applications";
+
+const NAP_ORIGIN =
+  import.meta.env.VITE_NAP_ORIGIN || "http://localhost:8080";
+
+function toAbsoluteUrl(value?: string): string | undefined {
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${NAP_ORIGIN}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+interface NapApplication {
+  id: number;
+  prn?: string;
+  firstName?: string;
+  lastName?: string;
+  otherNames?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  status?: string;
+  reviewStatus?: string;
+  [key: string]: any;
+}
+
+function mapNapApplication(a: NapApplication): Student {
+  const first = a.firstName || "";
+  const last = a.lastName || "";
+  return {
+    id: `nap-${a.id}`,
+    student_number: a.prn || a.studentNumber || `NAP-${a.id}`,
+    registration_number: a.registrationNumber || a.studentNumber || a.prn || "",
+    first_name: first,
+    last_name: last,
+    email: a.email || "",
+    department: a.department || a.faculty || "",
+    program: a.assignedProgramme || a.programChoice1 || "",
+    year_of_study: 1,
+    status: (a.status || "SUBMITTED") as any,
+    admission_date: a.createdAt ? a.createdAt.split("T")[0] : "",
+    avatar_url: toAbsoluteUrl(a.passportPhotoUrl) || "",
+    created_at: a.createdAt || "",
+    updated_at: a.updatedAt || "",
+    source: "nap",
+    prn: a.prn,
+    other_names: a.otherNames,
+    phone_number: a.phoneNumber,
+    gender: a.gender,
+    date_of_birth: a.dateOfBirth,
+    marital_status: a.maritalStatus,
+    nationality: a.nationality,
+    address: a.address,
+    postal_address: a.postalAddress,
+    city: a.city,
+    postal_code: a.postalCode,
+    country: a.country,
+    district: a.district,
+    subcounty: a.subcounty,
+    village: a.village,
+    has_national_id_or_passport: a.hasNationalIdOrPassport,
+    birth_certificate_or_national_id_details:
+      a.birthCertificateOrNationalIdDetails,
+    passport_photo_uploaded: a.passportPhotoUploaded,
+    passport_photo_url: a.passportPhotoUrl,
+    guardian_name: a.guardianName,
+    guardian_type: a.guardianType,
+    guardian_phone: a.guardianPhone,
+    next_of_kin_relationship: a.nextOfKinRelationship,
+    is_ugandan: a.isUgandan,
+    application_type: a.applicationType,
+    entry_scheme: a.entryScheme,
+    program_choice_1: a.programChoice1,
+    program_choice_2: a.programChoice2,
+    program_choice_3: a.programChoice3,
+    program_choice_4: a.programChoice4,
+    assigned_programme: a.assignedProgramme,
+    total_weight_score: a.totalWeightScore,
+    qualification_results: a.qualificationResults,
+    start_date: a.startDate,
+    previous_institution: a.previousInstitution,
+    highest_qualification: a.highestQualification,
+    academic_credential_level: a.academicCredentialLevel,
+    academic_credentials_details: a.academicCredentialsDetails,
+    study_mode: a.studyMode,
+    academic_year: a.academicYear,
+    semester: a.semester,
+    email_verified: a.emailVerified,
+    review_status: a.reviewStatus,
+    submitted_at: a.submittedAt,
+    reviewed_at: a.reviewedAt,
+    reviewer_notes: a.reviewerNotes,
+    uce_result: a.uceResult,
+    uace_result: a.uaceResult,
+    documents: a.documents,
+    extras: a.extras,
+    uce_index_number: a.uceIndexNumber,
+    uce_year_of_sitting: a.uceYearOfSitting ? String(a.uceYearOfSitting) : "",
+    uce_total_aggregates: a.uceTotalAggregates,
+    uce_division: a.uceDivision,
+    o_level_school_name: a.oLevelSchoolName,
+    uace_index_number: a.uaceIndexNumber,
+    uace_year_of_sitting: a.uaceYearOfSitting ? String(a.uaceYearOfSitting) : "",
+    uace_total_points: a.uaceTotalPoints,
+    uace_principal_subjects: a.uacePrincipalSubjects,
+    uace_general_paper_grade: a.uaceGeneralPaperGrade,
+    uace_ict_or_sub_math_subject: a.uaceIctOrSubMathSubject,
+    uace_ict_or_sub_math_grade: a.uaceIctOrSubMathGrade,
+    o_level_subjects: a.oLevelSubjects,
+    certificate_subjects: a.certificateSubjects,
+    gpa: a.gpa,
+    personal_statement: a.personalStatement,
+    how_did_you_hear: a.howDidYouHear,
+    documents_confirmed: a.documentsConfirmed,
+    application_fee_paid: a.applicationFeePaid,
+    payment_method: a.paymentMethod,
+    payment_reference: a.paymentReference,
+    interview_preference: a.interviewPreference,
+    terms_accepted: a.termsAccepted,
+  };
+}
+
+async function fetchNapApplications(): Promise<Student[]> {
+  try {
+    const response = await fetch(NAP_APPLICATIONS_URL);
+    if (!response.ok) {
+      throw new Error(`NAP backend returned ${response.status}`);
+    }
+    const data = await response.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(
+        (a: NapApplication) =>
+          String(a.status).toUpperCase() === "ADMITTED",
+      )
+      .map(mapNapApplication);
+  } catch (error: any) {
+    console.warn("[Students] Failed to fetch NAP applications:", error);
+    return [];
+  }
+}
 
 export default function Students() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StudentStatus | "all">(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -37,28 +179,15 @@ export default function Students() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const studentsData = await get<any[]>("/students/");
-      const mappedStudents: Student[] = studentsData.map((data) => ({
-        id: data.id,
-        student_number: data.student_number || "",
-        registration_number: data.registration_number || "",
-        first_name: (data.full_name || "").split(" ")[0] || "",
-        last_name: (data.full_name || "").split(" ").slice(1).join(" ") || "",
-        email: data.email || "",
-        department: data.department || "",
-        program: data.program || "",
-        year_of_study: data.year_of_study || 1,
-        status: data.status || "Active",
-        admission_date: data.admission_date || "",
-        avatar_url: data.avatar_url || "",
-        created_at: data.created_at || "",
-        updated_at: data.updated_at || "",
-      }));
-
-      setStudents(mappedStudents);
-      toast.success(`Loaded ${mappedStudents.length} students from database`);
+      const napStudents = await fetchNapApplications();
+      setStudents(napStudents);
+      toast.success(
+        napStudents.length > 0
+          ? `Loaded ${napStudents.length} admitted applicants from NAP`
+          : "No admitted applicants found in NAP",
+      );
     } catch (error: any) {
-      console.error("Error fetching students:", error);
+      console.error("Error fetching NAP students:", error);
       toast.error(`Failed to load students: ${error.message}`);
       setStudents([]);
     } finally {
@@ -235,7 +364,7 @@ export default function Students() {
           department: data.department || "",
           program: data.program || "",
           year_of_study: data.year_of_study || 1,
-          status: (data.status as StudentStatus) || "Active",
+          status: data.status || "Active",
           admission_date:
             data.admission_date || new Date().toISOString().split("T")[0],
           avatar_url: data.avatar_url || "",
@@ -362,7 +491,7 @@ export default function Students() {
             </div>
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as StudentStatus | "all")}
+              onValueChange={(v) => setStatusFilter(v)}
             >
               <SelectTrigger className="w-full lg:w-[200px] h-12 rounded-xl border-border/50">
                 <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -374,6 +503,17 @@ export default function Students() {
                 <SelectItem value="Inactive">Inactive</SelectItem>
                 <SelectItem value="Graduated">Graduated</SelectItem>
                 <SelectItem value="Suspended">Suspended</SelectItem>
+                {[
+                  "SUBMITTED",
+                  "ADMITTED",
+                  "REJECTED",
+                  "WAITLISTED",
+                  "DRAFT",
+                ].map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
