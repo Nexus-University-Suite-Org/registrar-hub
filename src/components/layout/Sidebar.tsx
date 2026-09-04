@@ -17,6 +17,7 @@ import {
   Wrench,
   DollarSign,
   Bell,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ const navigation = [
   { name: "Results", href: "/results", icon: GraduationCap },
   { name: "Transcripts", href: "/transcripts", icon: FileText },
   { name: "Reports", href: "/reports", icon: BarChart3 },
+  { name: "Academic Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Tools", href: "/tools", icon: Wrench },
   { name: "Settings", href: "/settings", icon: Settings },
