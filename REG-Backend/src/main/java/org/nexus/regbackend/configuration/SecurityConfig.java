@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/api/fee-assignments/**",
                                 "/api/departments/**",
                                 "/api/specializations/**",
+                                "/api/academic-calendar/**",
                                 "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
