@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/api/upload/**",
                                 "/api/uploads/**",
                                 "/api/profiles/**",
+                                "/api/student-grades/**",
                                 "/api/activities/**",
                                 "/api/courses/**",
                                 "/api/course-units/**",
@@ -57,7 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/university-services/**",
                                 "/api/office-locations/**",
-                                "/api/service-requests/**").permitAll()
+                                "/api/service-requests/**",
+                                "/api/settings/branding").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/service-requests/**").permitAll()
                         .anyRequest().authenticated()
                 )

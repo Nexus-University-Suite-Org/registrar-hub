@@ -3,11 +3,14 @@ package org.nexus.regbackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.nexus.regbackend.dto.*;
+import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.service.AuthService;
 import org.nexus.regbackend.service.OtpService;
+import org.nexus.regbackend.util.CurrentUser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +24,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final OtpService  otpService;
+    private final CurrentUser currentUser;
 
     /**
      * REG_UCD_004 — Send sign-up OTP.
@@ -73,5 +77,37 @@ public class AuthController {
 
         LoginResponse response = authService.login(request);
         return ApiResponse.ok("Login successful.", response);
+    }
+
+    /**
+     * Changes the authenticated registrar's password.
+     * POST /api/v1/auth/change-password
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(currentUser.registrar().getEmail(), request);
+        return ApiResponse.ok("Password updated successfully.", Map.of("changed", true));
+    }
+
+    /**
+     * Lists the authenticated registrar's active sessions (refresh tokens).
+     * GET /api/v1/auth/sessions
+     */
+    @GetMapping("/sessions")
+    public ResponseEntity<ApiResponse<List<SessionDto>>> sessions() {
+        Registrar registrar = currentUser.registrar();
+        return ApiResponse.ok("Sessions retrieved", authService.listSessions(registrar.getId()));
+    }
+
+    /**
+     * Revokes all of the authenticated registrar's sessions.
+     * DELETE /api/v1/auth/sessions
+     */
+    @DeleteMapping("/sessions")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> revokeSessions() {
+        Registrar registrar = currentUser.registrar();
+        authService.revokeAllSessions(registrar.getId());
+        return ApiResponse.ok("All sessions signed out.", Map.of("revoked", true));
     }
 }

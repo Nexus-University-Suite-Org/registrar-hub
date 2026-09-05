@@ -28,6 +28,7 @@ import {
   Loader2,
   Monitor,
   MapPin,
+  Search,
 } from "lucide-react";
 import { get, post, put, del } from "@/lib/api";
 import { toast } from "sonner";
@@ -81,6 +82,21 @@ const PALETTE = [
   "bg-sky-500",
 ];
 
+const NAP_PROGRAMS_URL = "http://localhost:8080/api/v1/programs";
+
+function stableUnitId(code: string, taken: Set<number>): number {
+  let h = 0;
+  for (const ch of code) {
+    h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  let id = (h % 1_000_000_000) + 1;
+  while (taken.has(id)) {
+    id = id + 1;
+  }
+  taken.add(id);
+  return id;
+}
+
 function hashCode(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -88,6 +104,33 @@ function hashCode(str: string): number {
     hash |= 0;
   }
   return Math.abs(hash);
+}
+
+function normalizeCode(s?: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function tokenMatch(a: string, b: string): boolean {
+  const stop = new Set(["the", "and", "of", "for", "in", "on", "at"]);
+  const aTok = a
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t && !stop.has(t) && t.length >= 3);
+  const bTok = b
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t && !stop.has(t) && t.length >= 3);
+  if (aTok.length === 0 || bTok.length === 0) return false;
+  let hits = 0;
+  for (const t of bTok) if (aTok.includes(t)) hits++;
+  return hits >= Math.max(2, Math.min(aTok.length, bTok.length) - 1);
+}
+
+function matchesProgram(p: any, course: Course): boolean {
+  const codeA = normalizeCode(p.programCode);
+  const codeB = normalizeCode(course.code);
+  if (codeA && codeB && codeA === codeB) return true;
+  return tokenMatch(p.programName || "", course.name);
 }
 
 function toMinutes(time: string): number {
@@ -118,6 +161,7 @@ export default function Timetable() {
   const [academicYear, setAcademicYear] = useState(ACADEMIC_YEARS[0]);
   const [semester, setSemester] = useState(1);
   const [yearOfStudy, setYearOfStudy] = useState(1);
+  const [unitSearch, setUnitSearch] = useState("");
 
   const selectedCourse = useMemo(
     () => courses.find((c) => c.id === Number(selectedCourseId)) || null,
@@ -128,6 +172,15 @@ export default function Timetable() {
       courseUnits.filter((u) => u.course_id === Number(selectedCourseId)),
     [courseUnits, selectedCourseId],
   );
+  const filteredUnits = useMemo(() => {
+    const term = unitSearch.trim().toLowerCase();
+    if (!term) return unitsForCourse;
+    return unitsForCourse.filter(
+      (u) =>
+        u.code.toLowerCase().includes(term) ||
+        u.name.toLowerCase().includes(term),
+    );
+  }, [unitsForCourse, unitSearch]);
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -192,13 +245,71 @@ export default function Timetable() {
       );
       setCourses(sorted);
 
-      const allUnits = await get<CourseUnit[]>("/course-units/");
-      setCourseUnits(Array.isArray(allUnits) ? allUnits : []);
+      const napUnits = await fetchProgramUnits(sorted);
+      if (napUnits.length > 0) {
+        setCourseUnits(napUnits);
+      } else {
+        const allUnits = await get<CourseUnit[]>("/course-units/");
+        setCourseUnits(Array.isArray(allUnits) ? allUnits : []);
+      }
     } catch (error) {
       console.error("Error fetching courses:", error);
       toast.error("Failed to load courses. Is the backend running?");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProgramUnits = async (programs: Course[]): Promise<CourseUnit[]> => {
+    try {
+      const resp = await fetch(NAP_PROGRAMS_URL);
+      if (!resp.ok) throw new Error(`NAP returned ${resp.status}`);
+      const napPrograms: any[] = await resp.json();
+
+      const taken = new Set<number>();
+      const units: CourseUnit[] = [];
+      for (const program of programs) {
+        const nap = napPrograms.find((p) => matchesProgram(p, program));
+        if (!nap?.curriculum) continue;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(nap.curriculum);
+        } catch {
+          continue;
+        }
+        const years: any[] = Array.isArray(parsed.years) ? parsed.years : [];
+        years.forEach((y) => {
+          const semesters: any[] = Array.isArray(y?.semesters)
+            ? y.semesters
+            : [];
+          semesters.forEach((s) => {
+            const items: any[] = Array.isArray(s?.courses) ? s.courses : [];
+            items.forEach((c) => {
+              if (!c?.code) return;
+              units.push({
+                id: stableUnitId(c.code, taken),
+                code: c.code,
+                name: c.name || c.code,
+                course_id: program.id,
+                course_name: program.name,
+                semester: Number(s?.semester) || 1,
+                year: Number(y?.year) || 1,
+                credits: Number(c.credits) || 3,
+              });
+            });
+          });
+        });
+      }
+      units.sort(
+        (a, b) =>
+          a.year - b.year ||
+          a.semester - b.semester ||
+          a.name.localeCompare(b.name),
+      );
+      return units;
+    } catch (error) {
+      console.error("Error fetching program course units:", error);
+      return [];
     }
   };
 
@@ -231,6 +342,7 @@ export default function Timetable() {
   const openAddModal = () => {
     setModalMode("add");
     setEditingId(null);
+    setUnitSearch("");
     setForm({
       course_unit_id: unitsForCourse[0]?.id || 0,
       session_type: SESSION_TYPES[0],
@@ -251,6 +363,7 @@ export default function Timetable() {
   const openEditModal = (entry: TimetableEntry) => {
     setModalMode("edit");
     setEditingId(entry.id);
+    setUnitSearch("");
     setForm({
       course_unit_id: entry.course_unit_id || 0,
       session_type: entry.session_type || SESSION_TYPES[0],
@@ -600,6 +713,15 @@ export default function Timetable() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Course Unit</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={unitSearch}
+                  onChange={(e) => setUnitSearch(e.target.value)}
+                  placeholder="Search units by code or name..."
+                  className="pl-9"
+                />
+              </div>
               <Select
                 value={form.course_unit_id ? String(form.course_unit_id) : ""}
                 onValueChange={(v) => setForm({ ...form, course_unit_id: Number(v) })}
@@ -608,15 +730,17 @@ export default function Timetable() {
                   <SelectValue placeholder="Select a unit" />
                 </SelectTrigger>
                 <SelectContent>
-                  {unitsForCourse.length > 0 ? (
-                    unitsForCourse.map((u) => (
+                  {filteredUnits.length > 0 ? (
+                    filteredUnits.map((u) => (
                       <SelectItem key={u.id} value={String(u.id)}>
                         {u.code} — {u.name}
                       </SelectItem>
                     ))
                   ) : (
                     <SelectItem value="none" disabled>
-                      No units for this program
+                      {unitsForCourse.length > 0
+                        ? "No units match your search"
+                        : "No units for this program"}
                     </SelectItem>
                   )}
                 </SelectContent>

@@ -33,7 +33,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
   });
   return handleResponse<T>(response);
 }
@@ -59,6 +59,15 @@ export async function post<T>(path: string, payload: unknown): Promise<T> {
 export async function put<T>(path: string, payload: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<T>(response);
+}
+
+export async function patch<T>(path: string, payload: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload),
   });

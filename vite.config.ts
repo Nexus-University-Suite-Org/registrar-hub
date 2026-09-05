@@ -14,10 +14,6 @@ export default defineConfig(({ mode }) => ({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/nad/, ""),
       },
-      "/api/student-grades": {
-        target: "http://localhost:8084",
-        changeOrigin: true,
-      },
       "/api/quiz-attempts": {
         target: "http://localhost:8084",
         changeOrigin: true,

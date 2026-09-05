@@ -31,6 +31,30 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { get } from "@/lib/api";
+import {
+  BarChart as RechartsBar,
+  Bar,
+  PieChart as RechartsPie,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+const CHART_COLORS = [
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#06b6d4",
+  "#a855f7",
+  "#ec4899",
+  "#84cc16",
+];
 
 interface EnrollmentStats {
   totalStudents: number;
@@ -138,6 +162,23 @@ interface DepartmentSummaryData {
   }>;
 }
 
+interface GraduationData {
+  totalStudents: number;
+  totalGraduates: number;
+  graduationRate: number;
+  byDepartment: { [key: string]: number };
+  byYear: { [key: string]: number };
+  byProgram: { [key: string]: number };
+  graduates: Array<{
+    studentNumber: string;
+    name: string;
+    department: string;
+    program: string;
+    yearOfStudy: number;
+    admissionDate: string;
+  }>;
+}
+
 interface StudentProfileRecord {
   id: string;
   student_number?: string;
@@ -166,6 +207,221 @@ interface StudentGradeRecord {
   grade?: string;
   academic_year?: string;
   semester?: string | number;
+}
+
+function normalizeStatus(status?: string): string {
+  if (!status) return "Active";
+  const s = status.trim().toLowerCase();
+  if (s === "active") return "Active";
+  if (s === "inactive") return "Inactive";
+  if (s === "graduated") return "Graduated";
+  if (s === "suspended") return "Suspended";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function mapStudent(data: Record<string, unknown> | null | undefined) {
+  const raw = data ?? {};
+  const fullName = String(
+    raw.full_name ||
+      `${String(raw.first_name ?? "")} ${String(raw.last_name ?? "")}`.trim(),
+  );
+  const parts = fullName.split(" ");
+  return {
+    id: String(raw.id ?? raw.user_id ?? ""),
+    student_number: String(raw.student_number ?? raw.studentNumber ?? ""),
+    first_name: parts[0] || fullName,
+    last_name: parts.slice(1).join(" ") || "",
+    department: String(raw.department ?? "Not Assigned"),
+    program: String(raw.program ?? raw.programme ?? "Not Assigned"),
+    year_of_study: Number(raw.year_of_study ?? raw.yearOfStudy ?? 1),
+    status: normalizeStatus(String(raw.status ?? "")),
+    admission_date: String(raw.admission_date ?? raw.admissionDate ?? ""),
+  };
+}
+
+type CsvRow = string[];
+
+function downloadCsv(filename: string, rows: CsvRow[]) {
+  const csvContent = rows
+    .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function enrollmentCsvRows(data: EnrollmentData): CsvRow[] {
+  const rows: CsvRow[] = [
+    ["Enrollment Report Summary"],
+    ["Generated on", new Date().toLocaleDateString()],
+    [""],
+    ["Total Students", data.stats.totalStudents.toString()],
+    ["Departments", Object.keys(data.stats.byDepartment).length.toString()],
+    ["Programs", Object.keys(data.stats.byProgram).length.toString()],
+    [""],
+    ["Department Breakdown"],
+    ...Object.entries(data.stats.byDepartment).map(([dept, count]) => [dept, count.toString()]),
+    [""],
+    ["Program Breakdown"],
+    ...Object.entries(data.stats.byProgram).map(([prog, count]) => [prog, count.toString()]),
+    [""],
+    ["Year Distribution"],
+    ...Object.entries(data.stats.byYear).map(([year, count]) => [`Year ${year}`, count.toString()]),
+    [""],
+    ["Status Distribution"],
+    ...Object.entries(data.stats.byStatus).map(([status, count]) => [status, count.toString()]),
+    [""],
+    ["Student Details"],
+    ["Student Number", "First Name", "Last Name", "Department", "Program", "Year of Study", "Status", "Admission Date"],
+  ];
+  data.students.forEach((student) =>
+    rows.push([
+      student.student_number,
+      student.first_name,
+      student.last_name,
+      student.department,
+      student.program,
+      student.year_of_study.toString(),
+      student.status,
+      student.admission_date,
+    ]),
+  );
+  return rows;
+}
+
+function academicCsvRows(data: AcademicData): CsvRow[] {
+  const rows: CsvRow[] = [
+    ["Academic Performance Report"],
+    ["Generated on", new Date().toLocaleDateString()],
+    [""],
+    ["Total Students with Grades", data.stats.totalStudentsWithGrades.toString()],
+    ["Average GPA", data.stats.averageGPA.toFixed(2)],
+    [""],
+    ["GPA Distribution"],
+    ...Object.entries(data.stats.gpaDistribution).map(([range, count]) => [range, count.toString()]),
+    [""],
+    ["Grade Distribution"],
+    ...Object.entries(data.stats.gradeDistribution).map(([grade, count]) => [grade, count.toString()]),
+    [""],
+    ["Department Performance"],
+    ["Department", "Average GPA", "Student Count", "Top GPA"],
+    ...data.stats.departmentPerformance.map((dept) => [
+      dept.department,
+      dept.averageGPA.toFixed(2),
+      dept.studentCount.toString(),
+      dept.topGPA.toFixed(2),
+    ]),
+    [""],
+    ["Top Performers"],
+    ["Rank", "Student Number", "Name", "CGPA", "Department"],
+    ...data.stats.topPerformers.slice(0, 20).map((student, index) => [
+      (index + 1).toString(),
+      student.studentNumber,
+      student.name,
+      student.cgpa.toFixed(2),
+      student.department,
+    ]),
+    [""],
+    ["At Risk Students (CGPA < 2.0)"],
+    ["Student Number", "Name", "CGPA", "Department", "Program"],
+    ...data.stats.atRiskStudents.map((student) => [
+      student.studentNumber,
+      student.name,
+      student.cgpa.toFixed(2),
+      student.department,
+      student.program,
+    ]),
+    [""],
+    ["Detailed Student Performance"],
+    ["Student Number", "Name", "Department", "Program", "CGPA", "Total Credits", "Academic Year", "Semester"],
+  ];
+  data.studentGrades.forEach((student) =>
+    rows.push([
+      student.studentNumber,
+      student.name,
+      student.department,
+      student.program,
+      student.cgpa.toFixed(2),
+      student.totalCredits.toString(),
+      student.academicYear,
+      student.semester,
+    ]),
+  );
+  return rows;
+}
+
+function departmentCsvRows(data: DepartmentSummaryData): CsvRow[] {
+  const rows: CsvRow[] = [
+    ["Department Summary Report"],
+    ["Generated on", new Date().toLocaleDateString()],
+    [""],
+    ["Total Departments", data.totalDepartments.toString()],
+    ["Total Students", data.totalStudents.toString()],
+    ["Total Programs", data.totalPrograms.toString()],
+    [
+      "Largest Department",
+      data.largestDepartment ? `${data.largestDepartment.name} (${data.largestDepartment.count})` : "N/A",
+    ],
+    [""],
+    ["Department", "Total Students", "Active", "Inactive", "Graduated", "Suspended", "Average Year", "Top Programs", "Year Distribution"],
+  ];
+  data.departments.forEach((department) =>
+    rows.push([
+      department.department,
+      department.totalStudents.toString(),
+      department.activeStudents.toString(),
+      department.inactiveStudents.toString(),
+      department.graduatedStudents.toString(),
+      department.suspendedStudents.toString(),
+      department.averageYear.toFixed(2),
+      department.programs
+        .slice(0, 3)
+        .map((program) => `${program.program} (${program.count})`)
+        .join(" | "),
+      Object.entries(department.yearDistribution)
+        .map(([year, count]) => `${year}: ${count}`)
+        .join(" | "),
+    ]),
+  );
+  return rows;
+}
+
+function graduationCsvRows(data: GraduationData): CsvRow[] {
+  return [
+    ["Graduation Statistics Report"],
+    ["Generated on", new Date().toLocaleDateString()],
+    [""],
+    ["Total Students", data.totalStudents.toString()],
+    ["Total Graduates", data.totalGraduates.toString()],
+    ["Graduation Rate", `${data.graduationRate.toFixed(2)}%`],
+    [""],
+    ["Graduates by Department"],
+    ...Object.entries(data.byDepartment).map(([dept, count]) => [dept, count.toString()]),
+    [""],
+    ["Graduates by Admission Year"],
+    ...Object.entries(data.byYear).map(([year, count]) => [year, count.toString()]),
+    [""],
+    ["Graduates by Program"],
+    ...Object.entries(data.byProgram).map(([program, count]) => [program, count.toString()]),
+    [""],
+    ["Graduates"],
+    ["Student Number", "Name", "Department", "Program", "Year of Study", "Admission Date"],
+    ...data.graduates.map((g) => [
+      g.studentNumber,
+      g.name,
+      g.department,
+      g.program,
+      g.yearOfStudy.toString(),
+      g.admissionDate,
+    ]),
+  ];
 }
 
 const reportTypes = [
@@ -208,6 +464,10 @@ export default function Reports() {
     useState<DepartmentSummaryData | null>(null);
   const [loadingDepartmentSummary, setLoadingDepartmentSummary] =
     useState(false);
+  const [graduationData, setGraduationData] = useState<GraduationData | null>(
+    null,
+  );
+  const [loadingGraduation, setLoadingGraduation] = useState(false);
 
   const handleViewReport = async (reportName: string) => {
     if (reportName === "Enrollment Report") {
@@ -216,6 +476,8 @@ export default function Reports() {
       await fetchAcademicData();
     } else if (reportName === "Department Summary") {
       await fetchDepartmentSummaryData();
+    } else if (reportName === "Graduation Statistics") {
+      await fetchGraduationData();
     }
     setViewingReport(reportName);
   };
@@ -224,12 +486,12 @@ export default function Reports() {
     try {
       setLoadingDepartmentSummary(true);
 
-      const profiles = await get<any[]>("/profiles/?role=student");
-      const students = profiles.map((data: any) => ({
-        department: data.department || "Not Assigned",
-        program: data.program || "Not Assigned",
-        year_of_study: Number(data.year_of_study || data.yearOfStudy || 1),
-        status: data.status || "Active",
+      const profiles = await get<Record<string, unknown>[]>("/students");
+      const students = profiles.map(mapStudent).map((s) => ({
+        department: s.department,
+        program: s.program,
+        year_of_study: s.year_of_study,
+        status: s.status,
       }));
 
       const departmentMap = new Map<
@@ -303,7 +565,7 @@ export default function Reports() {
       const totalPrograms = new Set(students.map((student) => student.program))
         .size;
 
-      setDepartmentSummaryData({
+      const result: DepartmentSummaryData = {
         totalDepartments: departments.length,
         totalStudents: students.length,
         totalPrograms,
@@ -315,7 +577,9 @@ export default function Reports() {
               }
             : null,
         departments,
-      });
+      };
+      setDepartmentSummaryData(result);
+      return result;
     } catch (error) {
       console.error("Error fetching department summary:", error);
       toast.error("Failed to load department summary");
@@ -329,21 +593,8 @@ export default function Reports() {
       setLoadingEnrollment(true);
 
       // Fetch all students from profiles collection
-      const profiles = await get<any[]>("/profiles/?role=student");
-      const students = profiles.map((data: any) => ({
-        id: data.id,
-        student_number: data.student_number || data.studentNumber || "",
-        first_name: data.full_name?.split(" ")[0] || data.firstName || "",
-        last_name:
-          data.full_name?.split(" ").slice(1).join(" ") ||
-          data.lastName ||
-          "",
-        department: data.department || "Not Assigned",
-        program: data.program || "Not Assigned",
-        year_of_study: data.year_of_study || data.yearOfStudy || 1,
-        status: data.status || "Active",
-        admission_date: data.admission_date || data.admissionDate || "",
-      }));
+      const profiles = await get<Record<string, unknown>[]>("/students");
+      const students = profiles.map(mapStudent);
 
       // Calculate statistics
       const stats: EnrollmentStats = {
@@ -419,7 +670,9 @@ export default function Reports() {
         }),
       );
 
-      setEnrollmentData({ stats, students });
+      const result: EnrollmentData = { stats, students };
+      setEnrollmentData(result);
+      return result;
     } catch (error) {
       console.error("Error fetching enrollment data:", error);
       toast.error("Failed to load enrollment data");
@@ -436,13 +689,13 @@ export default function Reports() {
       const grades: StudentGradeRecord[] = await get<StudentGradeRecord[]>("/student-grades/");
 
       // Fetch all students
-      const students: StudentProfileRecord[] = await get<StudentProfileRecord[]>("/profiles/?role=student");
+      const students: StudentProfileRecord[] = await get<StudentProfileRecord[]>("/students");
 
       // Fetch courses for course information
       const courses: CourseRecord[] = await get<CourseRecord[]>("/courses/");
 
       // Create maps for quick lookups
-      const studentMap = new Map(students.map((s) => [s.id, s]));
+      const studentMap = new Map(students.map((s) => [String(s.id), s]));
       const courseMap = new Map(
         courses.map((c) => [
           c.id,
@@ -458,8 +711,8 @@ export default function Reports() {
       const studentGradesMap = new Map<
         string,
         {
-          student: any;
-          grades: any[];
+          student: StudentProfileRecord;
+          grades: StudentGradeRecord[];
           totalGradePoints: number;
           totalCredits: number;
           cgpa: number;
@@ -467,9 +720,9 @@ export default function Reports() {
       >();
 
       grades.forEach((grade) => {
-        const studentId = grade.student_id;
+        const studentIdKey = String(studentId);
         if (!studentId) return;
-        const student = studentMap.get(studentId);
+        const student = studentMap.get(studentIdKey);
         if (!student) return;
 
         const course = grade.course_id
@@ -478,8 +731,8 @@ export default function Reports() {
         const credits = course?.credits || 3;
         const gradePoint = grade.gp || grade.grade_point || 0;
 
-        if (!studentGradesMap.has(studentId)) {
-          studentGradesMap.set(studentId, {
+        if (!studentGradesMap.has(studentIdKey)) {
+          studentGradesMap.set(studentIdKey, {
             student,
             grades: [],
             totalGradePoints: 0,
@@ -488,7 +741,7 @@ export default function Reports() {
           });
         }
 
-        const studentData = studentGradesMap.get(studentId)!;
+        const studentData = studentGradesMap.get(studentIdKey)!;
         studentData.grades.push(grade);
         studentData.totalGradePoints += gradePoint * credits;
         studentData.totalCredits += credits;
@@ -629,7 +882,9 @@ export default function Reports() {
         })
         .sort((a, b) => b.averageGPA - a.averageGPA);
 
-      setAcademicData({ stats, studentGrades });
+      const result: AcademicData = { stats, studentGrades };
+      setAcademicData(result);
+      return result;
     } catch (error) {
       console.error("Error fetching academic data:", error);
       toast.error("Failed to load academic performance data");
@@ -638,279 +893,88 @@ export default function Reports() {
     }
   };
 
+  const fetchGraduationData = async (): Promise<GraduationData | undefined> => {
+    try {
+      setLoadingGraduation(true);
+
+      const profiles = await get<Record<string, unknown>[]>("/students");
+      const students = profiles.map(mapStudent);
+      const graduates = students.filter((s) => s.status === "Graduated");
+
+      const byDepartment: { [key: string]: number } = {};
+      const byYear: { [key: string]: number } = {};
+      const byProgram: { [key: string]: number } = {};
+
+      graduates.forEach((graduate) => {
+        byDepartment[graduate.department] =
+          (byDepartment[graduate.department] || 0) + 1;
+
+        const year = graduate.admission_date
+          ? graduate.admission_date.slice(0, 4)
+          : "Unknown";
+        byYear[year] = (byYear[year] || 0) + 1;
+
+        byProgram[graduate.program] = (byProgram[graduate.program] || 0) + 1;
+      });
+
+      const result: GraduationData = {
+        totalStudents: students.length,
+        totalGraduates: graduates.length,
+        graduationRate:
+          students.length > 0 ? (graduates.length / students.length) * 100 : 0,
+        byDepartment,
+        byYear,
+        byProgram,
+        graduates: graduates.map((graduate) => ({
+          studentNumber: graduate.student_number,
+          name:
+            `${graduate.first_name} ${graduate.last_name}`.trim() ||
+            graduate.student_number,
+          department: graduate.department,
+          program: graduate.program,
+          yearOfStudy: graduate.year_of_study,
+          admissionDate: graduate.admission_date,
+        })),
+      };
+
+      setGraduationData(result);
+      return result;
+    } catch (error) {
+      console.error("Error fetching graduation data:", error);
+      toast.error("Failed to load graduation statistics");
+    } finally {
+      setLoadingGraduation(false);
+    }
+  };
+
   const handleDownloadReport = async (reportName: string) => {
+    if (reportName === "Graduation Statistics" && !graduationData) {
+      await fetchGraduationData();
+    }
     setDownloadingReport(reportName);
     try {
-      if (reportName === "Enrollment Report" && enrollmentData) {
-        // Generate CSV content
-        const csvHeaders = [
-          "Student Number",
-          "First Name",
-          "Last Name",
-          "Department",
-          "Program",
-          "Year of Study",
-          "Status",
-          "Admission Date",
-        ];
-
-        const csvRows = enrollmentData.students.map((student) => [
-          student.student_number,
-          student.first_name,
-          student.last_name,
-          student.department,
-          student.program,
-          student.year_of_study.toString(),
-          student.status,
-          student.admission_date,
-        ]);
-
-        // Add summary data at the top
-        const summaryRows = [
-          ["Enrollment Report Summary"],
-          ["Generated on", new Date().toLocaleDateString()],
-          [""],
-          ["Total Students", enrollmentData.stats.totalStudents.toString()],
-          [
-            "Departments",
-            Object.keys(enrollmentData.stats.byDepartment).length.toString(),
-          ],
-          [
-            "Programs",
-            Object.keys(enrollmentData.stats.byProgram).length.toString(),
-          ],
-          [""],
-          ["Department Breakdown"],
-          ...Object.entries(enrollmentData.stats.byDepartment).map(
-            ([dept, count]) => [dept, count.toString()],
-          ),
-          [""],
-          ["Program Breakdown"],
-          ...Object.entries(enrollmentData.stats.byProgram).map(
-            ([prog, count]) => [prog, count.toString()],
-          ),
-          [""],
-          ["Year Distribution"],
-          ...Object.entries(enrollmentData.stats.byYear).map(
-            ([year, count]) => [`Year ${year}`, count.toString()],
-          ),
-          [""],
-          ["Status Distribution"],
-          ...Object.entries(enrollmentData.stats.byStatus).map(
-            ([status, count]) => [status, count.toString()],
-          ),
-          [""],
-          ["Student Details"],
-          csvHeaders,
-          ...csvRows.map((row) => row.map((cell) => `"${cell}"`)),
-        ];
-
-        // Convert to CSV
-        const csvContent = summaryRows
-          .map((row) =>
-            row.map((cell) => cell.toString().replace(/"/g, '""')).join(","),
-          )
-          .join("\n");
-
-        // Create and download file
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `enrollment_report_${new Date().toISOString().split("T")[0]}.csv`,
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+      const today = new Date().toISOString().split("T")[0];
+      if (reportName === "Enrollment Report") {
+        const data = enrollmentData ?? (await fetchEnrollmentData());
+        if (!data) throw new Error("Enrollment data unavailable");
+        downloadCsv(`enrollment_report_${today}.csv`, enrollmentCsvRows(data));
         toast.success("Enrollment report downloaded successfully");
-      } else if (reportName === "Academic Performance" && academicData) {
-        // Generate CSV content for academic performance
-        const csvHeaders = [
-          "Student Number",
-          "Name",
-          "Department",
-          "Program",
-          "CGPA",
-          "Total Credits",
-          "Academic Year",
-          "Semester",
-        ];
-
-        const csvRows = academicData.studentGrades.map((student) => [
-          student.studentNumber,
-          student.name,
-          student.department,
-          student.program,
-          student.cgpa.toFixed(2),
-          student.totalCredits.toString(),
-          student.academicYear,
-          student.semester,
-        ]);
-
-        // Add summary data at the top
-        const summaryRows = [
-          ["Academic Performance Report"],
-          ["Generated on", new Date().toLocaleDateString()],
-          [""],
-          [
-            "Total Students with Grades",
-            academicData.stats.totalStudentsWithGrades.toString(),
-          ],
-          ["Average GPA", academicData.stats.averageGPA.toFixed(2)],
-          [""],
-          ["GPA Distribution"],
-          ...Object.entries(academicData.stats.gpaDistribution).map(
-            ([range, count]) => [range, count.toString()],
-          ),
-          [""],
-          ["Grade Distribution"],
-          ...Object.entries(academicData.stats.gradeDistribution).map(
-            ([grade, count]) => [grade, count.toString()],
-          ),
-          [""],
-          ["Department Performance"],
-          ["Department", "Average GPA", "Student Count", "Top GPA"],
-          ...academicData.stats.departmentPerformance.map((dept) => [
-            dept.department,
-            dept.averageGPA.toFixed(2),
-            dept.studentCount.toString(),
-            dept.topGPA.toFixed(2),
-          ]),
-          [""],
-          ["Top Performers"],
-          ["Rank", "Student Number", "Name", "CGPA", "Department"],
-          ...academicData.stats.topPerformers
-            .slice(0, 20)
-            .map((student, index) => [
-              (index + 1).toString(),
-              student.studentNumber,
-              student.name,
-              student.cgpa.toFixed(2),
-              student.department,
-            ]),
-          [""],
-          ["At Risk Students (CGPA < 2.0)"],
-          ["Student Number", "Name", "CGPA", "Department", "Program"],
-          ...academicData.stats.atRiskStudents.map((student) => [
-            student.studentNumber,
-            student.name,
-            student.cgpa.toFixed(2),
-            student.department,
-            student.program,
-          ]),
-          [""],
-          ["Detailed Student Performance"],
-          csvHeaders,
-          ...csvRows.map((row) => row.map((cell) => `"${cell}"`)),
-        ];
-
-        // Convert to CSV
-        const csvContent = summaryRows
-          .map((row) =>
-            row.map((cell) => cell.toString().replace(/"/g, '""')).join(","),
-          )
-          .join("\n");
-
-        // Create and download file
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `academic_performance_report_${new Date().toISOString().split("T")[0]}.csv`,
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+      } else if (reportName === "Academic Performance") {
+        const data = academicData ?? (await fetchAcademicData());
+        if (!data) throw new Error("Academic data unavailable");
+        downloadCsv(`academic_performance_report_${today}.csv`, academicCsvRows(data));
         toast.success("Academic performance report downloaded successfully");
-      } else if (reportName === "Department Summary" && departmentSummaryData) {
-        const rows: string[][] = [
-          ["Department Summary Report"],
-          ["Generated on", new Date().toLocaleDateString()],
-          [""],
-          [
-            "Total Departments",
-            departmentSummaryData.totalDepartments.toString(),
-          ],
-          ["Total Students", departmentSummaryData.totalStudents.toString()],
-          ["Total Programs", departmentSummaryData.totalPrograms.toString()],
-          [
-            "Largest Department",
-            departmentSummaryData.largestDepartment
-              ? `${departmentSummaryData.largestDepartment.name} (${departmentSummaryData.largestDepartment.count})`
-              : "N/A",
-          ],
-          [""],
-          [
-            "Department",
-            "Total Students",
-            "Active",
-            "Inactive",
-            "Graduated",
-            "Suspended",
-            "Average Year",
-            "Top Programs",
-            "Year Distribution",
-          ],
-        ];
-
-        departmentSummaryData.departments.forEach((department) => {
-          rows.push([
-            department.department,
-            department.totalStudents.toString(),
-            department.activeStudents.toString(),
-            department.inactiveStudents.toString(),
-            department.graduatedStudents.toString(),
-            department.suspendedStudents.toString(),
-            department.averageYear.toFixed(2),
-            department.programs
-              .slice(0, 3)
-              .map((program) => `${program.program} (${program.count})`)
-              .join(" | "),
-            Object.entries(department.yearDistribution)
-              .map(([year, count]) => `${year}: ${count}`)
-              .join(" | "),
-          ]);
-        });
-
-        const csv = rows
-          .map((row) =>
-            row
-              .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-              .join(","),
-          )
-          .join("\n");
-
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute(
-          "download",
-          `department_summary_${new Date().toISOString().split("T")[0]}.csv`,
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
+      } else if (reportName === "Department Summary") {
+        const data = departmentSummaryData ?? (await fetchDepartmentSummaryData());
+        if (!data) throw new Error("Department summary unavailable");
+        downloadCsv(`department_summary_${today}.csv`, departmentCsvRows(data));
         toast.success("Department summary downloaded successfully");
+      } else if (reportName === "Graduation Statistics") {
+        const data = graduationData;
+        if (!data) throw new Error("Graduation data unavailable");
+        downloadCsv(`graduation_statistics_${today}.csv`, graduationCsvRows(data));
+        toast.success("Graduation statistics downloaded successfully");
       } else {
-        // Mock download for other reports
         await new Promise((resolve) => setTimeout(resolve, 1200));
         toast.success(`${reportName} downloaded successfully.`);
       }
@@ -925,9 +989,21 @@ export default function Reports() {
   const handleExportAllReports = async () => {
     setIsExportingAll(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const [enrollment, academic, department] = await Promise.all([
+        enrollmentData ?? fetchEnrollmentData(),
+        academicData ?? fetchAcademicData(),
+        departmentSummaryData ?? fetchDepartmentSummaryData(),
+      ]);
+      if (!enrollment || !academic || !department) {
+        throw new Error("Some reports could not be loaded");
+      }
+      const today = new Date().toISOString().split("T")[0];
+      downloadCsv(`enrollment_report_${today}.csv`, enrollmentCsvRows(enrollment));
+      downloadCsv(`academic_performance_report_${today}.csv`, academicCsvRows(academic));
+      downloadCsv(`department_summary_${today}.csv`, departmentCsvRows(department));
       toast.success("All reports exported successfully.");
-    } catch {
+    } catch (error) {
+      console.error("Error exporting all reports:", error);
       toast.error("Failed to export all reports.");
     } finally {
       setIsExportingAll(false);
@@ -940,6 +1016,13 @@ export default function Reports() {
       navigate("/");
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (!enrollmentData && !loadingEnrollment) {
+      fetchEnrollmentData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <DashboardLayout>
@@ -1009,22 +1092,159 @@ export default function Reports() {
           ))}
         </div>
 
-        {/* Chart Placeholder */}
+        {/* Enrollment Overview */}
         <div className="rounded-xl border border-border bg-card p-8">
-          <h2 className="font-display text-xl font-semibold text-foreground mb-6">
-            Enrollment Overview
-          </h2>
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-              <BarChart3 className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">
-              Charts and analytics will appear here
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Connect to the database to view real-time data
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="font-display text-xl font-semibold text-foreground">
+              Enrollment Overview
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownloadReport("Enrollment Report")}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
           </div>
+
+          {loadingEnrollment ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">
+                  Loading enrollment data...
+                </p>
+              </div>
+            </div>
+          ) : enrollmentData ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="rounded-lg border border-border bg-muted/50 p-4">
+                  <div className="text-sm text-muted-foreground">
+                    Total Students
+                  </div>
+                  <div className="text-2xl font-bold mt-1">
+                    {enrollmentData.stats.totalStudents}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/50 p-4">
+                  <div className="text-sm text-muted-foreground">
+                    Departments
+                  </div>
+                  <div className="text-2xl font-bold mt-1">
+                    {Object.keys(enrollmentData.stats.byDepartment).length}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/50 p-4">
+                  <div className="text-sm text-muted-foreground">
+                    Programs
+                  </div>
+                  <div className="text-2xl font-bold mt-1">
+                    {Object.keys(enrollmentData.stats.byProgram).length}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/50 p-4">
+                  <div className="text-sm text-muted-foreground">
+                    Active Students
+                  </div>
+                  <div className="text-2xl font-bold mt-1">
+                    {enrollmentData.stats.byStatus.Active || 0}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="rounded-lg border border-border p-4 lg:col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                    Students by Department
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBar data={Object.entries(enrollmentData.stats.byDepartment).map(([name, value]) => ({ name, value }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <RechartsBar dataKey="value" name="Students" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      </RechartsBar>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                    Enrollment by Status
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPie>
+                        <Pie
+                          data={Object.entries(enrollmentData.stats.byStatus).map(([name, value]) => ({ name, value }))}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={80}
+                          label={(entry: { name?: string }) => (entry.name ? String(entry.name) : "")}
+                        >
+                          {Object.entries(enrollmentData.stats.byStatus).map(([name], index) => (
+                            <Cell key={name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-4 lg:col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                    Students by Program
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBar data={Object.entries(enrollmentData.stats.byProgram).map(([name, value]) => ({ name, value }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <RechartsBar dataKey="value" name="Students" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                      </RechartsBar>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-4">
+                  <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                    Students by Year
+                  </h3>
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBar data={Object.entries(enrollmentData.stats.byYear).map(([year, value]) => ({ name: `Year ${year}`, value }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                        <Tooltip />
+                        <RechartsBar dataKey="value" name="Students" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      </RechartsBar>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
+                <BarChart3 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">
+                Failed to load enrollment data
+              </p>
+            </div>
+          )}
         </div>
 
         {/* View Report Dialog */}
@@ -1045,7 +1265,9 @@ export default function Reports() {
                     ? "Student performance metrics, GPA distributions, and academic insights"
                     : viewingReport === "Department Summary"
                       ? "Department-level enrollment, status, and program distribution"
-                      : "Report preview. Connect to your database to load live data."}
+                      : viewingReport === "Graduation Statistics"
+                        ? "Graduation rates, completion timelines, and graduate profiles"
+                        : "Report preview. Connect to your database to load live data."}
               </DialogDescription>
             </DialogHeader>
 
@@ -1676,6 +1898,201 @@ export default function Reports() {
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
                       Failed to load department summary
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : viewingReport === "Graduation Statistics" ? (
+              <div className="space-y-6">
+                {loadingGraduation ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">
+                        Loading graduation statistics...
+                      </p>
+                    </div>
+                  </div>
+                ) : graduationData ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Total Students
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {graduationData.totalStudents}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Total Graduates
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {graduationData.totalGraduates}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Graduation Rate
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {graduationData.graduationRate.toFixed(1)}%
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">
+                            Graduation Years
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {Object.keys(graduationData.byYear).length}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {graduationData.totalGraduates === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center rounded-lg border border-border bg-muted/50">
+                        <GraduationCap className="h-10 w-10 text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground font-medium">
+                          No graduated students yet
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Graduate statistics will appear here once students
+                          are marked as graduated.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          <div className="rounded-lg border border-border p-4">
+                            <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                              Graduates by Department
+                            </h3>
+                            <div className="h-56">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsBar data={Object.entries(graduationData.byDepartment).map(([name, value]) => ({ name, value }))}>
+                                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                                  <Tooltip />
+                                  <RechartsBar dataKey="value" name="Graduates" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                </RechartsBar>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-border p-4">
+                            <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                              Graduates by Admission Year
+                            </h3>
+                            <div className="h-56">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsBar data={Object.entries(graduationData.byYear).map(([year, value]) => ({ name: year, value }))}>
+                                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                                  <Tooltip />
+                                  <RechartsBar dataKey="value" name="Graduates" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                </RechartsBar>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-border p-4">
+                            <h3 className="text-sm font-medium text-muted-foreground mb-4">
+                              Graduates by Program
+                            </h3>
+                            <div className="h-56">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPie>
+                                  <Pie
+                                    data={Object.entries(graduationData.byProgram).map(([name, value]) => ({ name, value }))}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={70}
+label={(entry: { name?: string }) => (entry.name ? String(entry.name) : "")}
+                                  >
+                                    {Object.entries(graduationData.byProgram).map(([name], index) => (
+                                      <Cell key={name} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend />
+                                </RechartsPie>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Graduates</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Student Number</TableHead>
+                                  <TableHead>Name</TableHead>
+                                  <TableHead>Department</TableHead>
+                                  <TableHead>Program</TableHead>
+                                  <TableHead>Admission Date</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {graduationData.graduates.map((graduate) => (
+                                  <TableRow key={graduate.studentNumber}>
+                                    <TableCell className="font-mono text-sm">
+                                      {graduate.studentNumber}
+                                    </TableCell>
+                                    <TableCell>{graduate.name}</TableCell>
+                                    <TableCell>{graduate.department}</TableCell>
+                                    <TableCell>{graduate.program}</TableCell>
+                                    <TableCell>{graduate.admissionDate}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </CardContent>
+                        </Card>
+                      </>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setViewingReport(null)}
+                      >
+                        Close
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          handleDownloadReport("Graduation Statistics")
+                        }
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Report
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Failed to load graduation statistics
                     </p>
                   </div>
                 )}

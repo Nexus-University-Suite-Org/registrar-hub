@@ -3,8 +3,12 @@ package org.nexus.regbackend.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nexus.regbackend.model.Department;
+import org.nexus.regbackend.model.EmailTemplate;
+import org.nexus.regbackend.model.SiteSettings;
 import org.nexus.regbackend.model.Specialization;
 import org.nexus.regbackend.repository.DepartmentRepository;
+import org.nexus.regbackend.repository.EmailTemplateRepository;
+import org.nexus.regbackend.repository.SiteSettingsRepository;
 import org.nexus.regbackend.repository.SpecializationRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -20,6 +24,8 @@ public class DataSeeder implements CommandLineRunner {
 
     private final DepartmentRepository departmentRepository;
     private final SpecializationRepository specializationRepository;
+    private final SiteSettingsRepository siteSettingsRepository;
+    private final EmailTemplateRepository emailTemplateRepository;
 
     @Override
     public void run(String... args) {
@@ -29,6 +35,103 @@ public class DataSeeder implements CommandLineRunner {
             log.info("Seeded {} departments and {} specializations",
                     departmentRepository.count(), specializationRepository.count());
         }
+        if (siteSettingsRepository.count() == 0) {
+            seedSiteSettings();
+        }
+        if (emailTemplateRepository.count() == 0) {
+            seedEmailTemplates();
+        }
+    }
+
+    private void seedSiteSettings() {
+        siteSettingsRepository.save(SiteSettings.builder()
+                .id(1L)
+                .siteName("Registrar Portal")
+                .tagline("Nexus University Registrar Management System")
+                .primaryColor("24 100% 50%")
+                .metaDescription("Registrar Portal")
+                .build());
+        log.info("Seeded site branding settings");
+    }
+
+    private void seedEmailTemplates() {
+        emailTemplateRepository.save(EmailTemplate.builder()
+                .templateKey("otp_email")
+                .name("OTP Verification Email")
+                .subject("Your Nexus University Verification Code")
+                .description("Verification code sent during registrar sign-up. Placeholder: {otp}")
+                .body(otpBody())
+                .isActive(true)
+                .build());
+        emailTemplateRepository.save(EmailTemplate.builder()
+                .templateKey("lecturer_welcome")
+                .name("Lecturer Welcome Email")
+                .subject("Welcome to Nexus University — Set Your Password")
+                .description("Welcome email sent to new lecturers. Placeholders: {firstName}, {setPasswordUrl}")
+                .body(lecturerWelcomeBody())
+                .isActive(true)
+                .build());
+        log.info("Seeded {} email templates", emailTemplateRepository.count());
+    }
+
+    private String otpBody() {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+            <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:40px 20px;"><tr><td align="center">
+                <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                  <tr><td style="background:linear-gradient(135deg,#0f172a 0%%,#1e293b 100%%);padding:32px 40px;text-align:center;">
+                    <div style="font-size:32px;margin-bottom:8px;">🎓</div>
+                    <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Nexus University</h1>
+                    <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">Registrar Portal</p>
+                  </td></tr>
+                  <tr><td style="padding:40px;">
+                    <p style="color:#334155;font-size:15px;margin:0 0 20px;">Hello,</p>
+                    <p style="color:#334155;font-size:15px;margin:0 0 8px;">Use the verification code below to complete your registration:</p>
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="background-color:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;padding:24px;text-align:center;">
+                      <p style="color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:2px;margin:0 0 12px;">Your Verification Code</p>
+                      <p style="color:#0f172a;font-size:40px;font-weight:800;letter-spacing:12px;margin:0;font-family:'Courier New',monospace;">{otp}</p>
+                      <p style="color:#94a3b8;font-size:12px;margin:12px 0 0;">Expires in 10 minutes</p>
+                    </td></tr></table>
+                    <p style="color:#64748b;font-size:13px;margin:0 0 8px;">Do not share this code with anyone. If you did not request this, please ignore this email.</p>
+                  </td></tr>
+                  <tr><td style="background-color:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
+                    <p style="color:#94a3b8;font-size:11px;margin:0;text-align:center;">© 2026 Nexus University — Registrar Management System</p>
+                  </td></tr>
+                </table>
+              </td></tr></table>
+            </body></html>""";
+    }
+
+    private String lecturerWelcomeBody() {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+            <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+              <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:40px 20px;"><tr><td align="center">
+                <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                  <tr><td style="background:linear-gradient(135deg,#0f172a 0%%,#1e293b 100%%);padding:32px 40px;text-align:center;">
+                    <div style="font-size:32px;margin-bottom:8px;">🎓</div>
+                    <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Nexus University</h1>
+                    <p style="color:#94a3b8;margin:4px 0 0;font-size:13px;">Lecturer Portal</p>
+                  </td></tr>
+                  <tr><td style="padding:40px;">
+                    <p style="color:#334155;font-size:15px;margin:0 0 20px;">Hello {firstName},</p>
+                    <p style="color:#334155;font-size:15px;margin:0 0 20px;">You have been added as a lecturer at <strong>Nexus University</strong>. Please set your password to access the Lecturer Portal.</p>
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="margin:32px 0;"><tr><td align="center">
+                      <a href="{setPasswordUrl}" style="display:inline-block;background:linear-gradient(135deg,#0f172a 0%%,#1e293b 100%%);color:#ffffff;text-decoration:none;padding:16px 48px;border-radius:12px;font-size:16px;font-weight:600;">Set Your Password</a>
+                    </td></tr></table>
+                    <p style="color:#64748b;font-size:13px;margin:0 0 8px;">This link will expire in 24 hours. If you did not expect this email, please ignore it.</p>
+                  </td></tr>
+                  <tr><td style="background-color:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;">
+                    <p style="color:#94a3b8;font-size:11px;margin:0;text-align:center;">© 2026 Nexus University — Registrar Management System</p>
+                  </td></tr>
+                </table>
+              </td></tr></table>
+            </body></html>""";
     }
 
     private void seedDepartments() {

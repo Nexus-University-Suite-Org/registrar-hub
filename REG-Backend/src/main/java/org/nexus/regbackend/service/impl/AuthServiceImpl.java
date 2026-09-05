@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -93,7 +94,6 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        // Resolve identifier — accepts email or username
         String identifier = request.getIdentifier().trim().toLowerCase();
         Registrar registrar = registrarRepository.findByEmail(identifier)
                 .or(() -> registrarRepository.findByUsername(identifier))
@@ -146,6 +146,50 @@ public class AuthServiceImpl implements AuthService {
                         .phoneNumber(registrar.getPhoneNumber())
                         .build())
                 .build();
+    }
+
+    // ── Change password ────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        Registrar registrar = registrarRepository.findByEmail(email.toLowerCase().trim())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account not found."));
+
+        if (!passwordEncoder.matches(request.getCurrent_password(), registrar.getPasswordHash())) {
+            throw new ValidationException("Current password is incorrect.");
+        }
+        if (passwordEncoder.matches(request.getNew_password(), registrar.getPasswordHash())) {
+            throw new ValidationException("New password must be different from the current password.");
+        }
+
+        registrar.setPasswordHash(passwordEncoder.encode(request.getNew_password()));
+        registrarRepository.save(registrar);
+        refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
+
+        log.info("Registrar changed password: id={}, email={}", registrar.getId(), registrar.getEmail());
+    }
+
+    // ── Sessions ───────────────────────────────────────────────────────────────
+
+    @Override
+    public List<SessionDto> listSessions(Long registrarId) {
+        return refreshTokenRepository.findByRegistrarIdOrderByCreatedAtDesc(registrarId)
+                .stream()
+                .map(token -> SessionDto.builder()
+                        .id(token.getId())
+                        .created_at(token.getCreatedAt() != null ? token.getCreatedAt().toString() : null)
+                        .expires_at(token.getExpiresAt() != null ? token.getExpiresAt().toString() : null)
+                        .active(!token.isExpired())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void revokeAllSessions(Long registrarId) {
+        refreshTokenRepository.deleteAllByRegistrarId(registrarId);
+        log.info("Revoked all sessions for registrar id={}", registrarId);
     }
 
     // ── Mapper ────────────────────────────────────────────────────────────────
