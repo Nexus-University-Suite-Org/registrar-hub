@@ -61,9 +61,8 @@ export function LecturerViewModal({
                 src={lecturer.avatar_url}
                 alt={`${lecturer.first_name} ${lecturer.last_name}`}
               />
-              <AvatarFallback className="text-lg font-semibold">
-                {lecturer.first_name?.[0]}
-                {lecturer.last_name?.[0]}
+              <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-primary to-orange-400 text-white">
+                {`${lecturer.first_name?.[0] ?? ""}${lecturer.last_name?.[0] ?? ""}`.toUpperCase()}
               </AvatarFallback>
             </Avatar>
 

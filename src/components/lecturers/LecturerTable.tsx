@@ -1,6 +1,7 @@
 import { Lecturer } from "@/types/lecturer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Edit, Trash2, Eye, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,30 @@ interface LecturerTableProps {
   onDelete: (lecturer: Lecturer) => void;
   onView: (lecturer: Lecturer) => void;
   onAssignUnits: (lecturer: Lecturer) => void;
+}
+
+const lecturerInitials = (lecturer: Lecturer) =>
+  `${lecturer.first_name?.[0] ?? ""}${lecturer.last_name?.[0] ?? ""}`.toUpperCase() ||
+  "?";
+
+function LecturerAvatar({
+  lecturer,
+  className,
+}: {
+  lecturer: Lecturer;
+  className?: string;
+}) {
+  return (
+    <Avatar className={cn("flex-shrink-0", className)}>
+      <AvatarImage
+        src={lecturer.avatar_url}
+        alt={`${lecturer.first_name} ${lecturer.last_name}`}
+      />
+      <AvatarFallback className="bg-gradient-to-br from-primary to-orange-400 text-white font-semibold">
+        {lecturerInitials(lecturer)}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
 
 const statusStyles = {
@@ -63,20 +88,7 @@ export function LecturerTable({
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    {lecturer.avatar_url ? (
-                      <img
-                        src={lecturer.avatar_url}
-                        alt={`${lecturer.first_name} ${lecturer.last_name}`}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {lecturer.first_name?.[0]}
-                          {lecturer.last_name?.[0]}
-                        </span>
-                      </div>
-                    )}
+                    <LecturerAvatar lecturer={lecturer} className="w-10 h-10" />
                     <div>
                       <p className="font-medium text-foreground">
                         {lecturer.first_name} {lecturer.last_name}
@@ -158,20 +170,7 @@ export function LecturerTable({
             className="rounded-xl border border-border bg-card p-4 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              {lecturer.avatar_url ? (
-                <img
-                  src={lecturer.avatar_url}
-                  alt={`${lecturer.first_name} ${lecturer.last_name}`}
-                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {lecturer.first_name?.[0]}
-                    {lecturer.last_name?.[0]}
-                  </span>
-                </div>
-              )}
+              <LecturerAvatar lecturer={lecturer} className="w-12 h-12" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-2">
                   <div>

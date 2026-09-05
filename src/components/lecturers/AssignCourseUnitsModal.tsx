@@ -28,6 +28,36 @@ interface AssignProps {
   onSuccess: (updatedLecturer: Lecturer) => void;
 }
 
+interface CurriculumItem {
+  code: string;
+  name: string;
+  credits: number;
+  type?: string;
+}
+
+interface Program {
+  id: number;
+  programCode: string;
+  programName: string;
+  department: string;
+  facultySchool: string | null;
+  numberOfYears: number | null;
+  curriculum: string | null;
+}
+
+function stableUnitId(code: string, taken: Set<number>): number {
+  let h = 0;
+  for (const ch of code) {
+    h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  let id = (h % 1_000_000_000) + 1;
+  while (taken.has(id)) {
+    id = id + 1;
+  }
+  taken.add(id);
+  return id;
+}
+
 export function AssignCourseUnitsModal({
   isOpen,
   onClose,
@@ -41,21 +71,120 @@ export function AssignCourseUnitsModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const NAP_PROGRAMS_URL = "http://localhost:8080/api/v1/programs";
   const LECTURER_BACKEND_URL = "http://localhost:8084";
 
   useEffect(() => {
     if (isOpen) {
-      fetchAssignedUnits();
-      fetchRegistrarData();
+      (async () => {
+        await loadProgramData();
+        await fetchAssignedUnits();
+      })();
     }
   }, [isOpen, lecturer]);
 
+  const loadProgramData = async () => {
+    setLoading(true);
+    try {
+      const resp = await fetch(NAP_PROGRAMS_URL);
+      if (!resp.ok) throw new Error(`NAP returned ${resp.status}`);
+      const programs: Program[] = await resp.json();
+
+      const program =
+        programs.find(
+          (p) =>
+            p.programCode?.toUpperCase() === "BSC-CS" ||
+            /computer science/i.test(p.programName || ""),
+        ) || programs[0];
+
+      if (!program) {
+        toast.error("No programs found in the Programs table");
+        return;
+      }
+
+      const parsed = program.curriculum ? JSON.parse(program.curriculum) : {};
+      const taken = new Set<number>();
+      const units: CourseUnit[] = [];
+      const years: any[] = Array.isArray(parsed.years) ? parsed.years : [];
+      years.forEach((y) => {
+        const semesters: any[] = Array.isArray(y?.semesters)
+          ? y.semesters
+          : [];
+        semesters.forEach((s) => {
+          const items: CurriculumItem[] = Array.isArray(s?.courses)
+            ? s.courses
+            : [];
+          items.forEach((c) => {
+            if (!c?.code) return;
+            units.push({
+              id: stableUnitId(c.code, taken),
+              code: c.code,
+              name: c.name || c.code,
+              course_id: program.id,
+              course_name: program.programName,
+              semester: Number(s?.semester) || 1,
+              year: Number(y?.year) || 1,
+              credits: Number(c.credits) || 3,
+            });
+          });
+        });
+      });
+      units.sort(
+        (a, b) =>
+          a.year - b.year ||
+          a.semester - b.semester ||
+          a.name.localeCompare(b.name),
+      );
+
+      setCourses([
+        {
+          id: program.id,
+          code: program.programCode || "PROG",
+          name: program.programName,
+          college: program.facultySchool || "",
+          department: program.department || "",
+          duration_years: program.numberOfYears || 4,
+        },
+      ]);
+      setCourseUnits(units);
+      setSelectedCourseId("all");
+    } catch (error) {
+      console.error("Error fetching program data:", error);
+      toast.error("Failed to load program course units");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchAssignedUnits = async () => {
     try {
-      const [lpProfilesResp, lpUnitsResp, regUnitsResp] = await Promise.all([
+      const unitsByCode: Record<string, number> = {};
+      courseUnits.forEach((u) => {
+        unitsByCode[u.code.trim().toLowerCase()] = u.id;
+      });
+
+      if (lecturer.id) {
+        const signUps = await get<any[]>(
+          `/sign-ups/?lecturer_id=${lecturer.id}`,
+        );
+        const unitIds = signUps
+          .map((s: any) => unitsByCode[String(s.course_unit_code || "").trim().toLowerCase()])
+          .filter((id: number | undefined): id is number => id != null);
+        if (lecturer.assigned_course_units?.length) {
+          const merged = new Set<number>([
+            ...unitIds,
+            ...lecturer.assigned_course_units.map(Number),
+          ]);
+          setSelectedUnitIds(Array.from(merged));
+          return;
+        }
+        setSelectedUnitIds(unitIds);
+        return;
+      }
+
+      const [lpProfilesResp, lpUnitsResp] = await Promise.all([
         fetch(`${LECTURER_BACKEND_URL}/api/profiles/?role=lecturer`),
         fetch(`${LECTURER_BACKEND_URL}/api/course-units/`),
-        get<CourseUnit[]>("/course-units/"),
       ]);
       const lpProfiles = await lpProfilesResp.json();
       const lpUnits = await lpUnitsResp.json();
@@ -67,71 +196,22 @@ export function AssignCourseUnitsModal({
       );
       const lpAssignedIds: number[] = profile?.assigned_course_units || [];
 
-      const lpIdToCode: Record<number, string> = {};
+      const codeToLpId: Record<string, number> = {};
       (lpUnits || []).forEach((u: any) => {
-        lpIdToCode[u.id] = u.code;
+        codeToLpId[String(u.code).trim().toLowerCase()] = u.id;
       });
       const assignedCodes = lpAssignedIds
-        .map((id) => lpIdToCode[id])
+        .map((id) => Object.entries(codeToLpId).find(([, lid]) => lid === id)?.[0])
         .filter(Boolean);
 
-      const regIdByCode: Record<string, number> = {};
-      (regUnitsResp || []).forEach((u) => {
-        regIdByCode[u.code] = u.id;
-      });
       const regIds = assignedCodes
-        .map((code) => regIdByCode[code])
+        .map((code) => unitsByCode[code as string])
         .filter((id) => id != null);
 
       setSelectedUnitIds(regIds);
     } catch (e) {
       console.warn("Failed to fetch assigned units from lecturer portal:", e);
       setSelectedUnitIds(lecturer.assigned_course_units?.map(Number) || []);
-    }
-  };
-
-  const fetchRegistrarData = async () => {
-    setLoading(true);
-    try {
-      const userId = localStorage.getItem("user_id");
-      if (!userId) return;
-
-      const registrar = await get<any>(`/registrars/${userId}/`);
-      await fetchData(registrar?.college || "");
-    } catch (error) {
-      console.error("Error fetching registrar data:", error);
-      toast.error("Failed to load initial data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchData = async (college: string) => {
-    try {
-      // Fetch Courses
-      const coursesData = await get<Course[]>(
-        college
-          ? `/courses/?college=${encodeURIComponent(college)}`
-          : "/courses/",
-      );
-      coursesData.sort((a, b) => a.name.localeCompare(b.name));
-      setCourses(coursesData);
-
-      // Fetch Course Units
-      const unitsData = await get<CourseUnit[]>("/course-units/");
-      unitsData.forEach((unit) => {
-        const course = coursesData.find((c) => c.id === unit.course_id);
-        unit.course_name = course?.name || "Unknown Course";
-      });
-      const filteredUnits = unitsData.filter((unit) =>
-        coursesData.some((c) => c.id === unit.course_id),
-      );
-      filteredUnits.sort((a, b) => a.name.localeCompare(b.name));
-
-      setCourseUnits(filteredUnits);
-    } catch (error) {
-      console.error("Error fetching courses/units:", error);
-      toast.error("Failed to load courses");
     }
   };
 
@@ -169,7 +249,7 @@ export function AssignCourseUnitsModal({
           course_unit_id: unitId,
           course_unit_code: unit?.code || "",
           course_unit_name: unit?.name || "",
-          course_id: unit?.course_id || "",
+          course_id: unit?.course_id ?? null,
           assigned_by: localStorage.getItem("user_id") || "system",
           assigned_at: new Date().toISOString(),
           status: "active",
@@ -216,10 +296,10 @@ export function AssignCourseUnitsModal({
         const lpUnits = await lpUnitsResp.json();
         const codeToLpId: Record<string, number> = {};
         (lpUnits || []).forEach((u: any) => {
-          codeToLpId[u.code] = u.id;
+          codeToLpId[String(u.code).trim().toLowerCase()] = u.id;
         });
         const lpIds = assignedUnits
-          .map((u) => codeToLpId[u.code])
+          .map((u) => codeToLpId[String(u.code).trim().toLowerCase()])
           .filter((id) => id != null);
 
         await fetch(
@@ -250,11 +330,11 @@ export function AssignCourseUnitsModal({
   const filteredUnits =
     selectedCourseId === "all"
       ? courseUnits
-      : courseUnits.filter((u) => u.course_id === selectedCourseId);
+      : courseUnits.filter((u) => u.course_id === Number(selectedCourseId));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl h-[80vh] grid grid-rows-[auto_1fr_auto] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Assign Course Units</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
@@ -266,7 +346,7 @@ export function AssignCourseUnitsModal({
           </p>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-4 flex-1 overflow-hidden">
+        <div className="flex flex-col gap-4 py-4 min-h-0 overflow-hidden">
           <div className="flex gap-4">
             <div className="flex-1">
               <Select
@@ -279,7 +359,7 @@ export function AssignCourseUnitsModal({
                 <SelectContent>
                   <SelectItem value="all">All Courses</SelectItem>
                   {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
+                    <SelectItem key={course.id} value={String(course.id)}>
                       {course.code} - {course.name}
                     </SelectItem>
                   ))}
@@ -288,7 +368,7 @@ export function AssignCourseUnitsModal({
             </div>
           </div>
 
-          <ScrollArea className="flex-1 border rounded-md">
+          <ScrollArea className="flex-1 min-h-0 border rounded-md">
             {loading ? (
               <div className="flex justify-center items-center h-40">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -302,7 +382,8 @@ export function AssignCourseUnitsModal({
                 {courses
                   .filter(
                     (c) =>
-                      selectedCourseId === "all" || c.id === selectedCourseId,
+                      selectedCourseId === "all" ||
+                      c.id === Number(selectedCourseId),
                   )
                   .map((course) => {
                     const courseGroupUnits = filteredUnits.filter(

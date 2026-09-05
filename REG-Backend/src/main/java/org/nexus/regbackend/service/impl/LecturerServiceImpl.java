@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,7 @@ public class LecturerServiceImpl implements LecturerService {
     private String setPasswordBaseUrl;
 
     @Override
+    @Transactional(readOnly = true)
     public List<LecturerDto> listAll(String search) {
         List<Lecturer> lecturers;
         if (search != null && !search.isBlank()) {
@@ -43,6 +45,7 @@ public class LecturerServiceImpl implements LecturerService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LecturerDto getById(Long id) {
         Lecturer lecturer = lecturerRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Lecturer not found with id: " + id));
@@ -112,6 +115,7 @@ public class LecturerServiceImpl implements LecturerService {
         if (dto.getAvatar_url() != null) lecturer.setAvatarUrl(dto.getAvatar_url());
         if (dto.getLecturer_number() != null) lecturer.setLecturerNumber(dto.getLecturer_number());
         if (dto.getEmployment_date() != null) lecturer.setEmploymentDate(LocalDate.parse(dto.getEmployment_date()));
+        if (dto.getAssigned_course_units() != null) lecturer.setAssignedCourseUnits(dto.getAssigned_course_units());
 
         lecturer = lecturerRepository.save(lecturer);
         return toDto(lecturer);
@@ -142,6 +146,9 @@ public class LecturerServiceImpl implements LecturerService {
                 .employment_date(l.getEmploymentDate() != null ? l.getEmploymentDate().format(fmt) : null)
                 .status(l.getStatus())
                 .avatar_url(l.getAvatarUrl())
+                .assigned_course_units(l.getAssignedCourseUnits() != null
+                        ? new ArrayList<>(l.getAssignedCourseUnits())
+                        : null)
                 .role("lecturer")
                 .created_at(l.getCreatedAt() != null ? l.getCreatedAt().toString() : null)
                 .updated_at(l.getUpdatedAt() != null ? l.getUpdatedAt().toString() : null)

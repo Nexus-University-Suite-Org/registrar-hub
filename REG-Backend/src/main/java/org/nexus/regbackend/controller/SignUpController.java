@@ -21,7 +21,7 @@ public class SignUpController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SignUpDto>>> list(
-            @RequestParam(required = false) Long lecturerId) {
+            @RequestParam(name = "lecturer_id", required = false) Long lecturerId) {
         List<SignUp> signUps;
         if (lecturerId != null) {
             signUps = signUpRepository.findByLecturerId(lecturerId);

@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -25,6 +26,7 @@ public class LecturerDto {
     private String employment_date;
     private String status;
     private String avatar_url;
+    private List<Long> assigned_course_units;
     private String role;
     private String created_at;
     private String updated_at;

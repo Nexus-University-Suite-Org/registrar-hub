@@ -15,7 +15,9 @@ import {
   Building,
   CreditCard,
   Loader2,
+  GraduationCap,
 } from "lucide-react";
+import UniversityServicesSection from "./settings/UniversityServicesSection";
 import { get, put } from "@/lib/api";
 import { useBranding } from "@/hooks/useBranding";
 import { updateExistingStudents } from "@/lib/studentMigration";
@@ -93,6 +95,7 @@ export default function SettingsPage() {
     notifications: useRef<HTMLDivElement>(null),
     security: useRef<HTMLDivElement>(null),
     evaluations: useRef<HTMLDivElement>(null),
+    services: useRef<HTMLDivElement>(null),
     database: useRef<HTMLDivElement>(null),
     email: useRef<HTMLDivElement>(null),
   };
@@ -109,6 +112,7 @@ export default function SettingsPage() {
     { id: "notifications", name: "Notifications", icon: Bell },
     { id: "security", name: "Security", icon: Shield },
     { id: "evaluations", name: "Evaluations", icon: FileText },
+    { id: "services", name: "University Services", icon: GraduationCap },
     { id: "database", name: "Database", icon: Database },
     { id: "email", name: "Email Templates", icon: Mail },
   ];
@@ -263,6 +267,11 @@ export default function SettingsPage() {
         <div ref={sectionRefs.evaluations}>
           <h2 className="text-xl font-bold mb-4">Evaluations</h2>
           <p>Evaluation settings</p>
+        </div>
+
+        {/* University Services */}
+        <div ref={sectionRefs.services}>
+          <UniversityServicesSection />
         </div>
 
         {/* Database */}

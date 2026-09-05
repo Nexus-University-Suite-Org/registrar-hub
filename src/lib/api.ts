@@ -5,6 +5,11 @@ function cleanPath(path: string): string {
   return path.replace(/\/\?/, "?").replace(/\/+$/, "");
 }
 
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
   const text = await response.text();
@@ -33,10 +38,19 @@ export async function get<T>(path: string): Promise<T> {
   return handleResponse<T>(response);
 }
 
+// NAD Admissions Dashboard backend (admissions-server, port 8083) via the /nad Vite proxy
+export async function getNad<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}/nad${cleanPath(path)}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  return handleResponse<T>(response);
+}
+
 export async function post<T>(path: string, payload: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload),
   });
   return handleResponse<T>(response);
@@ -45,7 +59,7 @@ export async function post<T>(path: string, payload: unknown): Promise<T> {
 export async function put<T>(path: string, payload: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload),
   });
   return handleResponse<T>(response);
@@ -54,7 +68,7 @@ export async function put<T>(path: string, payload: unknown): Promise<T> {
 export async function del<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
   });
   return handleResponse<T>(response);
 }
@@ -64,6 +78,7 @@ export async function uploadFile(path: string, file: File): Promise<{ url: strin
   formData.append("file", file);
   const response = await fetch(`${API_BASE_URL}/api${cleanPath(path)}`, {
     method: "POST",
+    headers: authHeaders(),
     body: formData,
   });
   return handleResponse<{ url: string }>(response);

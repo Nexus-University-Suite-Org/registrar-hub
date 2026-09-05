@@ -19,6 +19,7 @@ import Courses from "./pages/Courses";
 import Fees from "./pages/Fees";
 import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
+import Timetable from "./pages/Timetable";
 import Tools from "./pages/Tools";
 import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const AppContent = () => {
         <Route path="/fees" element={<Fees />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/calendar" element={<Calendar />} />
+        <Route path="/timetable" element={<Timetable />} />
         <Route path="/tools" element={<Tools />} />
         <Route path="/help-support" element={<HelpSupport />} />
         <Route path="*" element={<NotFound />} />
