@@ -41,6 +41,13 @@ server:
 lecturer:
   base-url: ${LECTURER_BASE_URL:http://localhost:8084}
 
+# ── NAP program catalog sync ────────────────────────────────────────────────
+nap:
+  base-url: ${NAP_BASE_URL:http://localhost:8080}
+  endpoint: ${NAP_PROGRAMS_ENDPOINT:/api/v1/programs}
+  college: ${NAP_DEFAULT_COLLEGE:Alvin University}
+  sync-interval-ms: ${NAP_SYNC_INTERVAL_MS:3600000}   # 1 hour
+
 # ── JWT settings ────────────────────────────────────────────────────────────
 jwt:
   secret: ${JWT_SECRET}

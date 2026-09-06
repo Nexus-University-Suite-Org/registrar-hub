@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -298,6 +298,20 @@ export default function Courses() {
       u.code.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const groupedUnits = filteredUnits.reduce<{ course: string; units: CourseUnit[] }[]>(
+    (acc, u) => {
+      const label = u.course_name || "Unknown Course";
+      let group = acc.find((g) => g.course === label);
+      if (!group) {
+        group = { course: label, units: [] };
+        acc.push(group);
+      }
+      group.units.push(u);
+      return acc;
+    },
+    [],
+  );
+
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
@@ -478,56 +492,77 @@ export default function Courses() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUnits.length > 0 ? (
-                  filteredUnits.map((u) => (
-                    <TableRow
-                      key={u.id}
-                      className="hover:bg-muted/20 transition-colors"
-                    >
-                      <TableCell className="font-mono font-medium">
-                        {u.code}
-                      </TableCell>
-                      <TableCell className="font-semibold">{u.name}</TableCell>
-                      <TableCell className="text-xs">{u.course_name}</TableCell>
-                      <TableCell>
-                        Y{u.year} S{u.semester}
-                      </TableCell>
-                      <TableCell>{u.credits}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedCU(u);
-                              const course = courses.find(
-                                (c) => c.id === u.course_id,
-                              );
-                              setSelectedCourseForUnits(course || null);
-                              setCuForm({
-                                code: u.code,
-                                name: u.name,
-                                course_id: u.course_id,
-                                semester: u.semester,
-                                year: u.year,
-                                credits: u.credits,
-                              });
-                              setModalMode("edit");
-                              setIsCUModalOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 text-blue-500" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteCU(u.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-rose-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                {groupedUnits.length > 0 ? (
+                  groupedUnits.map((group) => (
+                    <Fragment key={group.course}>
+                      <TableRow className="bg-primary/5">
+                        <TableCell
+                          colSpan={6}
+                          className="font-semibold text-primary py-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              {group.course}
+                            </span>
+                            <span className="text-xs text-muted-foreground font-normal">
+                              {group.units.length} unit
+                              {group.units.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {group.units.map((u) => (
+                        <TableRow
+                          key={u.id}
+                          className="hover:bg-muted/20 transition-colors"
+                        >
+                          <TableCell className="font-mono font-medium">
+                            {u.code}
+                          </TableCell>
+                          <TableCell className="font-semibold">{u.name}</TableCell>
+                          <TableCell className="text-xs">{u.course_name}</TableCell>
+                          <TableCell>
+                            Y{u.year} S{u.semester}
+                          </TableCell>
+                          <TableCell>{u.credits}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedCU(u);
+                                  const course = courses.find(
+                                    (c) => c.id === u.course_id,
+                                  );
+                                  setSelectedCourseForUnits(course || null);
+                                  setCuForm({
+                                    code: u.code,
+                                    name: u.name,
+                                    course_id: u.course_id,
+                                    semester: u.semester,
+                                    year: u.year,
+                                    credits: u.credits,
+                                  });
+                                  setModalMode("edit");
+                                  setIsCUModalOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteCU(u.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-rose-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </Fragment>
                   ))
                 ) : (
                   <TableRow>
