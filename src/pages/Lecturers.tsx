@@ -81,6 +81,41 @@ export default function Lecturers() {
     setIsAssignModalOpen(true);
   };
 
+  const handleCopyInvite = async (lecturer: Lecturer) => {
+    if (!lecturer.invite_link) {
+      toast.warning("This lecturer has no invite link yet. Try Resend Invite first.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(lecturer.invite_link);
+      toast.success("Invite link copied to clipboard");
+    } catch {
+      toast.error("Failed to copy invite link");
+    }
+  };
+
+  const handleResendInvite = async (lecturer: Lecturer) => {
+    try {
+      const updated = await post<Lecturer>(
+        `/profiles/${lecturer.id}/resend-invite/`,
+        {},
+      );
+      setLecturers(
+        lecturers.map((l) => (l.id === updated.id ? updated : l)),
+      );
+      if (lecturer.email_sent === false) {
+        toast.warning(
+          "Invite email failed to send. The link was regenerated — use Copy Invite Link.",
+        );
+      } else {
+        toast.success(`Invite email re-sent to ${lecturer.email}`);
+      }
+    } catch (error) {
+      console.error("Error re-sending invite to API:", error);
+      toast.error("Failed to re-send invite");
+    }
+  };
+
   const handleAssignSuccess = (updatedLecturer: Lecturer) => {
     setLecturers(
       lecturers.map((l) => (l.id === updatedLecturer.id ? updatedLecturer : l)),
@@ -106,6 +141,11 @@ export default function Lecturers() {
 
         setLecturers([created, ...lecturers]);
         toast.success("Lecturer added successfully");
+        if (created.email_sent === false) {
+          toast.warning(
+            "Lecturer added, but the invite email failed to send. Use Copy Invite Link or Resend Invite.",
+          );
+        }
       } else if (selectedLecturer) {
         await put(`/profiles/${selectedLecturer.id}/`, lecturerData);
 
@@ -357,6 +397,8 @@ export default function Lecturers() {
                 onDelete={handleDeleteLecturer}
                 onView={handleViewLecturer}
                 onAssignUnits={handleAssignUnits}
+                onCopyInvite={handleCopyInvite}
+                onResendInvite={handleResendInvite}
               />
             </div>
 

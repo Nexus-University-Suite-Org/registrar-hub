@@ -30,4 +30,7 @@ public class LecturerDto {
     private String role;
     private String created_at;
     private String updated_at;
+    private String invite_link;
+    private String invite_expires_at;
+    private Boolean email_sent;
 }

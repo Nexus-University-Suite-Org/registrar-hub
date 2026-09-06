@@ -17,6 +17,9 @@ export interface Lecturer {
   created_at: string;
   updated_at: string;
   assigned_course_units?: number[]; // Array of course unit IDs assigned to teaches
+  invite_link?: string;
+  invite_expires_at?: string;
+  email_sent?: boolean;
 }
 
 export interface LecturerStats {

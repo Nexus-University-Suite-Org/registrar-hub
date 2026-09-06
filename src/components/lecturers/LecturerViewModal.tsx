@@ -225,6 +225,49 @@ export function LecturerViewModal({
             </>
           )}
 
+          {/* Portal Access & Invite */}
+          <Separator />
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Portal Access
+            </h3>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Set-Password Invite
+              </label>
+              {lecturer.invite_link ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge
+                    variant="outline"
+                    className={
+                      lecturer.email_sent === false
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                        : "bg-success/10 text-success border-success/20"
+                    }
+                  >
+                    {lecturer.email_sent === false
+                      ? "Email failed to send"
+                      : "Invite email sent"}
+                  </Badge>
+                  {lecturer.invite_expires_at && (
+                    <span className="text-sm text-muted-foreground">
+                      Expires{" "}
+                      {new Date(
+                        lecturer.invite_expires_at
+                      ).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No invite generated yet. Use Resend Invite to create one.
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* System Information */}
           <Separator />
           <div className="space-y-4">

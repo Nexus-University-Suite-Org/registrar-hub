@@ -57,6 +57,14 @@ public class Lecturer {
     @Column(length = 500)
     private String avatarUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String inviteToken;
+
+    private LocalDateTime inviteCreatedAt;
+
+    @Column(nullable = false)
+    private boolean inviteEmailSent;
+
     @Column(nullable = false)
     private Role role;
 

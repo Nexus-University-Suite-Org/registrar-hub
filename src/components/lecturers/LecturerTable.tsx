@@ -2,7 +2,7 @@ import { Lecturer } from "@/types/lecturer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Edit, Trash2, Eye, BookOpen } from "lucide-react";
+import { Edit, Trash2, Eye, BookOpen, Link2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LecturerTableProps {
@@ -11,6 +11,8 @@ interface LecturerTableProps {
   onDelete: (lecturer: Lecturer) => void;
   onView: (lecturer: Lecturer) => void;
   onAssignUnits: (lecturer: Lecturer) => void;
+  onCopyInvite: (lecturer: Lecturer) => void;
+  onResendInvite: (lecturer: Lecturer) => void;
 }
 
 const lecturerInitials = (lecturer: Lecturer) =>
@@ -49,6 +51,8 @@ export function LecturerTable({
   onDelete,
   onView,
   onAssignUnits,
+  onCopyInvite,
+  onResendInvite,
 }: LecturerTableProps) {
   return (
     <>
@@ -129,6 +133,24 @@ export function LecturerTable({
                       title="Assign Course Units"
                     >
                       <BookOpen className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onCopyInvite(lecturer)}
+                      className="h-8 w-8 text-muted-foreground hover:text-amber-500"
+                      title="Copy Invite Link"
+                    >
+                      <Link2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onResendInvite(lecturer)}
+                      className="h-8 w-8 text-muted-foreground hover:text-sky-500"
+                      title="Resend Invite Email"
+                    >
+                      <Mail className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -218,6 +240,26 @@ export function LecturerTable({
                   >
                     <BookOpen className="h-4 w-4" />
                     <span className="hidden sm:inline ml-1">Units</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onCopyInvite(lecturer)}
+                    className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-amber-500 flex-1 sm:flex-none"
+                    title="Copy Invite Link"
+                  >
+                    <Link2 className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Invite Link</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onResendInvite(lecturer)}
+                    className="h-8 px-2 sm:px-3 text-muted-foreground hover:text-sky-500 flex-1 sm:flex-none"
+                    title="Resend Invite Email"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Resend</span>
                   </Button>
                   <Button
                     variant="ghost"

@@ -9,5 +9,6 @@ public interface LecturerService {
     LecturerDto getById(Long id);
     LecturerDto create(LecturerDto dto);
     LecturerDto update(Long id, LecturerDto dto);
+    LecturerDto resendInvite(Long id);
     void delete(Long id);
 }
