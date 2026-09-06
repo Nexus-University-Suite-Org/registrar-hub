@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "lecturers")
@@ -55,8 +57,21 @@ public class Lecturer {
     @Column(length = 500)
     private String avatarUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String inviteToken;
+
+    private LocalDateTime inviteCreatedAt;
+
+    @Column(nullable = false)
+    private boolean inviteEmailSent;
+
     @Column(nullable = false)
     private Role role;
+
+    @ElementCollection
+    @CollectionTable(name = "lecturer_assigned_course_units", joinColumns = @JoinColumn(name = "lecturer_id"))
+    @Column(name = "course_unit_id")
+    private List<Long> assignedCourseUnits = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

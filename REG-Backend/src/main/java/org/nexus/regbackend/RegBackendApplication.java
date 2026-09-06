@@ -16,7 +16,6 @@ public class RegBackendApplication {
     public static void main(String[] args) {
 
         Dotenv dotenv = Dotenv.configure()
-                .directory("./registrar-hub/REG-Backend")
                 .ignoreIfMissing()
                 .load();
 

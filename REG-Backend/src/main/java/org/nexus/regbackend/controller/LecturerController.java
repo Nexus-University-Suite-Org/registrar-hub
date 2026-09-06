@@ -43,6 +43,12 @@ public class LecturerController {
         return ApiResponse.created("Lecturer created successfully", created);
     }
 
+    @PostMapping("/{id}/resend-invite")
+    public ResponseEntity<ApiResponse<LecturerDto>> resendInvite(@PathVariable Long id) {
+        LecturerDto updated = lecturerService.resendInvite(id);
+        return ApiResponse.ok("Invite email re-sent", updated);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<LecturerDto>> update(
             @PathVariable Long id,

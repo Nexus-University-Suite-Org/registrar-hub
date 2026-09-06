@@ -29,6 +29,16 @@ import { Activity as ActivityType } from "@/types/activity";
 import { get } from "@/lib/api";
 import { useNotifications } from "@/hooks/useNotifications";
 
+const NAP_APPLICATIONS_URL =
+  import.meta.env.VITE_NAP_APPLICATIONS_URL ||
+  "http://localhost:8080/api/v1/applications";
+
+const systemPerformanceInitial = {
+  responseTime: 0,
+  dbStatus: "Excellent",
+  dbOk: true,
+};
+
 const quickActions = [
   {
     name: "Manage Students",
@@ -105,26 +115,94 @@ export default function Dashboard() {
     suspended: 0,
   });
   const [activities, setActivities] = useState<ActivityType[]>([]);
+  const [insights, setInsights] = useState({
+    newRegistrations: 0,
+    newRegistrationsDelta: { current: 0, previous: 0 },
+    transcriptsIssued: 0,
+    pendingReviews: 0,
+  });
+  const [systemPerformance, setSystemPerformance] = useState(
+    systemPerformanceInitial,
+  );
   const [greeting, setGreeting] = useState("");
   const [loading, setLoading] = useState(true);
   const { unreadCount: unreadNotificationCount } = useNotifications();
 
   const fetchStats = async () => {
     try {
-      const profiles: any[] = await get("/profiles/");
-      const total = (profiles || []).length || 0;
+      const started = Date.now();
+      const response = await fetch(NAP_APPLICATIONS_URL);
+      if (!response.ok) {
+        throw new Error(`NAP backend returned ${response.status}`);
+      }
+      const data = await response.json();
+      const applications: any[] = Array.isArray(data) ? data : [];
+      const responseTime = Math.max(1, Date.now() - started);
+
+      const now = new Date();
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      const createdAt = (a: any) => {
+        const d = a.createdAt ? new Date(a.createdAt) : null;
+        return d && !isNaN(d.getTime()) ? d : null;
+      };
+      const admitted = applications.filter(
+        (a) => String(a.status || "").toUpperCase() === "ADMITTED",
+      );
+      const thisWeek = applications.filter((a) => {
+        const d = createdAt(a);
+        return d && d > weekAgo && d <= now;
+      });
+      const lastWeek = applications.filter((a) => {
+        const d = createdAt(a);
+        return d && d > twoWeeksAgo && d <= weekAgo;
+      });
+      const pendingReviews = applications.filter((a) => {
+        const status = String(a.status || "").toUpperCase();
+        const review = String(a.reviewStatus || "").trim().toUpperCase();
+        return status === "SUBMITTED" && (!review || review === "PENDING");
+      }).length;
 
       setStats({
-        total,
-        active: total || 0,
+        total: admitted.length,
+        active: admitted.length,
         inactive: 0,
         graduated: 0,
         suspended: 0,
       });
+      setInsights({
+        newRegistrations: thisWeek.length,
+        newRegistrationsDelta: {
+          current: thisWeek.length,
+          previous: lastWeek.length,
+        },
+        transcriptsIssued: 0,
+        pendingReviews,
+      });
+      setSystemPerformance((prev) => ({ ...prev, responseTime }));
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHealth = async () => {
+    try {
+      const health = await get<{ status: string }>("/health/");
+      const ok = health?.status === "ok";
+      setSystemPerformance((prev) => ({
+        ...prev,
+        dbStatus: ok ? "Excellent" : "Attention",
+        dbOk: ok,
+      }));
+    } catch {
+      setSystemPerformance((prev) => ({
+        ...prev,
+        dbStatus: "Offline",
+        dbOk: false,
+      }));
     }
   };
 
@@ -217,11 +295,29 @@ export default function Dashboard() {
       else setGreeting("Good evening");
 
       fetchStats();
+      fetchHealth();
       fetchActivities();
     };
 
     checkAuth();
   }, [navigate]);
+
+  const regDelta =
+    insights.newRegistrationsDelta.previous > 0
+      ? Math.round(
+          ((insights.newRegistrationsDelta.current -
+            insights.newRegistrationsDelta.previous) /
+            insights.newRegistrationsDelta.previous) *
+            100,
+        )
+      : insights.newRegistrationsDelta.current > 0
+        ? 100
+        : 0;
+  const regDeltaPositive = regDelta >= 0;
+  const responseDisplay =
+    systemPerformance.responseTime > 0
+      ? `${systemPerformance.responseTime}ms`
+      : "<200ms";
 
   return (
     <DashboardLayout>
@@ -506,7 +602,9 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 rounded-xl bg-success/10 border border-success/20 hover:bg-success/15 transition-colors">
-                  <p className="text-3xl font-bold text-success mb-1">99.9%</p>
+                  <p className="text-3xl font-bold text-success mb-1">
+                    {systemPerformance.dbOk ? "99.9%" : "—"}
+                  </p>
                   <p className="text-sm text-success/80 font-medium">Uptime</p>
                   <div className="mt-2 h-1.5 w-full bg-success/20 rounded-full overflow-hidden">
                     <div className="h-full w-full bg-gradient-to-r from-success to-success/80 rounded-full"></div>
@@ -514,7 +612,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-center p-4 rounded-xl bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
                   <p className="text-2xl font-bold text-primary mb-1">
-                    &lt;200ms
+                    {loading ? "..." : responseDisplay}
                   </p>
                   <p className="text-sm text-primary/80 font-medium">
                     Response
@@ -530,12 +628,22 @@ export default function Dashboard() {
                   <span className="text-sm font-medium text-foreground">
                     Database Health
                   </span>
-                  <span className="text-sm text-success font-semibold">
-                    Excellent
+                  <span
+                    className={`text-sm font-semibold ${
+                      systemPerformance.dbOk ? "text-success" : "text-warning"
+                    }`}
+                  >
+                    {systemPerformance.dbStatus}
                   </span>
                 </div>
                 <div className="h-2 w-full bg-accent rounded-full overflow-hidden">
-                  <div className="h-full w-5/6 bg-gradient-to-r from-success to-success/80 rounded-full"></div>
+                  <div
+                    className={`h-full rounded-full ${
+                      systemPerformance.dbOk
+                        ? "w-5/6 bg-gradient-to-r from-success to-success/80"
+                        : "w-1/6 bg-gradient-to-r from-warning to-warning/80"
+                    }`}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -573,8 +681,20 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-foreground">+12</p>
-                    <p className="text-xs text-success">+8.2%</p>
+                    <p className="font-bold text-foreground">
+                      {loading ? "..." : insights.newRegistrations}
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        regDeltaPositive ? "text-success" : "text-warning"
+                      }`}
+                    >
+                      {regDelta > 0
+                        ? `+${regDelta}%`
+                        : regDelta < 0
+                          ? `${regDelta}%`
+                          : "—"}
+                    </p>
                   </div>
                 </div>
 
@@ -591,8 +711,10 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-foreground">28</p>
-                    <p className="text-xs text-success">+15.4%</p>
+                    <p className="font-bold text-foreground">
+                      {loading ? "..." : insights.transcriptsIssued}
+                    </p>
+                    <p className="text-xs text-muted-foreground">—</p>
                   </div>
                 </div>
 
@@ -611,8 +733,10 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-foreground">3</p>
-                    <p className="text-xs text-warning">-2.1%</p>
+                    <p className="font-bold text-foreground">
+                      {loading ? "..." : insights.pendingReviews}
+                    </p>
+                    <p className="text-xs text-muted-foreground">—</p>
                   </div>
                 </div>
               </div>

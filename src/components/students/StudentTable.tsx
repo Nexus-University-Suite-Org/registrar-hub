@@ -11,12 +11,18 @@ interface StudentTableProps {
   onView: (student: Student) => void;
 }
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
   Inactive: "bg-slate-100 text-slate-600 border-slate-200",
   Suspended: "bg-amber-500/10 text-amber-600 border-amber-200",
   Graduated: "bg-blue-500/10 text-blue-600 border-blue-200",
   Withdrawn: "bg-rose-500/10 text-rose-600 border-rose-200",
+  SUBMITTED: "bg-sky-500/10 text-sky-600 border-sky-200",
+  PENDING: "bg-amber-500/10 text-amber-600 border-amber-200",
+  ADMITTED: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+  REJECTED: "bg-rose-500/10 text-rose-600 border-rose-200",
+  WAITLISTED: "bg-indigo-500/10 text-indigo-600 border-indigo-200",
+  DRAFT: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 export function StudentTable({

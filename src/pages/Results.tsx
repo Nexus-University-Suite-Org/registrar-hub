@@ -241,6 +241,21 @@ export default function Results() {
         });
       });
 
+      // Embedded course info from the 8082 proxy (grade rows from the lecturer)
+      const embeddedCourseMap = new Map<
+        string,
+        { code: string; title: string; credits: number }
+      >();
+      studentGrades.forEach((g: any) => {
+        if (g.course_code || g.course_title) {
+          embeddedCourseMap.set(String(g.course_id), {
+            code: g.course_code || "N/A",
+            title: g.course_title || "Unknown Course",
+            credits: g.credits ?? 3,
+          });
+        }
+      });
+
       const studentResultsMap = new Map<string, StudentResults>();
       const courseIdsSeen = new Set<string>();
       const classSet = new Set<string>();
@@ -253,12 +268,19 @@ export default function Results() {
 
         studentGradesData.forEach((grade) => {
           const termKey = `${grade.academic_year} · ${grade.semester}`;
-          const courseData = coursesMap.get(grade.course_id);
+          // Course info embedded by the 8082 proxy takes precedence; fall back
+          // to 8082's own course/course-unit catalogs for locally-entered data.
+          const courseData =
+            coursesMap.get(grade.course_id) ||
+            embeddedCourseMap.get(String(grade.course_id));
           const title =
-            courseData?.title || courseData?.name || "Unknown Course";
-          const code = courseData?.code || "N/A";
-          const credits = courseData?.credits ?? 3;
-          courseIdsSeen.add(grade.course_id);
+            courseData?.title ||
+            courseData?.name ||
+            grade.course_title ||
+            "Unknown Course";
+          const code = courseData?.code || grade.course_code || "N/A";
+          const credits = courseData?.credits ?? grade.credits ?? 3;
+          courseIdsSeen.add(String(grade.course_id));
 
           if (!termsMap.has(termKey)) {
             termsMap.set(termKey, {
@@ -272,7 +294,7 @@ export default function Results() {
           const term = termsMap.get(termKey)!;
           term.entries.push({
             id: grade.id,
-            course_id: grade.course_id,
+            course_id: String(grade.course_id),
             academic_year: grade.academic_year,
             semester: grade.semester,
             marks: grade.total || 0,
@@ -334,16 +356,21 @@ export default function Results() {
         });
       });
 
-      const resultsArray = Array.from(studentResultsMap.values());
+      const resultsArray = Array.from(studentResultsMap.values()).filter(
+        (s) => s.terms.length > 0 && s.totalCredits > 0,
+      );
       setResults(resultsArray);
       setCourseUnitOptions(
-        Array.from(courseIdsSeen).map((id) => ({
-          id,
-          label:
-            coursesMap.get(id)?.code +
-            " - " +
-            (coursesMap.get(id)?.title || coursesMap.get(id)?.name || id),
-        })),
+        Array.from(courseIdsSeen).map((id) => {
+          const cat = coursesMap.get(String(id)) || embeddedCourseMap.get(String(id));
+          return {
+            id,
+            label:
+              (cat?.code || "N/A") +
+              " - " +
+              (cat?.title || cat?.name || id),
+          };
+        }),
       );
       setClassOptions(Array.from(classSet).sort());
       toast.success(
@@ -367,33 +394,50 @@ export default function Results() {
       const quizzes = Array.isArray(quizzesData) ? quizzesData : (quizzesData.data || []);
       if (!Array.isArray(quizzes) || quizzes.length === 0) return;
 
-      const studentProfiles = await get<any[]>("/profiles/?role=student");
-      const studentMap = new Map<string, { program: string; yearOfStudy: number; student_number: string; full_name: string }>();
-      if (studentProfiles.length > 0) {
-        studentProfiles.forEach((p: any) => {
-          const fullName = p.full_name || `${p.firstName || ""} ${p.lastName || ""}`.trim();
+      const registrarByEmail = new Map<
+        string,
+        { program: string; yearOfStudy: number; student_number: string; full_name: string }
+      >();
+      try {
+        const studentProfiles = await get<any[]>("/profiles/?role=student");
+        const registrarStudents =
+          studentProfiles.length > 0
+            ? studentProfiles
+            : await get<any[]>("/students/");
+        registrarStudents.forEach((p: any) => {
+          const fullName =
+            p.full_name ||
+            `${p.firstName || ""} ${p.lastName || ""}`.trim() ||
+            `${p.first_name || ""} ${p.last_name || ""}`.trim();
           const studentNumber = p.student_number || p.studentNumber || "";
-          studentMap.set(String(p.id), {
-            program: p.program || "",
-            yearOfStudy: p.year_of_study ?? p.yearOfStudy ?? 1,
-            student_number: studentNumber,
-            full_name: fullName,
-          });
-        });
-      } else {
-        try {
-          const raw = await get<any[]>("/students/");
-          raw.forEach((s: any) => {
-            const fullName = s.first_name || s.last_name ? `${s.first_name || ""} ${s.last_name || ""}`.trim() : (s.full_name || "");
-            studentMap.set(String(s.id), {
-              program: s.program || "",
-              yearOfStudy: s.year_of_study ?? s.yearOfStudy ?? 1,
-              student_number: s.student_number || s.studentNumber || "",
-              full_name: fullName,
+          const email = (p.email || "").toLowerCase();
+          if (email)
+            registrarByEmail.set(email, {
+              program: p.program || "",
+              yearOfStudy: p.year_of_study ?? p.yearOfStudy ?? 1,
+              student_number: studentNumber,
+              full_name: fullName || studentNumber,
             });
+        });
+      } catch {}
+
+      // Quiz attempts on the lecturer-backend are keyed by ITS OWN student ids,
+      // which do not match registrar student id numbers. Resolve via email:
+      // 8084 student_id -> 8084 profile email -> registrar student.
+      const profIdToEmail = new Map<string, string>();
+      try {
+        const profResp = await fetch(`${lecturerApi}/api/profiles/`);
+        if (profResp.ok) {
+          const profData = await profResp.json();
+          const profs = Array.isArray(profData)
+            ? profData
+            : (profData.data || []);
+          profs.forEach((p: any) => {
+            if (p.id != null && p.email)
+              profIdToEmail.set(String(p.id), String(p.email).toLowerCase());
           });
-        } catch {}
-      }
+        }
+      } catch {}
 
       const allAttempts: QuizAttemptResult[] = [];
       const quizMap = new Map<number, any>();
@@ -407,7 +451,9 @@ export default function Results() {
 
       attempts.forEach((a: any) => {
         const quiz = quizMap.get(a.quiz_id) || {};
-        const student = studentMap.get(String(a.student_id));
+        const student = registrarByEmail.get(
+          profIdToEmail.get(String(a.student_id)) || "",
+        );
         if (student) {
           allAttempts.push({
             id: String(a.id),

@@ -1,8 +1,7 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
   User,
   Bell,
@@ -12,297 +11,321 @@ import {
   Mail,
   Palette,
   ArrowLeft,
-  Building,
-  CreditCard,
-  Loader2,
+  GraduationCap,
+  Settings as SettingsIcon,
+  ChevronRight,
 } from "lucide-react";
-import { get, put } from "@/lib/api";
+import UniversityServicesSection from "./settings/UniversityServicesSection";
+import BrandingSection from "@/components/settings/BrandingSection";
+import ProfileSection from "@/components/settings/ProfileSection";
+import NotificationsSection from "@/components/settings/NotificationsSection";
+import SecuritySection from "@/components/settings/SecuritySection";
+import EvaluationsSection from "@/components/settings/EvaluationsSection";
+import DatabaseSection from "@/components/settings/DatabaseSection";
+import EmailTemplatesSection from "@/components/settings/EmailTemplatesSection";
 import { useBranding } from "@/hooks/useBranding";
-import { updateExistingStudents } from "@/lib/studentMigration";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+interface SettingsSection {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ElementType;
+}
+
+const SECTIONS: SettingsSection[] = [
+  {
+    id: "branding",
+    name: "Branding",
+    description: "Logo, colors and site identity",
+    icon: Palette,
+  },
+  {
+    id: "profile",
+    name: "Profile",
+    description: "Your registrar account details",
+    icon: User,
+  },
+  {
+    id: "notifications",
+    name: "Notifications",
+    description: "Alert preferences per activity",
+    icon: Bell,
+  },
+  {
+    id: "security",
+    name: "Security",
+    description: "Password and active sessions",
+    icon: Shield,
+  },
+  {
+    id: "evaluations",
+    name: "Evaluations",
+    description: "Course evaluation surveys",
+    icon: FileText,
+  },
+  {
+    id: "services",
+    name: "University Services",
+    description: "Service catalog, requests and offices",
+    icon: GraduationCap,
+  },
+  {
+    id: "database",
+    name: "Database",
+    description: "Storage statistics and maintenance",
+    icon: Database,
+  },
+  {
+    id: "email",
+    name: "Email Templates",
+    description: "Transactional email content",
+    icon: Mail,
+  },
+];
 
 export default function SettingsPage() {
-  const { branding } = useBranding();
+  const { branding, updateBranding } = useBranding();
   const navigate = useNavigate();
 
-  const [activeSection, setActiveSection] = useState("profile");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
-  const [department, setDepartment] = useState("");
-  const [college, setCollege] = useState("");
-  const [email, setEmail] = useState("");
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [active, setActive] = useState("branding");
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const userId = localStorage.getItem("user_id");
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const reg = await get<any>(`/registrars/${userId}/`);
-        setFirstName(reg.first_name || "");
-        setLastName(reg.last_name || "");
-        setEmployeeId(reg.employee_id || "");
-        setDepartment(reg.department || "");
-        setCollege(reg.college || "");
-        setEmail(reg.email || localStorage.getItem("user_email") || "");
-        localStorage.setItem("registrar_college", reg.college || "");
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: "-15% 0px -70% 0px", threshold: 0 },
+    );
+    Object.values(sectionRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
   }, []);
 
-  const handleSaveProfile = async (e: FormEvent) => {
-    e.preventDefault();
-    const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      toast.error("You must be signed in");
-      return;
-    }
-    setSaving(true);
-    try {
-      await put(`/registrars/${userId}/`, {
-        first_name: firstName,
-        last_name: lastName,
-        employee_id: employeeId,
-        department,
-        college,
-      });
-      localStorage.setItem("registrar_college", college);
-      toast.success("Profile updated successfully");
-    } catch (err) {
-      toast.error("Failed to update profile");
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const sectionRefs = {
-    branding: useRef<HTMLDivElement>(null),
-    profile: useRef<HTMLDivElement>(null),
-    notifications: useRef<HTMLDivElement>(null),
-    security: useRef<HTMLDivElement>(null),
-    evaluations: useRef<HTMLDivElement>(null),
-    database: useRef<HTMLDivElement>(null),
-    email: useRef<HTMLDivElement>(null),
-  };
-
-  const scrollToSection = (section: string) => {
-    sectionRefs[section as keyof typeof sectionRefs].current?.scrollIntoView({
+  const scrollToSection = (id: string) => {
+    setActive(id);
+    sectionRefs.current[id]?.scrollIntoView({
       behavior: "smooth",
+      block: "start",
     });
   };
 
-  const settingsSections = [
-    { id: "branding", name: "Branding", icon: Palette },
-    { id: "profile", name: "Profile", icon: User },
-    { id: "notifications", name: "Notifications", icon: Bell },
-    { id: "security", name: "Security", icon: Shield },
-    { id: "evaluations", name: "Evaluations", icon: FileText },
-    { id: "database", name: "Database", icon: Database },
-    { id: "email", name: "Email Templates", icon: Mail },
-  ];
+  const activeSection = SECTIONS.find((s) => s.id === active);
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <div className="w-64 h-screen border-r p-4 space-y-2">
-        {settingsSections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => scrollToSection(section.id)}
-            className="flex items-center gap-2 w-full p-2 rounded hover:bg-gray-100"
-          >
-            <section.icon size={18} />
-            {section.name}
-          </button>
-        ))}
-      </div>
+    <div className="flex h-screen overflow-hidden bg-muted/30">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-72 shrink-0 flex-col border-r bg-card lg:flex">
+        <div className="flex items-center gap-3 border-b p-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <SettingsIcon size={18} />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">
+              {branding.siteName || "Settings"}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              System configuration
+            </div>
+          </div>
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 p-6 space-y-20 overflow-y-auto h-screen">
-        {/* Back Button */}
-        <div className="flex items-center gap-4 mb-6">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+          {SECTIONS.map((section) => {
+            const isActive = section.id === active;
+            return (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm font-medium transition-colors",
+                  isActive
+                    ? "border-primary/30 bg-primary/10 text-primary shadow-sm"
+                    : "border-transparent hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <section.icon
+                  size={18}
+                  className={isActive ? "text-primary" : "text-muted-foreground"}
+                />
+                <span className="flex-1">
+                  <span className="block">{section.name}</span>
+                  <span className="block truncate text-xs font-normal text-muted-foreground">
+                    {section.description}
+                  </span>
+                </span>
+                <ChevronRight
+                  size={16}
+                  className={cn(
+                    "shrink-0 transition-all",
+                    isActive
+                      ? "translate-x-0 text-primary"
+                      : "-translate-x-1 opacity-0",
+                  )}
+                />
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="border-t p-3">
           <Button
             variant="ghost"
             size="sm"
+            className="w-full justify-start gap-2"
             onClick={() => navigate("/dashboard")}
-            className="flex items-center gap-2 hover:bg-gray-100"
           >
             <ArrowLeft size={16} />
             Back to Dashboard
           </Button>
         </div>
+      </aside>
 
-        {/* Branding */}
-        <div ref={sectionRefs.branding}>
-          <h2 className="text-xl font-bold mb-4">Branding</h2>
-          <p>Primary Color: {branding?.primaryColor}</p>
+      {/* Mobile tab strip */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex gap-1.5 overflow-x-auto border-b bg-card p-2 lg:hidden">
+          {SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => scrollToSection(section.id)}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
+                section.id === active
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              <section.icon size={14} />
+              {section.name}
+            </button>
+          ))}
         </div>
 
-        {/* Profile */}
-        <div ref={sectionRefs.profile}>
-          <h2 className="text-xl font-bold mb-4">Profile</h2>
-
-          {loading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading profile...
-            </div>
-          ) : (
-            <form onSubmit={handleSaveProfile} className="max-w-md space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="settings-email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="settings-email"
-                    value={email}
-                    disabled
-                    className="pl-10 bg-muted/50"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="settings-firstName">First Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="settings-firstName"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="pl-10"
-                    />
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
+            <header className="rounded-xl border bg-card p-6">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <SettingsIcon size={16} />
+                    Settings
                   </div>
+                  <h1 className="mt-1 text-2xl font-bold">
+                    {activeSection?.name}
+                  </h1>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {activeSection?.description}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="settings-lastName">Last Name</Label>
-                  <Input
-                    id="settings-lastName"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/dashboard")}
+                  className="gap-2 lg:hidden"
+                >
+                  <ArrowLeft size={16} />
+                  Dashboard
+                </Button>
               </div>
+            </header>
 
-              <div className="space-y-2">
-                <Label htmlFor="settings-employeeId">Employee ID</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="settings-employeeId"
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="settings-department">Department</Label>
-                <Input
-                  id="settings-department"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
+            <section
+              id="branding"
+              ref={(el) => {
+                sectionRefs.current.branding = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <BrandingSection
+                  branding={branding}
+                  updateBranding={updateBranding}
                 />
-              </div>
+              </Card>
+            </section>
 
-              <div className="space-y-2">
-                <Label htmlFor="settings-college">College / Institution</Label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="settings-college"
-                    value={college}
-                    onChange={(e) => setCollege(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+            <section
+              id="profile"
+              ref={(el) => {
+                sectionRefs.current.profile = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <ProfileSection />
+              </Card>
+            </section>
 
-              <Button type="submit" disabled={saving}>
-                {saving ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
-                  </span>
-                ) : (
-                  "Save Profile"
-                )}
-              </Button>
-            </form>
-          )}
-        </div>
+            <section
+              id="notifications"
+              ref={(el) => {
+                sectionRefs.current.notifications = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <NotificationsSection />
+              </Card>
+            </section>
 
-        {/* Notifications */}
-        <div ref={sectionRefs.notifications}>
-          <h2 className="text-xl font-bold mb-4">Notifications</h2>
-          <p>Notification settings go here</p>
-        </div>
+            <section
+              id="security"
+              ref={(el) => {
+                sectionRefs.current.security = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <SecuritySection />
+              </Card>
+            </section>
 
-        {/* Security */}
-        <div ref={sectionRefs.security}>
-          <h2 className="text-xl font-bold mb-4">Security</h2>
-          <Input type="password" placeholder="New Password" />
-          <Button className="mt-3">Update Password</Button>
-        </div>
+            <section
+              id="evaluations"
+              ref={(el) => {
+                sectionRefs.current.evaluations = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <EvaluationsSection />
+              </Card>
+            </section>
 
-        {/* Evaluations */}
-        <div ref={sectionRefs.evaluations}>
-          <h2 className="text-xl font-bold mb-4">Evaluations</h2>
-          <p>Evaluation settings</p>
-        </div>
+            <section
+              id="services"
+              ref={(el) => {
+                sectionRefs.current.services = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <UniversityServicesSection />
+              </Card>
+            </section>
 
-        {/* Database */}
-        <div ref={sectionRefs.database}>
-          <h2 className="text-xl font-bold mb-4">Database</h2>
-          <p className="mb-4">Database management tools</p>
+            <section
+              id="database"
+              ref={(el) => {
+                sectionRefs.current.database = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <DatabaseSection />
+              </Card>
+            </section>
 
-          <div className="space-y-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2">Student Data Migration</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Update existing students that may be missing department and
-                program information. This will set default values for students
-                created before these fields were added.
-              </p>
-              <Button
-                onClick={async () => {
-                  try {
-                    const updatedCount = await updateExistingStudents();
-                    toast.success(
-                      `Successfully updated ${updatedCount} students with missing data`,
-                    );
-                  } catch (error) {
-                    console.error("Migration failed:", error);
-                    toast.error("Failed to update student data");
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Run Student Migration
-              </Button>
-            </div>
+            <section
+              id="email"
+              ref={(el) => {
+                sectionRefs.current.email = el;
+              }}
+            >
+              <Card className="p-6 md:p-8">
+                <EmailTemplatesSection />
+              </Card>
+            </section>
           </div>
-        </div>
-
-        {/* Email Templates */}
-        <div ref={sectionRefs.email}>
-          <h2 className="text-xl font-bold mb-4">Email Templates</h2>
-          <p>Manage system emails</p>
-        </div>
+        </main>
       </div>
     </div>
   );

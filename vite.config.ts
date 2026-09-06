@@ -9,9 +9,10 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 5175,
     proxy: {
-      "/api/student-grades": {
-        target: "http://localhost:8084",
+      "/nad": {
+        target: "http://localhost:8083",
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/nad/, ""),
       },
       "/api/quiz-attempts": {
         target: "http://localhost:8084",

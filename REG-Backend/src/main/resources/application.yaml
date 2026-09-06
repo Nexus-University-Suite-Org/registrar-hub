@@ -37,6 +37,10 @@ spring:
 server:
   port: 8082
 
+# ── Lecturer-Backend proxy ─────────────────────────────────────────────────
+lecturer:
+  base-url: ${LECTURER_BASE_URL:http://localhost:8084}
+
 # ── JWT settings ────────────────────────────────────────────────────────────
 jwt:
   secret: ${JWT_SECRET}

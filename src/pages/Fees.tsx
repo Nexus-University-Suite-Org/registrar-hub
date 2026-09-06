@@ -27,9 +27,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Search, DollarSign, Edit, Trash2 } from "lucide-react";
-import { get, post, put, del } from "@/lib/api";
+import { get, getNad, post, put, del } from "@/lib/api";
 import { toast } from "sonner";
-import { FeeAssignment } from "@/types/fee";
+import { FeeAssignment, ProgramSemesterFees } from "@/types/fee";
 
 const ACADEMIC_YEARS = ["2025/2026", "2024/2025", "2023/2024", "2022/2023"];
 
@@ -95,6 +95,9 @@ export default function Fees() {
   const navigate = useNavigate();
   const [feeAssignments, setFeeAssignments] = useState<FeeAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [programFees, setProgramFees] = useState<ProgramSemesterFees[]>([]);
+  const [programFeesLoading, setProgramFeesLoading] = useState(true);
+  const [programFeesError, setProgramFeesError] = useState<string | null>(null);
   const [registrarCollege, setRegistrarCollege] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -119,7 +122,25 @@ export default function Fees() {
       return;
     }
     fetchRegistrarData();
+    fetchNadProgramFees();
   }, [navigate]);
+
+  const fetchNadProgramFees = async () => {
+    setProgramFeesLoading(true);
+    setProgramFeesError(null);
+    try {
+      const data = await getNad<ProgramSemesterFees[]>(
+        "/api/v1/public/fees/program-semesters",
+      );
+      setProgramFees(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching NAD programme fees:", error);
+      setProgramFeesError("Failed to load programme fees from NAD admissions");
+      setProgramFees([]);
+    } finally {
+      setProgramFeesLoading(false);
+    }
+  };
 
   const fetchRegistrarData = async () => {
     try {
@@ -424,6 +445,99 @@ export default function Fees() {
               {structureGroups.length}
             </div>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-5">
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              Programme Fees (from NAD Admissions)
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fee structure each student pays per year &amp; term, sourced from
+              the admissions backend programme records
+            </p>
+          </div>
+          {programFeesLoading ? (
+            <div className="p-10 text-center text-muted-foreground">
+              Loading programme fees...
+            </div>
+          ) : programFeesError ? (
+            <div className="p-10 text-center text-muted-foreground">
+              {programFeesError}
+            </div>
+          ) : programFees.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground">
+              No programme fee structures found yet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Programme</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Term</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Tuition</TableHead>
+                  <TableHead className="text-right">Functional</TableHead>
+                  <TableHead className="text-right">Other Items</TableHead>
+                  <TableHead className="text-right">Term Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {programFees.flatMap((prog, progIndex) =>
+                  prog.years.flatMap((year, yearIndex) =>
+                    year.semesters.map((sem, semIndex) => (
+                      <TableRow
+                        key={`${prog.programCode}-${year.year}-${sem.name}`}
+                        className="border-b-0"
+                      >
+                        <TableCell>
+                          <div>
+                            <span className="font-medium">
+                              {prog.programName}
+                            </span>
+                            {progIndex === 0 &&
+                              yearIndex === 0 &&
+                              semIndex === 0 && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {prog.programCode}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>Year {year.year}</TableCell>
+                        <TableCell>{sem.name}</TableCell>
+                        <TableCell>
+                          <span className="capitalize">{sem.termType}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {sem.tuition.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {sem.functional.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {(
+                            (sem.registration || 0) +
+                            (sem.examination || 0) +
+                            (sem.ict || 0) +
+                            (sem.library || 0) +
+                            (sem.medical || 0) +
+                            (sem.accommodation || 0) +
+                            (sem.other || 0)
+                          ).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {prog.currency || "UGX"}{" "}
+                          {sem.total.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    )),
+                  ),
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         <div className="rounded-xl border border-border bg-card overflow-hidden">

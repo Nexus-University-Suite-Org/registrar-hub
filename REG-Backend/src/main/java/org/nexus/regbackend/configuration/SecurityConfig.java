@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.nexus.regbackend.service.impl.RegistrarDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,6 +42,7 @@ public class SecurityConfig {
                                 "/api/upload/**",
                                 "/api/uploads/**",
                                 "/api/profiles/**",
+                                "/api/student-grades/**",
                                 "/api/activities/**",
                                 "/api/courses/**",
                                 "/api/course-units/**",
@@ -49,8 +51,16 @@ public class SecurityConfig {
                                 "/api/fee-assignments/**",
                                 "/api/departments/**",
                                 "/api/specializations/**",
+                                "/api/academic-calendar/**",
+                                "/api/timetable/**",
                                 "/actuator/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/university-services/**",
+                                "/api/office-locations/**",
+                                "/api/service-requests/**",
+                                "/api/settings/branding").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/service-requests/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -62,8 +72,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-                "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5178",
-                "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://127.0.0.1:5176", "http://127.0.0.1:5178"
+                "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5178",
+                "http://127.0.0.1:5173", "http://127.0.0.1:5174", "http://127.0.0.1:5175", "http://127.0.0.1:5176", "http://127.0.0.1:5178"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
