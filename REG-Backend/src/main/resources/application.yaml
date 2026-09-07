@@ -3,9 +3,9 @@ spring:
     name: REG-Backend
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
 
   jpa:
     hibernate:
@@ -23,10 +23,10 @@ spring:
       max-request-size: 10MB
 
   mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -35,7 +35,7 @@ spring:
             enable: true
 
 server:
-  port: 8082
+  port: 8080
 
 # ── Lecturer-Backend proxy ─────────────────────────────────────────────────
 lecturer:
@@ -43,13 +43,13 @@ lecturer:
 
 # ── JWT settings ────────────────────────────────────────────────────────────
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:reg-backend-dev-jwt-secret-change-in-production}
   access-token-expiry-ms: 900000       # 15 minutes
   refresh-token-expiry-ms: 604800000   # 7 days
 
 # ── OTP settings ────────────────────────────────────────────────────────────
 otp:
-  secret: ${OTP_SECRET}
+  secret: ${OTP_SECRET:reg-backend-dev-otp-secret-change-in-production}
   expiry-minutes: 10
   resend-cooldown-seconds: 60
   max-sends-per-hour: 5
