@@ -1,10 +1,17 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FileText, Search, Download, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,6 +22,41 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { get } from "@/lib/api";
+
+interface StudentRecord {
+  id: number | string;
+  student_number?: string;
+  registration_number?: string;
+  full_name?: string;
+  email?: string;
+  department?: string;
+  program?: string;
+  year_of_study?: number;
+  status?: string;
+}
+
+interface TranscriptGrade {
+  student_id: number | string;
+  course_id?: number | string;
+  course_code?: string;
+  course_title?: string;
+  credits?: number;
+  academic_year?: string;
+  semester?: number | string;
+  gp?: number | string;
+  grade_point?: number | string;
+  grade?: string | null;
+  total?: number | string;
+  marks?: number | string;
+}
+
+interface CourseRecord {
+  id: number | string;
+  code?: string;
+  name?: string;
+  title?: string;
+  credits?: number;
+}
 
 interface TranscriptEntry {
   courseCode: string;
@@ -51,7 +93,15 @@ export default function Transcripts() {
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [studentNumber, setStudentNumber] = useState("");
   const [academicYear, setAcademicYear] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<StudentRecord[] | null>(
+    null,
+  );
+  const [searchLoading, setSearchLoading] = useState(true);
+  const [searchError, setSearchError] = useState(false);
+  const [allGrades, setAllGrades] = useState<TranscriptGrade[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -60,104 +110,135 @@ export default function Transcripts() {
     }
   }, [navigate]);
 
-  const handleGenerateTranscript = async (e: FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError(false);
+      try {
+        const query = searchQuery.trim();
+        const result = await get<StudentRecord[]>(
+          query
+            ? `/students?search=${encodeURIComponent(query)}`
+            : "/students",
+        );
+        if (!cancelled) setSearchResults(result);
+      } catch (err) {
+        console.error("Student search error:", err);
+        if (!cancelled) setSearchError(true);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
-    if (!studentNumber.trim()) {
-      toast.error("Please enter a student number.");
-      return;
-    }
+  useEffect(() => {
+    let cancelled = false;
+    get<TranscriptGrade[]>("/student-grades")
+      .then((grades) => {
+        if (!cancelled) setAllGrades(grades);
+      })
+      .catch(() => {
+        // Grade counts are best-effort only.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
+  const gradeCountByStudent = useMemo(() => {
+    const map = new Map<string, number>();
+    allGrades.forEach((grade) => {
+      const key = String(grade.student_id);
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return map;
+  }, [allGrades]);
+
+  const generateForStudent = async (student: StudentRecord) => {
+    setGeneratingId(String(student.id));
     try {
-      setIsGenerating(true);
+      const grades = await get<TranscriptGrade[]>("/student-grades");
+      const studentGrades = grades.filter(
+        (grade) => String(grade.student_id) === String(student.id),
+      );
+      const yearFilter = academicYear.trim();
+      const filtered = yearFilter
+        ? studentGrades.filter((grade) => grade.academic_year === yearFilter)
+        : studentGrades;
 
-      // 1. Find student profile
-      let studentProfile: any | null = null;
-      const profiles: any[] = await get(`/profiles/?student_number=${encodeURIComponent(studentNumber.trim())}`);
-      if (profiles.length > 0) {
-        studentProfile = profiles[0];
-      } else {
-        const students: any[] = await get(`/students/?student_number=${encodeURIComponent(studentNumber.trim())}`);
-        if (students.length > 0) {
-          studentProfile = students[0];
-        }
-      }
-
-      if (!studentProfile) {
-        toast.error("Student not found. Please check the student number.");
-        return;
-      }
-
-      const studentId = studentProfile.id as string;
-
-      // 2. Fetch grades for student (optionally filtered by academic year)
-      let gradesPath = `/student-grades/?student_id=${encodeURIComponent(studentId)}`;
-      if (academicYear.trim()) {
-        gradesPath += `&academic_year=${encodeURIComponent(academicYear.trim())}`;
-      }
-      const grades: any[] = await get(gradesPath);
-
-      if (!grades.length) {
+      if (!filtered.length) {
         toast.error(
-          "No results found for this student (and academic year, if specified).",
+          yearFilter
+            ? "No results found for this student and academic year."
+            : "No academic records found for this student yet.",
         );
         return;
       }
 
-      // 3. Load course metadata
-      const courses: any[] = await get("/courses/");
-      const courseMap = new Map<
+      let courseMap = new Map<
         string,
         { code: string; title: string; credits: number }
       >();
-      courses.forEach((data: any) => {
-        courseMap.set(data.id, {
-          code: data.code || "N/A",
-          title: data.name || data.title || "Unknown Course",
-          credits: data.credits ?? 3,
-        });
-      });
+      try {
+        const courses = await get<CourseRecord[]>("/courses/");
+        courseMap = new Map(
+          courses.map((course) => [
+            String(course.id),
+            {
+              code: course.code || "N/A",
+              title: course.name || course.title || "Unknown Course",
+              credits: course.credits ?? 3,
+            },
+          ]),
+        );
+      } catch {
+        // Grades are already enriched by the registrar backend.
+      }
 
-      // 4. Group by academic year / semester and compute GPA per term
       const termMap = new Map<string, TermSummary>();
-      grades.forEach((g) => {
-        const termKey = `${g.academic_year} · Sem ${g.semester}`;
-        const courseInfo = courseMap.get(g.course_id) || {
-          code: "N/A",
-          title: "Unknown Course",
-          credits: 3,
-        };
+      filtered.forEach((grade) => {
+        const termKey = `${grade.academic_year || "Unknown"} · Sem ${
+          grade.semester ?? "—"
+        }`;
+        const courseInfo = courseMap.get(String(grade.course_id ?? ""));
+        const code = grade.course_code || courseInfo?.code || "N/A";
+        const title =
+          grade.course_title || courseInfo?.title || "Unknown Course";
+        const credits = Number(grade.credits ?? courseInfo?.credits ?? 3);
+
         if (!termMap.has(termKey)) {
           termMap.set(termKey, {
             termKey,
-            academicYear: g.academic_year,
-            semester: String(g.semester),
+            academicYear: grade.academic_year || "Unknown",
+            semester: String(grade.semester ?? ""),
             entries: [],
             gpa: 0,
             totalCredits: 0,
           });
         }
         const term = termMap.get(termKey)!;
-        const credits = courseInfo.credits ?? 3;
-        const gradePoint = g.gp ?? g.grade_point ?? 0;
-        const entry: TranscriptEntry = {
-          courseCode: courseInfo.code,
-          courseTitle: courseInfo.title,
-          academicYear: g.academic_year,
-          semester: String(g.semester),
+        term.entries.push({
+          courseCode: code,
+          courseTitle: title,
+          academicYear: grade.academic_year || "Unknown",
+          semester: String(grade.semester ?? ""),
           credits,
-          marks: g.total ?? g.marks ?? 0,
-          grade: g.grade ?? null,
-          gradePoint,
-        };
-        term.entries.push(entry);
+          marks: Number(grade.total ?? grade.marks ?? 0),
+          grade: grade.grade ?? null,
+          gradePoint: Number(grade.gp ?? grade.grade_point ?? 0),
+        });
         term.totalCredits += credits;
       });
 
       termMap.forEach((term) => {
         if (!term.entries.length || term.totalCredits <= 0) return;
         const totalGradePoints = term.entries.reduce(
-          (sum, e) => sum + (e.gradePoint || 0) * e.credits,
+          (sum, entry) => sum + (entry.gradePoint || 0) * entry.credits,
           0,
         );
         term.gpa = totalGradePoints / term.totalCredits;
@@ -169,33 +250,29 @@ export default function Transcripts() {
           Number(a.semester) - Number(b.semester),
       );
 
-      // 5. Compute overall CGPA
-      const allEntries = terms.flatMap((t) => t.entries);
-      const overallCredits = allEntries.reduce((sum, e) => sum + e.credits, 0);
+      const allEntries = terms.flatMap((term) => term.entries);
+      const overallCredits = allEntries.reduce(
+        (sum, entry) => sum + entry.credits,
+        0,
+      );
       const overallGradePoints = allEntries.reduce(
-        (sum, e) => sum + (e.gradePoint || 0) * e.credits,
+        (sum, entry) => sum + (entry.gradePoint || 0) * entry.credits,
         0,
       );
       const cgpa = overallCredits > 0 ? overallGradePoints / overallCredits : 0;
       const remark = calculateRemark(cgpa);
 
-      // 6. Build printable HTML and trigger browser print (user can save as PDF)
-      const fullName =
-        studentProfile.full_name ||
-        `${studentProfile.first_name || ""} ${
-          studentProfile.last_name || ""
-        }`.trim();
-      const program = studentProfile.program || "—";
-      const yearOfStudy = studentProfile.year_of_study ?? 1;
+      const fullName = student.full_name || "Student";
+      const program = student.program || "—";
+      const yearOfStudy = student.year_of_study ?? 1;
       const registrationNumber =
-        studentProfile.registration_number ||
-        studentProfile.registrationNumber ||
-        "—";
+        student.registration_number || student.student_number || "—";
+      const displayedNumber = student.student_number || registrationNumber;
 
       const buildHtml = () => {
         let html = "";
         html += '<div style="margin-bottom: 24px;">';
-        html += `<h2 style="margin:0 0 8px 0; font-size:1.25rem; font-weight:600;">${fullName} (${studentNumber})</h2>`;
+        html += `<h2 style="margin:0 0 8px 0; font-size:1.25rem; font-weight:600;">${fullName} (${displayedNumber})</h2>`;
         html += `<p style="margin:0; font-size:0.9rem;">Program: ${program} · Year of Study: ${yearOfStudy}</p>`;
         html += `<p style="margin:4px 0 0 0; font-size:0.9rem;">Registration No.: ${registrationNumber}</p>`;
         html += `</div>`;
@@ -215,12 +292,12 @@ export default function Transcripts() {
           html +=
             '<th style="border:1px solid #ddd; padding:6px 8px; text-align:left;">Grade</th>';
           html += "</tr></thead><tbody>";
-          term.entries.forEach((e) => {
+          term.entries.forEach((entry) => {
             html += "<tr>";
-            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${e.courseCode} - ${e.courseTitle}</td>`;
-            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${e.credits}</td>`;
-            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${e.marks}</td>`;
-            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${e.grade ?? "—"}</td>`;
+            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${entry.courseCode} - ${entry.courseTitle}</td>`;
+            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${entry.credits}</td>`;
+            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${entry.marks}</td>`;
+            html += `<td style="border:1px solid #ddd; padding:6px 8px;">${entry.grade ?? "—"}</td>`;
             html += "</tr>";
           });
           html += "</tbody>";
@@ -243,46 +320,93 @@ export default function Transcripts() {
       };
 
       const win = window.open("", "_blank");
-      if (win) {
-        win.document.write(`
-          <!DOCTYPE html><html><head>
-            <title>Transcript - ${fullName}</title>
-            <style>
-              body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; }
-              h1 { font-size: 1.5rem; margin-bottom: 4px; }
-              h2 { font-size: 1.25rem; }
-              h3 { font-size: 1rem; }
-              table { width: 100%; border-collapse: collapse; }
-              @media print {
-                body { padding: 0 16px; }
-              }
-            </style>
-          </head><body>
-            <h1>Official Academic Transcript</h1>
-            <p style="margin:0 0 16px 0; font-size:0.9rem;">Generated by Registrar · ${new Date().toLocaleDateString()}</p>
-            ${buildHtml()}
-          </body></html>
-        `);
-        win.document.close();
-        win.focus();
-        win.print();
+      if (!win) {
+        toast.error(
+          "Popup blocked. Please allow pop-ups for this site and try again.",
+        );
+        return;
       }
+      win.document.write(`
+        <!DOCTYPE html><html><head>
+          <title>Transcript - ${fullName}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 24px; }
+            h1 { font-size: 1.5rem; margin-bottom: 4px; }
+            h2 { font-size: 1.25rem; }
+            h3 { font-size: 1rem; }
+            table { width: 100%; border-collapse: collapse; }
+            @media print {
+              body { padding: 0 16px; }
+            }
+          </style>
+        </head><body>
+          <h1>Official Academic Transcript</h1>
+          <p style="margin:0 0 16px 0; font-size:0.9rem;">Generated by Registrar · ${new Date().toLocaleDateString()}</p>
+          ${buildHtml()}
+        </body></html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
 
-      setIsGenerateOpen(false);
-      setStudentNumber("");
-      setAcademicYear("");
-    } catch (err: any) {
+      if (isGenerateOpen) {
+        setIsGenerateOpen(false);
+        setStudentNumber("");
+        setAcademicYear("");
+      }
+    } catch (err) {
       console.error("Transcript generation error:", err);
       toast.error("Failed to generate transcript.");
     } finally {
-      setIsGenerating(false);
+      setGeneratingId(null);
+    }
+  };
+
+  const handleGenerateTranscript = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!studentNumber.trim()) {
+      toast.error("Please enter a student number.");
+      return;
+    }
+
+    setGeneratingId("manual");
+    try {
+      const matches = await get<StudentRecord[]>(
+        `/students?search=${encodeURIComponent(studentNumber.trim())}`,
+      );
+      if (!matches.length) {
+        toast.error("Student not found. Please check the student number.");
+        return;
+      }
+
+      const lowered = studentNumber.trim().toLowerCase();
+      const exact = matches.filter(
+        (student) =>
+          String(student.student_number || "").toLowerCase() === lowered ||
+          String(student.registration_number || "").toLowerCase() === lowered,
+      );
+
+      if (exact.length === 1) {
+        await generateForStudent(exact[0]);
+      } else if (matches.length === 1) {
+        await generateForStudent(matches[0]);
+      } else {
+        toast.error(
+          "Multiple students match. Please refine the student number.",
+        );
+      }
+    } catch (err) {
+      console.error("Transcript lookup error:", err);
+      toast.error("Failed to generate transcript.");
+    } finally {
+      setGeneratingId(null);
     }
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground">
@@ -298,47 +422,109 @@ export default function Transcripts() {
           </Button>
         </div>
 
-        {/* Search */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search by student name or number..."
               className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" type="button" disabled>
             <Filter className="h-4 w-4 mr-2" />
             Filters
           </Button>
         </div>
 
-        {/* Empty State */}
-        <div className="rounded-xl border border-border bg-card p-16 text-center">
-          <div className="flex flex-col items-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent mb-6">
-              <FileText className="h-10 w-10 text-primary" />
-            </div>
-            <h3 className="font-display text-xl font-semibold text-foreground">
-              Transcript Management
-            </h3>
-            <p className="mt-2 text-muted-foreground max-w-md">
-              Search for a student to view or generate their academic
-              transcript. Transcripts include all courses, grades, and GPA
-              calculations.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <Button variant="outline" onClick={() => navigate("/students")}>
-                View Students
-              </Button>
-              <Button onClick={() => setIsGenerateOpen(true)}>
-                Generate New Transcript
-              </Button>
+        {searchLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading students...</p>
             </div>
           </div>
-        </div>
+        ) : searchError ? (
+          <div className="rounded-xl border border-border bg-card p-16 text-center">
+            <div className="flex flex-col items-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent mb-6">
+                <FileText className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                Could not load students
+              </h3>
+              <p className="mt-2 text-muted-foreground max-w-md">
+                An error occurred while searching. Please try again.
+              </p>
+            </div>
+          </div>
+        ) : searchResults && searchResults.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-16 text-center">
+            <div className="flex flex-col items-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent mb-6">
+                <FileText className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-semibold text-foreground">
+                No students found
+              </h3>
+              <p className="mt-2 text-muted-foreground max-w-md">
+                No students matched your search. Try a different name or
+                student number.
+              </p>
+            </div>
+          </div>
+        ) : searchResults ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {searchResults.map((student) => {
+                const gradeCount =
+                  gradeCountByStudent.get(String(student.id)) || 0;
+                return (
+                  <Card key={String(student.id)}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <CardTitle className="text-base">
+                            {student.full_name || "Student"}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {student.student_number || "No number"} ·{" "}
+                            {student.program || "—"} ·{" "}
+                            {student.department || "—"}
+                          </p>
+                        </div>
+                        <Badge variant={gradeCount > 0 ? "default" : "secondary"}>
+                          {gradeCount} record{gradeCount === 1 ? "" : "s"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-muted-foreground">
+                          Year {student.year_of_study ?? "—"} ·{" "}
+                          {student.status || "—"}
+                        </span>
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => generateForStudent(student)}
+                          disabled={generatingId !== null}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          {generatingId === String(student.id)
+                            ? "Generating..."
+                            : "Generate transcript"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
-        {/* Generate transcript modal */}
         <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
           <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -375,12 +561,14 @@ export default function Transcripts() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsGenerateOpen(false)}
-                  disabled={isGenerating}
+                  disabled={generatingId !== null}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isGenerating}>
-                  {isGenerating ? "Generating..." : "Generate"}
+                <Button type="submit" disabled={generatingId !== null}>
+                  {generatingId === "manual"
+                    ? "Generating..."
+                    : "Generate"}
                 </Button>
               </DialogFooter>
             </form>
