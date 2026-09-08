@@ -387,7 +387,7 @@ export default function Results() {
   const fetchQuizResults = async () => {
     try {
       setQuizLoading(true);
-      const lecturerApi = "http://localhost:8084";
+      const lecturerApi = import.meta.env.VITE_LECTURER_API_BASE_URL || "http://localhost:8084";
       const quizzesRes = await fetch(`${lecturerApi}/api/quizzes/`);
       if (!quizzesRes.ok) return;
       const quizzesData = await quizzesRes.json();

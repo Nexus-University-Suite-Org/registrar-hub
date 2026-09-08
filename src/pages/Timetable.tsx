@@ -82,7 +82,7 @@ const PALETTE = [
   "bg-sky-500",
 ];
 
-const NAP_PROGRAMS_URL = "http://localhost:8080/api/v1/programs";
+const NAP_PROGRAMS_URL = `${import.meta.env.VITE_NAP_API_BASE_URL || "http://localhost:8080"}/api/v1/programs`;
 
 function stableUnitId(code: string, taken: Set<number>): number {
   let h = 0;
