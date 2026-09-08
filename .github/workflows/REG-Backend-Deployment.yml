@@ -1,11 +1,7 @@
 name: Deploy REG Backend
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'REG-Backend/**'
+  workflow_dispatch:
 
 jobs:
   build:
