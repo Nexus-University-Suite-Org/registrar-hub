@@ -401,6 +401,18 @@ export default function Fees() {
     return a.category.localeCompare(b.category);
   });
 
+  const programFeesByFaculty = Object.entries(
+    programFees.reduce(
+      (groups, prog) => {
+        const key = (prog.facultySchool || "Uncategorized").trim();
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(prog);
+        return groups;
+      },
+      {} as Record<string, ProgramSemesterFees[]>,
+    ),
+  ).sort(([a], [b]) => a.localeCompare(b));
+
   const activeFormStructureTotal = getStructureTotalForForm();
   const activeFormAmount = Number.parseFloat(feeForm.amount || "0");
   const projectedStructureTotal =
@@ -484,57 +496,85 @@ export default function Fees() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {programFees.flatMap((prog, progIndex) =>
-                  prog.years.flatMap((year, yearIndex) =>
-                    year.semesters.map((sem, semIndex) => (
-                      <TableRow
-                        key={`${prog.programCode}-${year.year}-${sem.name}`}
-                        className="border-b-0"
-                      >
-                        <TableCell>
-                          <div>
-                            <span className="font-medium">
-                              {prog.programName}
+                {programFeesByFaculty.flatMap(([faculty, progs]) => [
+                  <TableRow key={`faculty-${faculty}`} className="bg-muted/50 border-b">
+                    <TableCell colSpan={8} className="py-3">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="font-semibold text-foreground">
+                          {faculty}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {progs.length} programme{progs.length === 1 ? "" : "s"}
+                          {progs
+                            .map((p) => p.campus)
+                            .filter(Boolean)
+                            .filter((v, i, arr) => arr.indexOf(v) === i)
+                            .length > 0 && (
+                            <span>
+                              {" · "}
+                              {progs
+                                .map((p) => p.campus)
+                                .filter(Boolean)
+                                .filter((v, i, arr) => arr.indexOf(v) === i)
+                                .join(", ")}
                             </span>
-                            {progIndex === 0 &&
-                              yearIndex === 0 &&
-                              semIndex === 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                {prog.programCode}
+                          )}
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>,
+                  ...progs
+                    .sort((a, b) => a.programName.localeCompare(b.programName))
+                    .flatMap((prog) =>
+                      prog.years.flatMap((year) =>
+                        year.semesters.map((sem) => (
+                          <TableRow
+                            key={`${prog.programCode}-${year.year}-${sem.name}`}
+                            className="border-b-0"
+                          >
+                            <TableCell>
+                              <div>
+                                <span className="font-medium">
+                                  {prog.programName}
+                                </span>
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  {prog.programCode}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>Year {year.year}</TableCell>
+                            <TableCell>{sem.name}</TableCell>
+                            <TableCell>
+                              <span className="capitalize">
+                                {sem.termType}
                               </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>Year {year.year}</TableCell>
-                        <TableCell>{sem.name}</TableCell>
-                        <TableCell>
-                          <span className="capitalize">{sem.termType}</span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {sem.tuition.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {sem.functional.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {(
-                            (sem.registration || 0) +
-                            (sem.examination || 0) +
-                            (sem.ict || 0) +
-                            (sem.library || 0) +
-                            (sem.medical || 0) +
-                            (sem.accommodation || 0) +
-                            (sem.other || 0)
-                          ).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {prog.currency || "UGX"}{" "}
-                          {sem.total.toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    )),
-                  ),
-                )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {sem.tuition.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {sem.functional.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {(
+                                (sem.registration || 0) +
+                                (sem.examination || 0) +
+                                (sem.ict || 0) +
+                                (sem.library || 0) +
+                                (sem.medical || 0) +
+                                (sem.accommodation || 0) +
+                                (sem.other || 0)
+                              ).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {prog.currency || "UGX"}{" "}
+                              {sem.total.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        )),
+                      ),
+                    ),
+                ])}
               </TableBody>
             </Table>
           )}
