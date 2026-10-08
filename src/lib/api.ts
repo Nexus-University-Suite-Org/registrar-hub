@@ -1,6 +1,10 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+// NAD Admissions backend (admissions-server) — prod points at the NAD Railway API.
+const NAD_API_BASE_URL =
+  import.meta.env.VITE_NAD_API_BASE_URL || "http://localhost:8083";
+
 function cleanPath(path: string): string {
   return path.replace(/\/\?/, "?").replace(/\/+$/, "");
 }
@@ -38,9 +42,9 @@ export async function get<T>(path: string): Promise<T> {
   return handleResponse<T>(response);
 }
 
-// NAD Admissions Dashboard backend (admissions-server, port 8083) via the /nad Vite proxy
+// NAD Admissions Dashboard backend (admissions-server) — direct call to NAD API
 export async function getNad<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}/nad${cleanPath(path)}`, {
+  const response = await fetch(`${NAD_API_BASE_URL}/api${cleanPath(path)}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
