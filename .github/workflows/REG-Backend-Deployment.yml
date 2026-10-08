@@ -1,11 +1,9 @@
 name: Deploy REG Backend
 
+# Disabled 2026-10-08: REG-Backend now deploys to Railway (Registrar Hub project).
+# Manual-only so nothing auto-deploys to the VPS on push.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'REG-Backend/**'
+  workflow_dispatch:
 
 jobs:
   build:
