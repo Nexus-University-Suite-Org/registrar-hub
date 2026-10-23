@@ -13,9 +13,12 @@ import org.nexus.regbackend.repository.SpecializationRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Component
@@ -31,9 +34,11 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         if (departmentRepository.count() == 0) {
             seedDepartments();
+            log.info("Seeded {} departments", departmentRepository.count());
+        }
+        if (specializationRepository.count() == 0) {
             seedSpecializations();
-            log.info("Seeded {} departments and {} specializations",
-                    departmentRepository.count(), specializationRepository.count());
+            log.info("Seeded {} specializations", specializationRepository.count());
         }
         if (siteSettingsRepository.count() == 0) {
             seedSiteSettings();
@@ -358,13 +363,9 @@ public class DataSeeder implements CommandLineRunner {
             ))
         );
 
+        Set<String> seen = new HashSet<>();
         deptSpecs.forEach((dept, specs) ->
-            specs.forEach(name ->
-                specializationRepository.save(Specialization.builder()
-                    .name(name)
-                    .department(dept)
-                    .build())
-            )
+            specs.forEach(name -> saveSpecialization(name, dept, seen))
         );
 
         // Add cross-cutting specializations without a specific department
@@ -378,8 +379,21 @@ public class DataSeeder implements CommandLineRunner {
             "Quantum Computing", "Augmented Reality", "Virtual Reality",
             "Game Development", "UI/UX Design", "Product Management",
             "Technical Writing", "Business Process Reengineering"
-        ).forEach(name ->
-            specializationRepository.save(Specialization.builder().name(name).build())
-        );
+        ).forEach(name -> saveSpecialization(name, null, seen));
+    }
+
+    /**
+     * Specialization names are globally unique, but the seed catalogue lists
+     * some names under more than one department. Insert each name only once.
+     */
+    private void saveSpecialization(String name, String department, Set<String> seen) {
+        if (!seen.add(name.toLowerCase(Locale.ROOT))
+                || specializationRepository.existsByNameIgnoreCase(name)) {
+            return;
+        }
+        specializationRepository.save(Specialization.builder()
+                .name(name)
+                .department(department)
+                .build());
     }
 }

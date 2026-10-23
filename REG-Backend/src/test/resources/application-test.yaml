@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:regdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  mail:
+    host: localhost
+    port: 3025
+    username: test
+    password: test
+
+reg:
+  cors:
+    allowed-origins: http://localhost:5173
+
+jwt:
+  secret: test-jwt-secret-key-long-enough-for-hmac-sha-256-signing-0123456789
+  access-token-expiry-ms: 900000
+  refresh-token-expiry-ms: 604800000
+
+otp:
+  secret: test-otp-secret
+  expiry-minutes: 10
+  resend-cooldown-seconds: 60
+  max-sends-per-hour: 5
+  max-verify-attempts: 5
+  show-in-dev: true
+
+lecturer:
+  base-url: http://localhost:8084
+
+nap:
+  base-url: http://localhost:8080
+  endpoint: /api/v1/programs
+  college: Test University
+  sync-interval-ms: 3600000
+
+file:
+  upload:
+    dir: target/test-uploads

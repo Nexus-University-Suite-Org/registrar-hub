@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -40,31 +42,24 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/health",
-                                "/api/v1/auth/**",
-                                "/api/upload/**",
-                                "/api/uploads/**",
-                                "/api/profiles/**",
-                                "/api/student-grades/**",
-                                "/api/activities/**",
-                                "/api/courses/**",
-                                "/api/course-units/**",
-                                "/api/sign-ups/**",
-                                "/api/students/**",
-                                "/api/fee-assignments/**",
-                                "/api/departments/**",
-                                "/api/specializations/**",
-                                "/api/academic-calendar/**",
-                                "/api/timetable/**",
-                                "/actuator/**"
+                                "/actuator/health"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/auth/send-signup-otp",
+                                "/api/v1/auth/verify-signup-otp",
+                                "/api/v1/auth/signup",
+                                "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/uploads/**",
+                                "/api/settings/branding",
                                 "/api/university-services/**",
                                 "/api/office-locations/**",
-                                "/api/service-requests/**",
-                                "/api/settings/branding").permitAll()
+                                "/api/service-requests/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/service-requests/**").permitAll()
                         .anyRequest().authenticated()
                 )
