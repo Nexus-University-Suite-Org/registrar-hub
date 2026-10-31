@@ -2,6 +2,7 @@ package org.nexus.regbackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.nexus.regbackend.configuration.NexusIdentityTokenVerifier;
 import org.nexus.regbackend.dto.*;
 import org.nexus.regbackend.model.Registrar;
 import org.nexus.regbackend.service.AuthService;
@@ -25,6 +26,7 @@ public class AuthController {
     private final AuthService authService;
     private final OtpService  otpService;
     private final CurrentUser currentUser;
+    private final NexusIdentityTokenVerifier identityTokenVerifier;
 
     /**
      * REG_UCD_004 — Send sign-up OTP.
@@ -76,6 +78,14 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request) {
 
         LoginResponse response = authService.login(request);
+        return ApiResponse.ok("Login successful.", response);
+    }
+
+    @PostMapping("/sso")
+    public ResponseEntity<ApiResponse<LoginResponse>> sso(
+            @RequestHeader("Authorization") String authorization) {
+        LoginResponse response = authService.loginWithSso(
+                identityTokenVerifier.verifiedRegistrarEmail(authorization));
         return ApiResponse.ok("Login successful.", response);
     }
 

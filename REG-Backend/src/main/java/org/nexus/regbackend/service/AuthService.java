@@ -28,6 +28,8 @@ public interface AuthService {
      */
     LoginResponse login(LoginRequest request);
 
+    LoginResponse loginWithSso(String email);
+
     /**
      * Verifies the current password and sets a new BCrypt hash.
      * Revokes all existing refresh tokens.

@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider as IdentityAuthProvider } from "@/lib/nexus-auth";
+import { IdentitySessionBridge } from "@/lib/nexus-auth/IdentitySessionBridge";
 import { useBranding } from "@/hooks/useBranding";
 
 import Index from "./pages/Index";
@@ -25,6 +27,8 @@ import HelpSupport from "./pages/HelpSupport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+const IDENTITY_ISSUER =
+  import.meta.env.VITE_IDENTITY_ISSUER ?? "http://localhost:9000";
 
 const AppContent = () => {
   const { branding } = useBranding();
@@ -38,6 +42,7 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
+      <IdentitySessionBridge />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
@@ -66,7 +71,21 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AppContent />
+      <IdentityAuthProvider
+        config={{
+          issuer: IDENTITY_ISSUER,
+          clientId: "nexus-registrar",
+          redirectPath: "/auth",
+          defaultReturnTo: "/auth",
+        }}
+        fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            Checking your sign-in...
+          </div>
+        }
+      >
+        <AppContent />
+      </IdentityAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

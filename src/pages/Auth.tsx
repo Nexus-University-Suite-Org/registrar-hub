@@ -31,12 +31,14 @@ import {
 import { toast } from "sonner";
 import { post } from "@/lib/api";
 import { useBranding } from "@/hooks/useBranding";
+import { useNexusAuth } from "@/lib/nexus-auth";
 
 type AuthStep = "email" | "verification" | "password" | "profile" | "login" | "forgot-password" | "reset-otp" | "reset-password";
 
 export default function Auth() {
   const navigate = useNavigate();
   const { branding } = useBranding();
+  const { login: loginWithSso } = useNexusAuth();
 
   const [step, setStep] = useState<AuthStep>("email");
   const [isLogin, setIsLogin] = useState(true);
@@ -63,6 +65,16 @@ export default function Auth() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [verifiedOtp, setVerifiedOtp] = useState("");
+
+  useEffect(() => {
+    const handleSsoError = (event: Event) => {
+      const message = (event as CustomEvent<string>).detail;
+      setError(message);
+      toast.error(message);
+    };
+    window.addEventListener("nexus-sso-error", handleSsoError);
+    return () => window.removeEventListener("nexus-sso-error", handleSsoError);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -677,6 +689,14 @@ export default function Auth() {
                     Forgot your password?
                   </Button>
                 </form>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 rounded-xl"
+                  onClick={() => void loginWithSso("/auth")}
+                >
+                  Sign in with University SSO
+                </Button>
               </div>
             )}
 

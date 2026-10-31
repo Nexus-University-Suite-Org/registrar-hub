@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -45,6 +47,7 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(
                         new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/health",
                                 "/actuator/health"
@@ -53,7 +56,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/send-signup-otp",
                                 "/api/v1/auth/verify-signup-otp",
                                 "/api/v1/auth/signup",
-                                "/api/v1/auth/login").permitAll()
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/sso").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/uploads/**",
                                 "/api/settings/branding",
@@ -61,7 +65,7 @@ public class SecurityConfig {
                                 "/api/office-locations/**",
                                 "/api/service-requests/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/service-requests/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().hasRole("REGISTRAR")
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
