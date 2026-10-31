@@ -114,7 +114,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse loginWithSso(String email) {
-        Registrar registrar = registrarRepository.findByEmail(email.toLowerCase().trim())
+        Registrar registrar = registrarRepository.findByEmailIgnoreCase(email.trim())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED, "No registrar account matches this identity."));
         return issueLogin(registrar);

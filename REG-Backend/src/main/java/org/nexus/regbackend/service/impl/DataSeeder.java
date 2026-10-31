@@ -359,12 +359,7 @@ public class DataSeeder implements CommandLineRunner {
         );
 
         deptSpecs.forEach((dept, specs) ->
-            specs.forEach(name ->
-                specializationRepository.save(Specialization.builder()
-                    .name(name)
-                    .department(dept)
-                    .build())
-            )
+            specs.forEach(name -> saveSpecialization(name, dept))
         );
 
         // Add cross-cutting specializations without a specific department
@@ -378,8 +373,16 @@ public class DataSeeder implements CommandLineRunner {
             "Quantum Computing", "Augmented Reality", "Virtual Reality",
             "Game Development", "UI/UX Design", "Product Management",
             "Technical Writing", "Business Process Reengineering"
-        ).forEach(name ->
-            specializationRepository.save(Specialization.builder().name(name).build())
-        );
+        ).forEach(name -> saveSpecialization(name, null));
+    }
+
+    private void saveSpecialization(String name, String department) {
+        if (specializationRepository.existsByNameIgnoreCase(name)) {
+            return;
+        }
+        specializationRepository.save(Specialization.builder()
+                .name(name)
+                .department(department)
+                .build());
     }
 }

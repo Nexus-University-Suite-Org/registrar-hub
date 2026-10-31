@@ -17,7 +17,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     try {
+      window.dispatchEvent(new Event("nexus-sso-signout"));
       localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_id");
       localStorage.removeItem("user_email");
       localStorage.removeItem("registrar_college");

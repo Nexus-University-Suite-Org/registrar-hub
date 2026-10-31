@@ -71,8 +71,8 @@ export function AssignCourseUnitsModal({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const NAP_PROGRAMS_URL = "http://localhost:8080/api/v1/programs";
-  const LECTURER_BACKEND_URL = "http://localhost:8084";
+  const NAP_PROGRAMS_URL = `${import.meta.env.VITE_NAP_API_BASE_URL || "http://localhost:8080"}/api/v1/programs`;
+  const LECTURER_BACKEND_URL = import.meta.env.VITE_LECTURER_API_BASE_URL || "http://localhost:8084";
 
   useEffect(() => {
     if (isOpen) {

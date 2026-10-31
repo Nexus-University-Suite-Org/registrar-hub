@@ -1,5 +1,6 @@
 package org.nexus.regbackend.configuration;
 
+import java.util.List;
 import java.util.Locale;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -11,40 +12,44 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 @Component
-public class KeycloakTokenVerifier {
+public class NexusIdentityTokenVerifier {
 
     private final String issuerUri;
-    private final String clientId;
+    private final String audience;
     private volatile JwtDecoder decoder;
 
-    public KeycloakTokenVerifier(
-            @Value("${keycloak.issuer-uri:}") String issuerUri,
-            @Value("${keycloak.client-id:}") String clientId) {
+    public NexusIdentityTokenVerifier(
+            @Value("${NEXUS_IDENTITY_ISSUER_URI:http://localhost:9000}") String issuerUri,
+            @Value("${NEXUS_IDENTITY_AUDIENCE:nexus-registrar}") String audience) {
         this.issuerUri = issuerUri;
-        this.clientId = clientId;
+        this.audience = audience;
     }
 
-    public String verifiedEmail(String authorization) {
-        if (issuerUri.isBlank() || clientId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "SSO is not configured");
+    public String verifiedRegistrarEmail(String authorization) {
+        if (issuerUri.isBlank() || audience.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Nexus Identity SSO is not configured");
         }
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A Keycloak bearer token is required");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "A Nexus Identity bearer token is required");
         }
 
         try {
             Jwt jwt = decoder().decode(authorization.substring(7));
             String email = jwt.getClaimAsString("email");
-            if (!clientId.equals(jwt.getClaimAsString("azp"))
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (!jwt.getAudience().contains(audience)
+                    || !"access".equals(jwt.getClaimAsString("token_use"))
                     || !Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified"))
+                    || roles == null
+                    || !roles.contains("REGISTRAR")
                     || email == null
                     || email.isBlank()) {
                 throw new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED, "The Keycloak identity is not verified for this application");
+                        HttpStatus.FORBIDDEN, "A verified registrar identity is required");
             }
             return email.trim().toLowerCase(Locale.ROOT);
         } catch (JwtException exception) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The Keycloak token is invalid or expired");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The Nexus Identity token is invalid or expired");
         }
     }
 
