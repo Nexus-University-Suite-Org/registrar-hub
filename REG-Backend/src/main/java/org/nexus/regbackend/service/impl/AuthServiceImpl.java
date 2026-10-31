@@ -121,6 +121,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private LoginResponse issueLogin(Registrar registrar) {
+        // Revoke any existing refresh token for this registrar (one active token per user)
         refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
 
         String accessToken = jwtService.generateAccessToken(registrar);

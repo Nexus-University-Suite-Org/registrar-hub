@@ -41,7 +41,8 @@ export function useNotifications() {
       const list = (data || []).map(toNotification);
       setNotifications(list);
     } catch (err) {
-      console.error("Notifications fetch error:", err);
+      console.warn("Notifications fetch skipped:", err);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

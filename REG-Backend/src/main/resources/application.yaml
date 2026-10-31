@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   application:
     name: REG-Backend
 
@@ -33,10 +33,18 @@ spring:
           auth: true
           starttls:
             enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+nexus-identity:
+  issuer-uri: ${NEXUS_IDENTITY_ISSUER_URI:http://localhost:9000}
+  audience: ${NEXUS_IDENTITY_AUDIENCE:nexus-registrar}
 
 server:
   port: ${PORT:8082}
 
+# â”€â”€ Lecturer-Backend proxy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # ── CORS ─────────────────────────────────────────────────────────────────────
 reg:
   cors:
@@ -46,20 +54,20 @@ reg:
 lecturer:
   base-url: ${LECTURER_BASE_URL:http://localhost:8084}
 
-# ── NAP program catalog sync ────────────────────────────────────────────────
+# â”€â”€ NAP program catalog sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 nap:
   base-url: ${NAP_BASE_URL:http://localhost:8080}
   endpoint: ${NAP_PROGRAMS_ENDPOINT:/api/v1/programs}
   college: ${NAP_DEFAULT_COLLEGE:Alvin University}
   sync-interval-ms: ${NAP_SYNC_INTERVAL_MS:3600000}   # 1 hour
 
-# ── JWT settings ────────────────────────────────────────────────────────────
+# â”€â”€ JWT settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 jwt:
   secret: ${JWT_SECRET:reg-backend-dev-jwt-secret-change-in-production}
   access-token-expiry-ms: 900000       # 15 minutes
   refresh-token-expiry-ms: 604800000   # 7 days
 
-# ── OTP settings ────────────────────────────────────────────────────────────
+# â”€â”€ OTP settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 otp:
   secret: ${OTP_SECRET:reg-backend-dev-otp-secret-change-in-production}
   expiry-minutes: 10
@@ -69,16 +77,16 @@ otp:
   # Set to true ONLY in local dev to include raw OTP in response
   show-in-dev: ${OTP_SHOW_IN_DEV:false}
 
-# ── File upload ──────────────────────────────────────────────────────────────
+# â”€â”€ File upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 file:
   upload:
     dir: uploads
 
-# ── Set password ────────────────────────────────────────────────────────────
+# â”€â”€ Set password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 set-password:
   url: ${SET_PASSWORD_URL:http://localhost:5176/set-password}
 
-# REG_UCD_001 — Actuator: expose health endpoint for internal deployment checks only.
+# REG_UCD_001 â€” Actuator: expose health endpoint for internal deployment checks only.
 # The public health check is served by HealthController at /api/health.
 management:
   endpoints:
