@@ -26,12 +26,8 @@ import {
 import { StudentStats } from "@/types/student";
 import { LecturerStats } from "@/types/lecturer";
 import { Activity as ActivityType } from "@/types/activity";
-import { get } from "@/lib/api";
+import { get, getNad } from "@/lib/api";
 import { useNotifications } from "@/hooks/useNotifications";
-
-const NAP_APPLICATIONS_URL =
-  import.meta.env.VITE_NAP_APPLICATIONS_URL ||
-  "http://localhost:8080/api/v1/applications";
 
 const systemPerformanceInitial = {
   responseTime: 0,
@@ -131,12 +127,23 @@ export default function Dashboard() {
   const fetchStats = async () => {
     try {
       const started = Date.now();
-      const response = await fetch(NAP_APPLICATIONS_URL);
-      if (!response.ok) {
-        throw new Error(`NAP backend returned ${response.status}`);
+      let applications: any[] = [];
+      try {
+        try {
+          const data = await getNad<any[]>("/api/v1/admin/applications");
+          applications = Array.isArray(data) ? data : [];
+        } catch (e) {
+          try {
+            const data = await getNad<any[]>("/api/v1/applications");
+            applications = Array.isArray(data) ? data : [];
+          } catch (e2) {
+            applications = [];
+          }
+        }
+      } catch (napErr) {
+        console.warn("NAP applications fetch skipped:", napErr);
+        applications = [];
       }
-      const data = await response.json();
-      const applications: any[] = Array.isArray(data) ? data : [];
       const responseTime = Math.max(1, Date.now() - started);
 
       const now = new Date();

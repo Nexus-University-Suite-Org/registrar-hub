@@ -100,10 +100,23 @@ public class OtpServiceImpl implements OtpService {
                 .build();
 
         otpRecordRepository.save(newRecord);
-        emailService.sendOtpEmail(email, rawOtp);
+        boolean emailSent = false;
+        try {
+            emailService.sendOtpEmail(email, rawOtp);
+            emailSent = true;
+        } catch (Exception e) {
+            log.warn("Failed to send OTP email to {}: {}", email, e.getMessage());
+        }
 
-        // Only expose raw OTP in dev; never in production
-        return otpProperties.isShowInDev() ? rawOtp : null;
+        // Return OTP in dev mode (or always if email failed but we want to be flexible)
+        // For now: return OTP if showInDev is true, regardless of email send success
+        if (otpProperties.isShowInDev()) {
+            return rawOtp;
+        }
+        if (!emailSent) {
+            throw new OtpException("Failed to send OTP email. Please try again later.");
+        }
+        return null;
     }
 
     // ── REG_UCD_005 ──────────────────────────────────────────────────────────

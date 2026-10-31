@@ -65,6 +65,22 @@ export default function Auth() {
   const [verifiedOtp, setVerifiedOtp] = useState("");
 
   useEffect(() => {
+    console.log("[Auth] page mounted", {
+      apiBase: import.meta.env.VITE_API_BASE_URL || "http://localhost:5173",
+      isLogin,
+      step,
+    });
+  }, []);
+
+  useEffect(() => {
+    console.log("[Auth] step ->", step, "| isLogin:", isLogin);
+  }, [step, isLogin]);
+
+  useEffect(() => {
+    if (error) console.log("[Auth] error ->", error);
+  }, [error]);
+
+  useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) navigate("/dashboard");
     else setIsCheckingAuth(false);
@@ -96,11 +112,14 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
+      console.log("[Auth] send-signup-otp request", { email });
       const res = await post<{ otp?: string }>("/v1/auth/send-signup-otp", { email });
+      console.log("[Auth] send-signup-otp response", res);
       toast.success("Verification code sent to your email.");
       setOtpDigits(["", "", "", ""]);
       setStep("verification");
     } catch (err: any) {
+      console.log("[Auth] send-signup-otp ERROR", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -109,8 +128,12 @@ export default function Auth() {
 
   const handleProfileSubmit = (e: any) => {
     e.preventDefault();
-    if (!firstName || !lastName || !username || !employeeId || !college || !department || !phoneNumber || !dateOfBirth)
+    const fields = { firstName, lastName, username, employeeId, college, department, phoneNumber, dateOfBirth };
+    if (!firstName || !lastName || !username || !employeeId || !college || !department || !phoneNumber || !dateOfBirth) {
+      console.log("[Auth] profile validation failed", fields);
       return setError("Fill all fields");
+    }
+    console.log("[Auth] profile validated", fields);
 
     setStep("password");
   };
@@ -124,7 +147,7 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      await post("/v1/auth/signup", {
+      const payload = {
         firstName,
         lastName,
         email,
@@ -137,12 +160,20 @@ export default function Auth() {
         phoneNumber,
         dateOfBirth,
         otp: verifiedOtp,
+      };
+      console.log("[Auth] signup request", {
+        ...payload,
+        password: `[${password.length} chars]`,
+        confirmPassword: `[${confirmPassword.length} chars]`,
       });
+      const signupRes = await post("/v1/auth/signup", payload);
+      console.log("[Auth] signup response", signupRes);
 
       localStorage.setItem("registrar_college", college);
       toast.success("Account created successfully!");
       navigate("/dashboard");
     } catch (err: any) {
+      console.log("[Auth] signup ERROR", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -154,7 +185,9 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
+      console.log("[Auth] login request", { identifier: email, password: `[${password.length} chars]` });
       const data: any = await post("/v1/auth/login", { identifier: email, password });
+      console.log("[Auth] login response keys", data ? Object.keys(data) : data, { accessToken: !!data?.accessToken });
       if (data.accessToken) {
         localStorage.setItem("access_token", data.accessToken);
       }
@@ -170,9 +203,11 @@ export default function Auth() {
       if (data.profile?.institution) {
         localStorage.setItem("registrar_college", data.profile.institution);
       }
+      console.log("[Auth] login success, stored: access/refresh/user_id/user_email/college");
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err: any) {
+      console.log("[Auth] login ERROR", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -186,10 +221,12 @@ export default function Auth() {
         step === "reset-otp"
           ? "/v1/auth/verify-reset-otp"
           : "/v1/auth/verify-signup-otp";
+      console.log("[Auth] verify-otp request", { endpoint, email, code });
       const res = await post<{ valid: boolean }>(endpoint, {
         email,
         otp: code,
       });
+      console.log("[Auth] verify-otp response", res);
       if (res.valid) {
         setVerifiedOtp(code);
         setOtpVerified(true);
@@ -204,6 +241,7 @@ export default function Auth() {
           }
         }, 2000);
       } else {
+        console.log("[Auth] verify-otp INVALID code", code);
         setOtpDigits((prev) => {
           const next = [...prev];
           for (let i = 0; i < next.length; i++) next[i] = "";
@@ -211,7 +249,8 @@ export default function Auth() {
         });
         otpRefs.current[0]?.focus();
       }
-    } catch {
+    } catch (err) {
+      console.log("[Auth] verify-otp ERROR", err);
       setOtpDigits((prev) => {
         const next = [...prev];
         for (let i = 0; i < next.length; i++) next[i] = "";
@@ -228,12 +267,15 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
+      console.log("[Auth] send-reset-otp request", { email });
       const res = await post<{ otp?: string }>("/v1/auth/send-reset-otp", { email });
+      console.log("[Auth] send-reset-otp response", res);
       setOtpDigits(["", "", "", ""]);
       setOtpVerified(false);
       toast.success("Reset code sent to your email.");
       setStep("reset-otp");
     } catch (err: any) {
+      console.log("[Auth] send-reset-otp ERROR", err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -807,20 +849,23 @@ export default function Auth() {
                       Didn't receive the code?{" "}
                       <button
                         type="button"
-                        onClick={async () => {
-                          setIsLoading(true);
-                          try {
-                            const res = await post<{ otp?: string }>("/v1/auth/send-signup-otp", {
-                              email,
-                            });
-                            setOtpDigits(["", "", "", ""]);
-                            toast.success("New code sent.");
-                          } catch (err: any) {
-                            setError(err.message);
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }}
+onClick={async () => {
+                           setIsLoading(true);
+                           try {
+                             console.log("[Auth] resend-signup-otp", { email });
+                             const res = await post<{ otp?: string }>("/v1/auth/send-signup-otp", {
+                               email,
+                             });
+                             console.log("[Auth] resend-signup-otp response", res);
+                             setOtpDigits(["", "", "", ""]);
+                             toast.success("New code sent.");
+                           } catch (err: any) {
+                             console.log("[Auth] resend-signup-otp ERROR", err);
+                             setError(err.message);
+                           } finally {
+                             setIsLoading(false);
+                           }
+                         }}
                         className="text-primary font-medium hover:text-primary/80"
                         disabled={isLoading}
                       >
@@ -921,20 +966,23 @@ export default function Auth() {
                       Didn't receive the code?{" "}
                       <button
                         type="button"
-                        onClick={async () => {
-                          setIsLoading(true);
-                          try {
-                            const res = await post<{ otp?: string }>("/v1/auth/send-reset-otp", {
-                              email,
-                            });
-                            setOtpDigits(["", "", "", ""]);
-                            toast.success("New code sent.");
-                          } catch (err: any) {
-                            setError(err.message);
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }}
+onClick={async () => {
+                           setIsLoading(true);
+                           try {
+                             console.log("[Auth] resend-reset-otp", { email });
+                             const res = await post<{ otp?: string }>("/v1/auth/send-reset-otp", {
+                               email,
+                             });
+                             console.log("[Auth] resend-reset-otp response", res);
+                             setOtpDigits(["", "", "", ""]);
+                             toast.success("New code sent.");
+                           } catch (err: any) {
+                             console.log("[Auth] resend-reset-otp ERROR", err);
+                             setError(err.message);
+                           } finally {
+                             setIsLoading(false);
+                           }
+                         }}
                         className="text-primary font-medium hover:text-primary/80"
                         disabled={isLoading}
                       >

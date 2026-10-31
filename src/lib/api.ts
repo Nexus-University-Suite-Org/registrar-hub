@@ -40,7 +40,7 @@ export async function get<T>(path: string): Promise<T> {
 
 // NAD Admissions Dashboard backend (admissions-server, port 8083) via the /nad Vite proxy
 export async function getNad<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}/nad${cleanPath(path)}`, {
+  const response = await fetch(`/nad${cleanPath(path)}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });

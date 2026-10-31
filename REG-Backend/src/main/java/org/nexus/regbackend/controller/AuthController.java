@@ -79,6 +79,15 @@ public class AuthController {
         return ApiResponse.ok("Login successful.", response);
     }
 
+    @PostMapping("/sso")
+    public ResponseEntity<ApiResponse<LoginResponse>> sso(
+            @RequestHeader("Authorization") String authorization,
+            org.nexus.regbackend.configuration.KeycloakTokenVerifier keycloakTokenVerifier) {
+        LoginResponse response = authService.loginWithSso(
+                keycloakTokenVerifier.verifiedEmail(authorization));
+        return ApiResponse.ok("Login successful.", response);
+    }
+
     /**
      * Changes the authenticated registrar's password.
      * POST /api/v1/auth/change-password

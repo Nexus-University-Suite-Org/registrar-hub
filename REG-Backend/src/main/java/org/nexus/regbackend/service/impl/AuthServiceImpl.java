@@ -108,6 +108,19 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials.");
         }
 
+        return issueLogin(registrar);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse loginWithSso(String email) {
+        Registrar registrar = registrarRepository.findByEmail(email.toLowerCase().trim())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "No registrar account matches this identity."));
+        return issueLogin(registrar);
+    }
+
+    private LoginResponse issueLogin(Registrar registrar) {
         // Revoke any existing refresh token for this registrar (one active token per user)
         refreshTokenRepository.deleteAllByRegistrarId(registrar.getId());
 
