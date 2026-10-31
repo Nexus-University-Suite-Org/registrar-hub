@@ -1,7 +1,7 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8082";
 
-// NAD Admissions backend (admissions-server) — prod points at the NAD Railway API.
+// Admissions backend (admissions-server).
 const NAD_API_BASE_URL =
   import.meta.env.VITE_NAD_API_BASE_URL || "http://localhost:8083";
 
